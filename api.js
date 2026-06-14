@@ -93,10 +93,10 @@ const API = (() => {
       if (_useRemote) return RS.mem.teacherPin || DEF_PIN;
       return localStorage.getItem(T_PIN_KEY)||DEF_PIN;
     },
-    setTeacherPin(p) {
+    async setTeacherPin(p) {
       if (_useRemote) {
+        await RS.flushKey('teacher_pin', { pin: p });
         RS.mem.teacherPin = p;
-        RS.schedule('teacher_pin', () => ({ pin: RS.mem.teacherPin || '' }));
         return;
       }
       localStorage.setItem(T_PIN_KEY, p);
@@ -153,7 +153,13 @@ const API = (() => {
     },
     save(db)        { writeDB(db); },
     getTeacher()    { return this.get().teacher; },
-    saveTeacher(data){ const db=this.get(); db.teacher={...db.teacher,...data}; this.save(db); },
+    async saveTeacher(data){
+      const db=this.get();
+      const next={...db.teacher,...data};
+      if (_useRemote && RS.updateConfigRemote) await RS.updateConfigRemote(next);
+      db.teacher=next; this.save(db);
+      return next;
+    },
     exportJSON() {
       const goals = _useRemote ? RS.mem.goals : JSON.parse(localStorage.getItem(GOALS_KEY)||'{}');
       const exams = _useRemote ? RS.mem.exams : JSON.parse(localStorage.getItem(EXAMS_KEY)||'{}');
@@ -296,7 +302,7 @@ const API = (() => {
       if(!enrollmentDate) return null;
       return new Date().getFullYear() - new Date(enrollmentDate).getFullYear();
     },
-    add({ name, cls, roll, note, pin, fatherName='', fatherOccupation='', contact='', district='', upazila='', bloodGroup='', enrollmentDate='', responsibility='' }) {
+    async add({ name, cls, roll, note, pin, fatherName='', fatherOccupation='', contact='', district='', upazila='', bloodGroup='', enrollmentDate='', responsibility='' }) {
       const db = DB.get();
       const colors=['#128C7E','#1565C0','#6A1B9A','#BF360C','#1B5E20','#E65100','#004D40','#880E4F'];
       const s = {
@@ -304,30 +310,37 @@ const API = (() => {
         name, cls, roll, note, pin, color:colors[db.students.length%colors.length],
         fatherName, fatherOccupation, contact, district, upazila, bloodGroup, enrollmentDate, responsibility,
       };
+      if (_useRemote && RS.saveStudentRemote) await RS.saveStudentRemote(s);
       db.students.push(s); db.chats[s.id]=[];
       delete db.allowEmptyStudents;
       DB.save(db);
-      if (_useRemote && RS.saveStudentRemote) RS.saveStudentRemote(s);
       return s;
     },
 
-    update(sid, data) {
+    async update(sid, data) {
       const db=DB.get(); const s=db.students.find(s=>s.id===sid); if(!s) return null;
       // Don't overwrite id, waqfId, color
       const { id:_, waqfId:__, color:___, ...rest } = data;
+      const next={...s,...rest};
+      if (_useRemote && window.__MADRASA_ROLE__==='teacher' && RS.saveStudentRemote)
+        await RS.saveStudentRemote(next);
       Object.assign(s, rest); DB.save(db); return s;
     },
 
-    updatePin(sid, pin) {
+    async updatePin(sid, pin, { skipRemote=false }={}) {
       const db=DB.get();
-      const s=db.students.find(s=>s.id===sid); if(s){ s.pin=pin; DB.save(db); } return s;
+      const s=db.students.find(s=>s.id===sid);
+      if(!s) return null;
+      if (_useRemote && !skipRemote && window.__MADRASA_ROLE__==='teacher' && RS.saveStudentRemote)
+        await RS.saveStudentRemote({...s,pin});
+      s.pin=pin; DB.save(db); return s;
     },
 
     /** ছাত্র সারি অপরিবর্তিত; চ্যাট, টাস্ক, পরীক্ষা, ডক, লক্ষ্য, একাডেমিক, নোট মুছে। */
-    clearAllRelatedData(sid) {
+    async clearAllRelatedData(sid, { skipRemote=false }={}) {
       if (!this.getById(sid)) throw new Error('student_not_found');
       // Delete all related rows from the remote DB first (before local changes)
-      if (_useRemote && RS.clearStudentDataRemote) RS.clearStudentDataRemote(sid);
+      if (_useRemote && !skipRemote && RS.clearStudentDataRemote) await RS.clearStudentDataRemote(sid);
       if (typeof window !== 'undefined' && window.DailyScheduleAPI && window.DailyScheduleAPI.clearStudent)
         window.DailyScheduleAPI.clearStudent(sid);
       const AA = window.ApiAmal; if (AA) AA.Completions.clearStudent(sid);
@@ -372,14 +385,15 @@ const API = (() => {
     },
 
     /** সব ছাত্রের সংশ্লিষ্ট ডেটা মুছে — নাম/ওয়াকফ/পিন অপরিবর্তিত থাকে। */
-    clearAllStudentsData() {
-      for (const s of this.getAll()) this.clearAllRelatedData(s.id);
+    async clearAllStudentsData() {
+      for (const s of this.getAll()) await this.clearAllRelatedData(s.id);
     },
 
     /** ছাত্র + সব সংশ্লিষ্ট ডেটা মুছে; ওয়াকফ নম্বর পরে নতুন ছাত্রের জন্য পুনরায় বরাদ্দ হতে পারে। */
-    deleteCompletely(sid) {
+    async deleteCompletely(sid) {
       if (!this.getById(sid)) throw new Error('student_not_found');
-      this.clearAllRelatedData(sid);
+      if (_useRemote && RS.deleteStudentRemote) await RS.deleteStudentRemote(sid);
+      await this.clearAllRelatedData(sid, { skipRemote:true });
       const db = DB.get();
       db.students = db.students.filter((s) => s.id !== sid);
       delete db.chats[sid];
@@ -388,12 +402,10 @@ const API = (() => {
         // Remove from lock-screen hints immediately so UI updates at once
         if (RS.mem && Array.isArray(RS.mem.lockHints))
           RS.mem.lockHints = RS.mem.lockHints.filter(s => s.id !== sid);
-        // Delete from DB (CASCADE removes all related rows)
-        if (RS.deleteStudentRemote) RS.deleteStudentRemote(sid);
       }
     },
 
-    importFromCSV(csvText) {
+    async importFromCSV(csvText) {
       const lines = csvText.replace(/\r/g,'').trim().split('\n');
       if(lines.length < 2) throw new Error('empty_file');
       const parseCSVLine = line => {
@@ -439,7 +451,13 @@ const API = (() => {
           enrollmentDate:r[col('enrollment_date')]||'',
           note:r[col('note')]||'',
         };
-        db.students.push(s); db.chats[s.id]=[]; results.success++;
+        try {
+          if (_useRemote && RS.saveStudentRemote) await RS.saveStudentRemote(s);
+          db.students.push(s); db.chats[s.id]=[]; results.success++;
+        } catch (e) {
+          console.error('CSV student save failed:', e);
+          results.errors.push(`Row ${i+1} (${name}): database save failed`);
+        }
       }
       if (results.success > 0) delete db.allowEmptyStudents;
       DB.save(db); return results;
@@ -462,13 +480,17 @@ const API = (() => {
       localStorage.setItem(this._key,JSON.stringify(d));
     },
     getAll(sid){ return this._read()[sid]||[]; },
-    add(sid,{yearClass,grade}){
+    async add(sid,{yearClass,grade}){
       const all=this._read(); if(!all[sid]) all[sid]=[];
       const rec={id:uid('ah'),yearClass,grade,addedAt:today()};
+      if (_useRemote && RS.upsertAcademicHistoryRemote)
+        await RS.upsertAcademicHistoryRemote(sid,rec);
       all[sid].push(rec); this._write(all); return rec;
     },
-    delete(sid,rid){
+    async delete(sid,rid){
       const all=this._read();
+      if (_useRemote && RS.deleteAcademicHistoryRemote)
+        await RS.deleteAcademicHistoryRemote(sid,rid);
       if(all[sid]) all[sid]=all[sid].filter(r=>r.id!==rid);
       this._write(all);
     },
@@ -490,44 +512,46 @@ const API = (() => {
       localStorage.setItem(this._key,JSON.stringify(d));
     },
     getAll(sid){ return this._read()[sid]||[]; },
-    add(sid,text){
+    async add(sid,text){
       const all=this._read(); if(!all[sid]) all[sid]=[];
       const note={id:uid('tn'),text,date:today(),time:nowTime()};
+      if (_useRemote && RS.upsertTeacherNoteRemote) await RS.upsertTeacherNoteRemote(note, sid);
       all[sid].unshift(note); this._write(all);
-      if (_useRemote && RS.upsertTeacherNoteRemote) RS.upsertTeacherNoteRemote(note, sid);
       return note;
     },
-    update(sid,nid,text){
+    async update(sid,nid,text){
       const all=this._read(); const n=(all[sid]||[]).find(x=>x.id===nid);
-      if(n){ n.text=text; n.edited=today(); this._write(all);
-        if (_useRemote && RS.upsertTeacherNoteRemote) RS.upsertTeacherNoteRemote(n, sid);
-      } return n;
+      if(!n) return null;
+      const next={...n,text,edited:today()};
+      if (_useRemote && RS.upsertTeacherNoteRemote) await RS.upsertTeacherNoteRemote(next, sid);
+      Object.assign(n,next); this._write(all);
+      return n;
     },
-    delete(sid,nid){
+    async delete(sid,nid){
       const all=this._read();
+      if (_useRemote && RS.deleteTeacherNoteRemote) await RS.deleteTeacherNoteRemote(nid);
       if(all[sid]) all[sid]=all[sid].filter(n=>n.id!==nid);
       this._write(all);
-      if (_useRemote && RS.deleteTeacherNoteRemote) RS.deleteTeacherNoteRemote(nid);
     },
   };
 
   // ── MESSAGES ─────────────────────────────────────────────
   const Messages = {
     getThread(id)          { return DB.get().chats[id]||[]; },
-    send(threadId,text,type='text',extra={}) {
+    async send(threadId,text,type='text',extra={}) {
       const db=DB.get(); if(!db.chats[threadId]) db.chats[threadId]=[];
       // read:false = student hasn't seen it yet (shows single tick; double tick after student opens chat)
       const m={id:uid('m'),role:'out',text,type,time:nowTime(),read:false,_ts:Date.now(),...extra};
+      if (_useRemote && RS.sendMessageRemote) await RS.sendMessageRemote(threadId, m);
       db.chats[threadId].push(m); stampNotify(db); DB.save(db);
-      if (_useRemote && RS.sendMessageRemote) RS.sendMessageRemote(threadId, m);
       return m;
     },
-    sendFromStudent(sid,text,type='text',extra={}) {
+    async sendFromStudent(sid,text,type='text',extra={}) {
       const db=DB.get(); if(!db.chats[sid]) db.chats[sid]=[];
       // read:false = teacher hasn't seen it yet (single tick on student side)
       const m={id:uid('m'),role:'in',text,type,time:nowTime(),read:false,_ts:Date.now(),...extra};
+      if (_useRemote && RS.sendMessageRemote) await RS.sendMessageRemote(sid, m);
       db.chats[sid].push(m); stampNotify(db); DB.save(db);
-      if (_useRemote && RS.sendMessageRemote) RS.sendMessageRemote(sid, m);
       return m;
     },
     // Send a file directly from chat (student → teacher)
@@ -540,7 +564,7 @@ const API = (() => {
         if (_useRemote) {
           const docId=uid('doc');
           const path=`${sid}/${docId}_${safeFilePart(file.name)}`;
-          RS.uploadFile(path, file).then(res=>{
+          RS.uploadFile(path, file).then(async res=>{
             const { fileUrl, storagePath } = RS.consumeUploadResult(res);
             const meta={
               id:docId, studentId:sid, studentName:student.name,
@@ -548,16 +572,16 @@ const API = (() => {
               category, note, uploadedAt:new Date().toISOString(), read:false,
               fileUrl, storage_path: storagePath || path, sentBy:'student', reviewStatus:'pending',
             };
+            if (RS.saveDocumentRemote) await RS.saveDocumentRemote(meta);
             const list=RS.mem.docs||[];
             list.unshift(meta);
             RS.mem.docs=list;
-            RS.schedule('docs_meta', ()=>JSON.parse(JSON.stringify(RS.mem.docs)));
             const db=DB.get(); if(!db.chats[sid]) db.chats[sid]=[];
             const m={id:uid('m'),role:'in',type:'doc',text:dispName,time:nowTime(),read:false,
                      fileName:dispName, fileType:file.type, fileSize:file.size, docId, fileUrl, storage_path: storagePath || path,
                      ...(replyTo?{replyTo}:{})};
+            if (RS.sendMessageRemote) await RS.sendMessageRemote(sid, m);
             db.chats[sid].push(m); stampNotify(db); DB.save(db);
-            if (RS.sendMessageRemote) RS.sendMessageRemote(sid, m);
             resolve({ meta, msg: m });
           }).catch(err=>reject(err));
           return;
@@ -593,7 +617,7 @@ const API = (() => {
           const docId=uid('tdoc');
           const path=`teacher/${sid}/${docId}_${safeFilePart(file.name)}`;
           const st=Students.getById(sid);
-          RS.uploadFile(path, file).then(res=>{
+          RS.uploadFile(path, file).then(async res=>{
             const { fileUrl, storagePath } = RS.consumeUploadResult(res);
             const meta={
               id:docId, studentId:sid, studentName:st?.name||'',
@@ -601,16 +625,16 @@ const API = (() => {
               category:'general', note:'', uploadedAt:new Date().toISOString(), read:true,
               fileUrl, storage_path: storagePath || path, sentBy:'teacher',
             };
+            if (RS.saveDocumentRemote) await RS.saveDocumentRemote(meta);
             const list=RS.mem.docs||[];
             list.unshift(meta);
             RS.mem.docs=list;
-            RS.schedule('docs_meta', ()=>JSON.parse(JSON.stringify(RS.mem.docs)));
             const db=DB.get(); if(!db.chats[sid]) db.chats[sid]=[];
             const m={id:uid('m'),role:'out',type:'doc',text:dispName,time:nowTime(),read:false,
                      fileName:dispName, fileType:file.type, fileSize:file.size, docId, fileUrl, storage_path: storagePath || path,
                      ...(replyTo?{replyTo}:{})};
+            if (RS.sendMessageRemote) await RS.sendMessageRemote(sid, m);
             db.chats[sid].push(m); stampNotify(db); DB.save(db);
-            if (RS.sendMessageRemote) RS.sendMessageRemote(sid, m);
             resolve({ msg: m });
           }).catch(err=>reject(err));
           return;
@@ -638,21 +662,21 @@ const API = (() => {
         reader.readAsDataURL(file);
       });
     },
-    broadcast(text) {
+    async broadcast(text) {
       const db=DB.get(); const m={id:uid('m'),role:'out',text,type:'text',time:nowTime(),read:false,isBroadcast:true,_ts:Date.now()};
+      if (_useRemote && RS.sendMessageRemote) await RS.sendMessageRemote('_bc', m);
       if(!db.chats['_bc']) db.chats['_bc']=[];
       db.chats['_bc'].push({...m});
       // Student copies are local-only — _bc row in Supabase is the single notification source.
       db.students.forEach(s=>{ if(!db.chats[s.id]) db.chats[s.id]=[]; db.chats[s.id].push({...m,id:uid('m'),_skipRemote:true}); });
       stampNotify(db); DB.save(db);
-      if (_useRemote && RS.sendMessageRemote) RS.sendMessageRemote('_bc', m);
       return m;
     },
-    sendTask(sid,task) {
+    async sendTask(sid,task) {
       const db=DB.get(); if(!db.chats[sid]) db.chats[sid]=[];
       const m={id:uid('m'),role:'out',type:'task',text:task.title,task:{title:task.title,desc:task.desc,deadline:task.deadline,taskType:task.type},time:nowTime(),read:true};
+      if (_useRemote && RS.sendMessageRemote) await RS.sendMessageRemote(sid, m);
       db.chats[sid].push(m); stampNotify(db); DB.save(db);
-      if (_useRemote && RS.sendMessageRemote) RS.sendMessageRemote(sid, m);
       return m;
     },
     markRead(threadId,role='in') {
@@ -744,7 +768,7 @@ const API = (() => {
       if (!ts) return false;
       return (Date.now() - ts) <= this.MSG_TEXT_WINDOW_MS;
     },
-    updateOwnText(threadId, msgId, newText, asTeacher) {
+    async updateOwnText(threadId, msgId, newText, asTeacher) {
       const t = String(newText || '').trim();
       if (!t) return { ok: false, err: 'empty' };
       const db = DB.get();
@@ -752,14 +776,14 @@ const API = (() => {
       const m = arr && arr.find((x) => x.id === msgId);
       if (!m) return { ok: false, err: 'nf' };
       if (!this.canModifyOwnMessage(m, !!asTeacher)) return { ok: false, err: 'forbidden' };
+      if (_useRemote && RS.updateMessageTextRemote) await RS.updateMessageTextRemote(msgId, t);
       m.text = t;
       m.editedAt = new Date().toISOString();
       stampNotify(db);
       DB.save(db);
-      if (_useRemote && RS.updateMessageTextRemote) RS.updateMessageTextRemote(msgId, t);
       return { ok: true };
     },
-    deleteOwn(threadId, msgId, asTeacher) {
+    async deleteOwn(threadId, msgId, asTeacher) {
       const db = DB.get();
       const arr = db.chats[threadId];
       const m = arr && arr.find((x) => x.id === msgId);
@@ -767,10 +791,10 @@ const API = (() => {
       if (!this.canModifyOwnMessage(m, !!asTeacher)) return { ok: false, err: 'forbidden' };
       const ix = arr.findIndex((x) => x.id === msgId);
       if (ix < 0) return { ok: false };
+      if (_useRemote && RS.deleteOwnMessageRemote) await RS.deleteOwnMessageRemote(msgId);
       arr.splice(ix, 1);
       stampNotify(db);
       DB.save(db);
-      if (_useRemote && RS.deleteOwnMessageRemote) RS.deleteOwnMessageRemote(msgId);
       return { ok: true };
     },
   };
@@ -780,7 +804,7 @@ const API = (() => {
     getAll()           { return DB.get().tasks||[]; },
     getForStudent(sid) { return this.getAll().filter(t=>t.assignees&&t.assignees[sid]); },
 
-    add({ title, desc, deadline, type='onetime', assigneeIds }) {
+    async add({ title, desc, deadline, type='onetime', assigneeIds }) {
       const db=DB.get();
       const task={
         id:uid('t'), title, desc,
@@ -790,14 +814,14 @@ const API = (() => {
         assignees:Object.fromEntries(assigneeIds.map(id=>[id,'pending'])),
         completedBy:{},
       };
+      if (_useRemote && RS.saveTaskRemote) await RS.saveTaskRemote(task);
       db.tasks.push(task); DB.save(db);
-      if (_useRemote && RS.saveTaskRemote) RS.saveTaskRemote(task);
       return task;
     },
 
     // ── Completions API ────────────────────────────────────────
     markCompleted(tid,sid,opts)    { const AA=window.ApiAmal; return AA&&AA.markCompleted(tid,sid,opts); },
-    unmarkCompleted(tid,sid,date)  { const AA=window.ApiAmal; AA&&AA.unmarkCompleted(tid,sid,date); },
+    unmarkCompleted(tid,sid,date)  { const AA=window.ApiAmal; return AA&&AA.unmarkCompleted(tid,sid,date); },
     isCompleted(tid,sid,date)      { const AA=window.ApiAmal; return !!(AA&&AA.isCompleted(tid,sid,date)); },
 
     getTodayStatus(task,sid) {
@@ -826,36 +850,50 @@ const API = (() => {
     },
 
     // Legacy compat — also records in Completions
-    markDailyDone(tid,sid) {
+    async markDailyDone(tid,sid) {
       const db=DB.get(); const t=db.tasks.find(x=>x.id===tid); if(!t) return null;
+      const AA=window.ApiAmal;
+      if (AA) await AA.markCompleted(tid,sid,{status:'done'});
       if (!t.completedBy) t.completedBy={};
       t.completedBy[sid]={date:today(),time:nowTime()};
       t.assignees[sid]='done';
       DB.save(db);
-      const AA=window.ApiAmal; if (AA) AA.markCompleted(tid,sid,{status:'done'});
       return t;
     },
-    markDone(tid,sid) {
+    async markDone(tid,sid) {
       const db=DB.get(); const t=db.tasks.find(x=>x.id===tid); if(!t) return null;
+      const completed={date:today(),time:nowTime()};
+      const AA=window.ApiAmal;
+      if (_useRemote && RS.completeOnetimeTaskRemote && AA) {
+        const row=AA.Completions.prepare({
+          task_id:tid, student_id:sid, date:completed.date, status:'done',
+        });
+        await RS.completeOnetimeTaskRemote(row);
+        AA.Completions.commit(row);
+      } else if (AA) {
+        await AA.markCompleted(tid,sid,{status:'done'});
+      }
       t.assignees[sid]='done';
       if (!t.completedBy) t.completedBy={};
-      t.completedBy[sid]={date:today(),time:nowTime()};
+      t.completedBy[sid]=completed;
       DB.save(db);
-      const AA=window.ApiAmal; if (AA) AA.markCompleted(tid,sid,{status:'done'});
       return t;
     },
     isDailyDoneToday(task,sid) {
       return this.isCompleted(task.id,sid,today())||task.completedBy?.[sid]?.date===today();
     },
-    toggleStatus(tid,sid) {
+    async toggleStatus(tid,sid) {
       const db=DB.get(); const t=db.tasks.find(x=>x.id===tid); if(!t) return null;
       if (t.type==='daily') {
         const done=this.isCompleted(tid,sid,today());
-        if (done) this.unmarkCompleted(tid,sid,today()); else this.markCompleted(tid,sid);
+        if (done) await this.unmarkCompleted(tid,sid,today()); else await this.markCompleted(tid,sid);
         t.assignees[sid]=done?'pending':'done';
       } else {
         const c=t.assignees[sid];
-        t.assignees[sid]=c==='pending'?'done':c==='done'?'late':'pending';
+        const next=c==='pending'?'done':c==='done'?'late':'pending';
+        if (_useRemote && RS.updateTaskStatusRemote)
+          await RS.updateTaskStatusRemote(tid,sid,next,next==='done'?{date:today(),time:nowTime()}:null);
+        t.assignees[sid]=next;
       }
       DB.save(db); return t;
     },
@@ -884,9 +922,9 @@ const API = (() => {
       return done===ids.length?'done':late?'late':'pending';
     },
 
-    delete(tid) {
+    async delete(tid) {
+      if (_useRemote && RS.deleteTaskRemote) await RS.deleteTaskRemote(tid);
       const db=DB.get(); db.tasks=db.tasks.filter(t=>t.id!==tid); DB.save(db);
-      if (_useRemote && RS.deleteTaskRemote) RS.deleteTaskRemote(tid);
     },
 
     // ── ApiAmal delegates ─────────────────────────────────────
@@ -913,13 +951,22 @@ const API = (() => {
       }
       localStorage.setItem(GOALS_KEY,JSON.stringify(all));
     },
-    add(sid,{title,cat='other',deadline='',note=''}) {
+    async add(sid,{title,cat='other',deadline='',note=''}) {
       const goals=this.getAll(sid);
       const g={id:uid('g'),title,cat,deadline,note,done:false,created:today()};
+      if (_useRemote && RS.upsertGoalRemote) await RS.upsertGoalRemote(g,sid);
       goals.push(g); this._save(sid,goals); return g;
     },
-    toggle(sid,gid)  { const goals=this.getAll(sid); const g=goals.find(x=>x.id===gid); if(g){ g.done=!g.done; this._save(sid,goals); } return g; },
-    delete(sid,gid)  { this._save(sid,this.getAll(sid).filter(g=>g.id!==gid)); },
+    async toggle(sid,gid)  {
+      const goals=this.getAll(sid); const g=goals.find(x=>x.id===gid); if(!g) return null;
+      const next={...g,done:!g.done};
+      if (_useRemote && RS.upsertGoalRemote) await RS.upsertGoalRemote(next,sid);
+      Object.assign(g,next); this._save(sid,goals); return g;
+    },
+    async delete(sid,gid)  {
+      if (_useRemote && RS.deleteGoalRemote) await RS.deleteGoalRemote(sid,gid);
+      this._save(sid,this.getAll(sid).filter(g=>g.id!==gid));
+    },
   };
 
   // ── EXAMS ─────────────────────────────────────────────────
@@ -958,7 +1005,7 @@ const API = (() => {
     getSubmission(qid, sid)     { return this.getSubmissions().find(s=>s.quizId===qid&&s.studentId===sid)||null; },
     getSubmissionsForQuiz(qid)  { return this.getSubmissions().filter(s=>s.quizId===qid); },
 
-    addQuiz({ title, subject, desc, timeLimit, passPercent, deadline, assigneeIds, questions }) {
+    async addQuiz({ title, subject, desc, timeLimit, passPercent, deadline, assigneeIds, questions }) {
       const data=this._readAll();
       const quiz={
         id:uid('q'), title, subject:subject||'', desc:desc||'',
@@ -968,19 +1015,19 @@ const API = (() => {
         assigneeIds:assigneeIds||[],
         questions:(questions||[]).map((q,i)=>({...q,id:uid('qq'+i)})),
       };
+      if (_useRemote && RS.saveQuizRemote) await RS.saveQuizRemote(quiz);
       data.quizzes.push(quiz); this._write(data); return quiz;
     },
 
-    deleteQuiz(qid) {
+    async deleteQuiz(qid) {
+      if (_useRemote && RS.deleteQuizRemote) await RS.deleteQuizRemote(qid);
       const data=this._readAll();
       data.quizzes=data.quizzes.filter(q=>q.id!==qid);
       data.submissions=data.submissions.filter(s=>s.quizId!==qid);
       this._write(data);
-      /* Remote: saveExams only upserts — DB row must be deleted or quiz returns on next bootstrap. */
-      if (_useRemote && RS.deleteQuizRemote) void RS.deleteQuizRemote(qid);
     },
 
-    submitQuiz(qid, sid, answers) {
+    async submitQuiz(qid, sid, answers) {
       const quiz=this.getQuizById(qid); if(!quiz) throw new Error('quiz_not_found');
       const student=Students.getById(sid);
       let score=0, total=0;
@@ -1004,17 +1051,20 @@ const API = (() => {
         submittedAt:new Date().toISOString(),
         needsManualGrade: quiz.questions.some(q=>['short_answer','essay','file_upload'].includes(q.type)),
       };
+      if (_useRemote && RS.submitQuizRemote) await RS.submitQuizRemote(sub);
       if(existing>=0) data.submissions[existing]=sub; else data.submissions.push(sub);
       this._write(data); return sub;
     },
 
     // Teacher manually updates a score
-    updateScore(subId, score) {
+    async updateScore(subId, score) {
       const data=this._readAll();
       const sub=data.submissions.find(s=>s.id===subId); if(!sub) return null;
       const quiz=this.getQuizById(sub.quizId);
+      if (_useRemote && RS.updateQuizScoreRemote) await RS.updateQuizScoreRemote(subId,score);
       sub.score=score;
       sub.passed=quiz?(score/sub.total*100)>=(quiz.passPercent||60):false;
+      sub.needsManualGrade=false;
       this._write(data); return sub;
     },
   };
@@ -1069,7 +1119,7 @@ const API = (() => {
         if (_useRemote) {
           const id=uid('doc');
           const path=`${sid}/${id}_${safeFilePart(file.name)}`;
-          RS.uploadFile(path, file).then(res=>{
+          RS.uploadFile(path, file).then(async res=>{
             const { fileUrl, storagePath } = RS.consumeUploadResult(res);
             const meta={
               id, studentId:sid, studentName:student.name,
@@ -1077,6 +1127,7 @@ const API = (() => {
               category, note, uploadedAt:new Date().toISOString(), read:false,
               fileUrl, storage_path: storagePath || path, sentBy:'student',
             };
+            if (RS.saveDocumentRemote) await RS.saveDocumentRemote(meta);
             const list=this._readMeta(); list.unshift(meta); this._writeMeta(list);
             resolve(meta);
           }).catch(err=>reject(err.message==='storage_full'?new Error('storage_full'):err));
@@ -1109,13 +1160,14 @@ const API = (() => {
       if(d){ d.read=true; this._writeMeta(list); }
     },
 
-    markReviewed(id) {
+    async markReviewed(id) {
       const list=this._readMeta(); const d=list.find(x=>x.id===id);
+      if(_useRemote && RS.markDocReviewedRemote) await RS.markDocReviewedRemote(id);
       if(d){ d.reviewStatus='done'; d.read=true; this._writeMeta(list); }
-      if(_useRemote && RS.markDocReviewedRemote) RS.markDocReviewedRemote(id);
     },
 
-    delete(id) {
+    async delete(id) {
+      if (_useRemote && RS.deleteDocumentRemote) await RS.deleteDocumentRemote(id);
       if (!_useRemote) localStorage.removeItem('madrasa_doc_'+id);
       this._writeMeta(this._readMeta().filter(d=>d.id!==id));
     },
@@ -1159,34 +1211,39 @@ const API = (() => {
     },
     getAll() { return this._read(); },
     getById(gid) { return this._read().find(g => g.id === gid) || null; },
-    add(name, studentIds) {
+    async add(name, studentIds) {
       const arr = this._read();
       const g = { id: uid('grp'), name: String(name||'').trim(), studentIds: studentIds||[], createdAt: today() };
+      if (_useRemote && RS.upsertGroupRemote) await RS.upsertGroupRemote(g);
       arr.push(g); this._write(arr);
-      if (_useRemote && RS.upsertGroupRemote) RS.upsertGroupRemote(g);
       return g;
     },
-    update(gid, name, studentIds) {
+    async update(gid, name, studentIds) {
       const arr = this._read(); const g = arr.find(x => x.id === gid); if (!g) return null;
-      g.name = String(name||'').trim(); g.studentIds = studentIds||[];
+      const next={...g,name:String(name||'').trim(),studentIds:studentIds||[]};
+      if (_useRemote && RS.upsertGroupRemote) await RS.upsertGroupRemote(next);
+      Object.assign(g,next);
       this._write(arr);
-      if (_useRemote && RS.upsertGroupRemote) RS.upsertGroupRemote(g);
       return g;
     },
-    delete(gid) {
+    async delete(gid) {
+      if (_useRemote && RS.deleteGroupRemote) await RS.deleteGroupRemote(gid);
       this._write(this._read().filter(g => g.id !== gid));
-      if (_useRemote && RS.deleteGroupRemote) RS.deleteGroupRemote(gid);
     },
-    sendToGroup(gid, text) {
+    async sendToGroup(gid, text) {
       const g = this.getById(gid); if (!g || !g.studentIds.length) return [];
       const db = DB.get(); const msgs = [];
       g.studentIds.forEach(sid => {
         if (!db.chats[sid]) db.chats[sid] = [];
         const m = { id: uid('m'), role: 'out', text, type: 'text', time: nowTime(), read: false, groupId: gid };
-        db.chats[sid].push(m); msgs.push(m);
+        msgs.push({ sid, message: m });
       });
+      if (_useRemote && RS.sendMessageRemote) {
+        await Promise.all(msgs.map(x => RS.sendMessageRemote(x.sid, x.message)));
+      }
+      msgs.forEach(x => db.chats[x.sid].push(x.message));
       if (msgs.length) { stampNotify(db); DB.save(db); }
-      return msgs;
+      return msgs.map(x => x.message);
     },
   };
 
@@ -1202,22 +1259,25 @@ const API = (() => {
       localStorage.setItem(_DIARY_KEY, JSON.stringify(arr));
     },
     getAll() { return this._read(); },
-    add(text, date) {
+    async add(text, date) {
       const arr = this._read();
       const entry = { id: uid('di'), date: date || today(), time: nowTime(), text: String(text||'').trim() };
+      if (_useRemote && RS.upsertDiaryRemote) await RS.upsertDiaryRemote(entry);
       arr.unshift(entry); this._write(arr);
-      if (_useRemote && RS.upsertDiaryRemote) RS.upsertDiaryRemote(entry);
       return entry;
     },
-    update(id, text) {
+    async update(id, text) {
       const arr = this._read(); const e = arr.find(x => x.id === id);
-      if (e) { e.text = String(text||'').trim(); e.edited = today(); this._write(arr);
-        if (_useRemote && RS.upsertDiaryRemote) RS.upsertDiaryRemote(e); }
+      if (e) {
+        const next={...e,text:String(text||'').trim(),edited:today()};
+        if (_useRemote && RS.upsertDiaryRemote) await RS.upsertDiaryRemote(next);
+        Object.assign(e,next); this._write(arr);
+      }
       return e;
     },
-    delete(id) {
+    async delete(id) {
+      if (_useRemote && RS.deleteDiaryRemote) await RS.deleteDiaryRemote(id);
       this._write(this._read().filter(x => x.id !== id));
-      if (_useRemote && RS.deleteDiaryRemote) RS.deleteDiaryRemote(id);
     },
   };
 

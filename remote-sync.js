@@ -42,6 +42,12 @@
     return client;
   }
 
+  async function rpcOrThrow(sb, name, params) {
+    const { data, error } = await sb.rpc(name, params);
+    if (error) throw error;
+    return data;
+  }
+
   function isRemote() { return !!(w.SUPABASE_URL && w.SUPABASE_ANON_KEY && getCreateClient()); }
 
   /** "001" / "waqf_001" → `waqf_001` for RPC (matches `students.waqf_id`). */
@@ -330,13 +336,12 @@
   }
 
   async function markDocReviewedRemote(docId) {
-    const sb = getClient(); if (!sb || !usesSecureKv()) return;
-    const pin = _teacherPin; if (!pin) return;
-    try {
-      await sb.rpc('madrasa_rel_mark_doc_reviewed', { p_teacher_pin: pin, p_doc_id: docId });
-      const d = (mem.docs || []).find(x => x.id === docId);
-      if (d) { d.reviewStatus = 'done'; d.read = true; }
-    } catch (e) { console.warn('markDocReviewedRemote:', e); }
+    if (!usesSecureKv()) return;
+    const sb = getClient(); if (!sb) throw new Error('remote_unavailable');
+    const pin = _teacherPin; if (!pin) throw new Error('missing_pin');
+    await rpcOrThrow(sb, 'madrasa_rel_mark_doc_reviewed', { p_teacher_pin: pin, p_doc_id: docId });
+    const d = (mem.docs || []).find(x => x.id === docId);
+    if (d) { d.reviewStatus = 'done'; d.read = true; }
   }
 
   async function markMessagesReadRemote(threadId, roleStr) {
@@ -345,7 +350,7 @@
     const pin = r === 'teacher' ? _teacherPin : _studentPin;
     if (!pin) return;
     try {
-      await sb.rpc('madrasa_rel_mark_messages_read', { p_pin: pin, p_role: r, p_thread_id: threadId });
+      await rpcOrThrow(sb, 'madrasa_rel_mark_messages_read', { p_pin: pin, p_role: r, p_thread_id: threadId });
       applyReadReceiptPatch(threadId, r);
       sendReadReceiptBroadcast(threadId, r);
     }
@@ -386,7 +391,7 @@
     const sb = getClient(); if (!sb) throw new Error('Supabase client unavailable');
     const keys = ['core', 'goals', 'exams', 'docs_meta', 'academic', 'tnotes', 'teacher_pin'];
     const rows = await Promise.all(keys.map(k =>
-      sb.from('app_kv').select('value').eq('key', k).maybeSingle().then(r => r.data?.value)));
+      sb.from('waqf_app_kv').select('value').eq('key', k).maybeSingle().then(r => r.data?.value)));
     const [core, goals, exams, docs, academic, tnotes, tp] = rows;
     mem.core = core || null; mem.goals = goals || {};
     mem.exams = exams || { quizzes: [], submissions: [] };
@@ -421,21 +426,17 @@
   async function upsertGroupRemote(g) {
     if (!usesSecureKv() || role() !== 'teacher' || !_teacherPin) return;
     const sb = getClient(); if (!sb) return;
-    try {
-      await sb.rpc('madrasa_rel_upsert_group', {
-        p_teacher_pin: _teacherPin,
-        p_id: g.id, p_name: g.name,
-        p_student_ids: g.studentIds || [],
-      });
-    } catch (e) { console.warn('upsertGroupRemote:', e); }
+    await rpcOrThrow(sb, 'madrasa_rel_upsert_group', {
+      p_teacher_pin: _teacherPin,
+      p_id: g.id, p_name: g.name,
+      p_student_ids: g.studentIds || [],
+    });
   }
 
   async function deleteGroupRemote(gid) {
     if (!usesSecureKv() || role() !== 'teacher' || !_teacherPin) return;
     const sb = getClient(); if (!sb) return;
-    try {
-      await sb.rpc('madrasa_rel_delete_group', { p_teacher_pin: _teacherPin, p_group_id: gid });
-    } catch (e) { console.warn('deleteGroupRemote:', e); }
+    await rpcOrThrow(sb, 'madrasa_rel_delete_group', { p_teacher_pin: _teacherPin, p_group_id: gid });
   }
 
   async function fetchDiaryRemote() {
@@ -455,21 +456,17 @@
   async function upsertDiaryRemote(entry) {
     if (!usesSecureKv() || role() !== 'teacher' || !_teacherPin) return;
     const sb = getClient(); if (!sb) return;
-    try {
-      await sb.rpc('madrasa_rel_upsert_diary', {
-        p_teacher_pin: _teacherPin,
-        p_id: entry.id, p_date: entry.date || '', p_time: entry.time || '',
-        p_text: entry.text || '', p_edited: entry.edited || null,
-      });
-    } catch (e) { console.warn('upsertDiaryRemote:', e); }
+    await rpcOrThrow(sb, 'madrasa_rel_upsert_diary', {
+      p_teacher_pin: _teacherPin,
+      p_id: entry.id, p_date: entry.date || '', p_time: entry.time || '',
+      p_text: entry.text || '', p_edited: entry.edited || null,
+    });
   }
 
   async function deleteDiaryRemote(id) {
     if (!usesSecureKv() || role() !== 'teacher' || !_teacherPin) return;
     const sb = getClient(); if (!sb) return;
-    try {
-      await sb.rpc('madrasa_rel_delete_diary', { p_teacher_pin: _teacherPin, p_id: id });
-    } catch (e) { console.warn('deleteDiaryRemote:', e); }
+    await rpcOrThrow(sb, 'madrasa_rel_delete_diary', { p_teacher_pin: _teacherPin, p_id: id });
   }
 
   async function unlockTeacherWithPin(pin) {
@@ -617,43 +614,38 @@
     return { fileUrl: res, storagePath: null };
   }
 
-  function upsertCompletionRemote(row) {
+  async function upsertCompletionRemote(row) {
     if (!usesSecureKv()) return;
     const sb = getClient(); if (!sb) return;
     const r = role(), pin = r === 'teacher' ? _teacherPin : _studentPin;
-    _write.upsertCompletionRemote(sb, row, pin, r);
+    return _write.upsertCompletionRemote(sb, row, pin, r);
   }
 
-  function deleteCompletionRemote(tid, sid, date) {
+  async function deleteCompletionRemote(tid, sid, date) {
     if (!usesSecureKv()) return;
     const sb = getClient(); if (!sb) return;
     const r = role(), pin = r === 'teacher' ? _teacherPin : _studentPin;
-    _write.deleteCompletionRemote(sb, tid, sid, date, pin, r);
+    return _write.deleteCompletionRemote(sb, tid, sid, date, pin, r);
   }
 
   async function clearStudentDataRemote(sid) {
     if (!usesSecureKv() || role() !== 'teacher' || !_teacherPin) return;
-    const sb = getClient(); if (!sb) return;
-    try {
-      await sb.rpc('madrasa_rel_clear_student_data', { p_teacher_pin: _teacherPin, p_student_id: sid });
-    } catch (e) { console.warn('clearStudentDataRemote:', e); }
+    const sb = getClient(); if (!sb) throw new Error('remote_unavailable');
+    await rpcOrThrow(sb, 'madrasa_rel_clear_student_data', { p_teacher_pin: _teacherPin, p_student_id: sid });
   }
 
   async function deleteStudentRemote(sid) {
     if (!usesSecureKv() || role() !== 'teacher' || !_teacherPin) return;
-    const sb = getClient(); if (!sb) return;
-    try {
-      await sb.rpc('madrasa_rel_delete_student', { p_teacher_pin: _teacherPin, p_student_id: sid });
-      if (Array.isArray(mem.lockHints)) mem.lockHints = mem.lockHints.filter(s => s.id !== sid);
-    } catch (e) { console.warn('deleteStudentRemote:', e); }
+    const sb = getClient(); if (!sb) throw new Error('remote_unavailable');
+    await rpcOrThrow(sb, 'madrasa_rel_delete_student', { p_teacher_pin: _teacherPin, p_student_id: sid });
+    if (Array.isArray(mem.lockHints)) mem.lockHints = mem.lockHints.filter(s => s.id !== sid);
   }
 
   async function deleteQuizRemote(qid) {
     if (!usesSecureKv() || role() !== 'teacher' || !_teacherPin) return;
-    const sb = getClient(); if (!sb || !qid) return;
-    try {
-      await sb.rpc('madrasa_rel_delete_quiz', { p_teacher_pin: _teacherPin, p_quiz_id: qid });
-    } catch (e) { console.warn('deleteQuizRemote:', e); }
+    const sb = getClient(); if (!sb) throw new Error('remote_unavailable');
+    if (!qid) throw new Error('invalid_quiz');
+    await rpcOrThrow(sb, 'madrasa_rel_delete_quiz', { p_teacher_pin: _teacherPin, p_quiz_id: qid });
   }
 
   async function getBroadcastReadCounts() {
@@ -670,44 +662,42 @@
     if (!usesSecureKv() || role() !== 'teacher' || !_teacherPin) return;
     const sb = getClient(); if (!sb || !mid) return;
     try {
-      await sb.rpc('madrasa_rel_delete_message', { p_teacher_pin: _teacherPin, p_message_id: mid });
+      await rpcOrThrow(sb, 'madrasa_rel_delete_message', { p_teacher_pin: _teacherPin, p_message_id: mid });
     } catch (e) { console.warn('deleteMessageRemote:', e); }
   }
 
   async function updateMessageTextRemote(mid, text) {
     if (!usesSecureKv() || !mid) return;
-    const sb = getClient(); if (!sb) return;
+    const sb = getClient(); if (!sb) throw new Error('remote_unavailable');
     const r = role();
     const pin = r === 'teacher' ? _teacherPin : _studentPin;
-    if (!pin) return;
-    try {
-      await sb.rpc('madrasa_rel_update_message_text', {
-        p_pin: pin,
-        p_role: r === 'teacher' ? 'teacher' : 'student',
-        p_message_id: mid,
-        p_new_text: String(text || ''),
-      });
-    } catch (e) { console.warn('updateMessageTextRemote:', e); }
+    if (!pin) throw new Error('missing_pin');
+    await rpcOrThrow(sb, 'madrasa_rel_update_message_text', {
+      p_pin: pin,
+      p_role: r === 'teacher' ? 'teacher' : 'student',
+      p_message_id: mid,
+      p_new_text: String(text || ''),
+    });
   }
 
   async function updateStudentPinRemote(newPin) {
     if (!usesSecureKv() || role() !== 'student' || !_studentWaqf || !_studentPin) return;
     const sb = getClient(); if (!sb) return;
-    const { error } = await sb.rpc('madrasa_rel_student_update_pin', {
+    await rpcOrThrow(sb, 'madrasa_rel_student_update_pin', {
       p_waqf: normalizeWaqfForRpc(_studentWaqf),
       p_old_pin: String(_studentPin),
       p_new_pin: String(newPin),
     });
-    if (error) throw error;
     _studentPin = String(newPin);
   }
 
   async function sendMessageRemote(threadId, msg) {
     if (!usesSecureKv()) return;
-    const sb = getClient(); if (!sb) return;
+    const sb = getClient(); if (!sb) throw new Error('remote_unavailable');
     const r = role();
     const pin = r === 'teacher' ? _teacherPin : _studentPin;
-    if (!pin || !msg || !msg.id) return;
+    if (!pin) throw new Error('missing_pin');
+    if (!msg || !msg.id) throw new Error('invalid_message');
     if (msg._skipRemote) return;
     const { id, role: msgRole, type, text, read, time, ...extra } = msg;
     const p_message = { id, thread_id: threadId,
@@ -716,79 +706,76 @@
       extra, is_read: read || false, sent_at: null,
       ...(r === 'student' ? { thread_id_waqf: _studentWaqf } : {}),
     };
-    try {
-      await sb.rpc('madrasa_rel_insert_message', { p_pin: pin, p_role: r, p_message });
-      _savedMsgIds.add(id);
-    } catch (e) { console.warn('sendMessageRemote:', e); }
+    await rpcOrThrow(sb, 'madrasa_rel_insert_message', { p_pin: pin, p_role: r, p_message });
+    _savedMsgIds.add(id);
   }
 
   async function deleteOwnMessageRemote(mid) {
     if (!usesSecureKv() || !mid) return;
-    const sb = getClient(); if (!sb) return;
+    const sb = getClient(); if (!sb) throw new Error('remote_unavailable');
     const r = role();
     const pin = r === 'teacher' ? _teacherPin : _studentPin;
-    if (!pin) return;
-    try {
-      await sb.rpc('madrasa_rel_delete_own_message', {
-        p_pin: pin,
-        p_role: r === 'teacher' ? 'teacher' : 'student',
-        p_message_id: mid,
-      });
-    } catch (e) { console.warn('deleteOwnMessageRemote:', e); }
+    if (!pin) throw new Error('missing_pin');
+    await rpcOrThrow(sb, 'madrasa_rel_delete_own_message', {
+      p_pin: pin,
+      p_role: r === 'teacher' ? 'teacher' : 'student',
+      p_message_id: mid,
+    });
   }
 
   async function saveTaskRemote(task) {
     if (!usesSecureKv() || role() !== 'teacher' || !_teacherPin) return;
     const sb = getClient(); if (!sb || !task) return;
-    try {
-      const p_task = { id: task.id, title: task.title, description: task.desc || '',
-        type: task.type || 'onetime', deadline: task.deadline || '', created_at: task.created || '' };
-      await sb.rpc('madrasa_rel_upsert_task', {
-        p_teacher_pin: _teacherPin, p_task,
-        p_assignee_ids: Object.keys(task.assignees || {}),
+    const p_task = { id: task.id, title: task.title, description: task.desc || '',
+      type: task.type || 'onetime', deadline: task.deadline || '', created_at: task.created || '' };
+    await rpcOrThrow(sb, 'madrasa_rel_upsert_task', {
+      p_teacher_pin: _teacherPin, p_task,
+      p_assignee_ids: Object.keys(task.assignees || {}),
+    });
+    for (const [sid, status] of Object.entries(task.assignees || {})) {
+      const cb = (task.completedBy || {})[sid] || {};
+      await rpcOrThrow(sb, 'madrasa_rel_update_task_status', {
+        p_pin: _teacherPin, p_role: 'teacher',
+        p_task_id: task.id, p_student_id: sid, p_status: status,
+        p_completed_date: cb.date || null, p_completed_time: cb.time || null,
       });
-      for (const [sid, status] of Object.entries(task.assignees || {})) {
-        const cb = (task.completedBy || {})[sid] || {};
-        await sb.rpc('madrasa_rel_update_task_status', {
-          p_pin: _teacherPin, p_role: 'teacher',
-          p_task_id: task.id, p_student_id: sid, p_status: status,
-          p_completed_date: cb.date || null, p_completed_time: cb.time || null,
-        });
-      }
-    } catch (e) { console.warn('saveTaskRemote:', e); }
+    }
+  }
+
+  async function saveQuizRemote(quiz) {
+    if (!usesSecureKv() || role() !== 'teacher' || !_teacherPin || !quiz) return;
+    const sb = getClient(); if (!sb) return;
+    await _write.saveExams(sb, { quizzes: [quiz], submissions: [] });
   }
 
   async function saveStudentRemote(student) {
     if (!usesSecureKv() || role() !== 'teacher' || !_teacherPin) return;
     const sb = getClient(); if (!sb || !student) return;
-    try {
-      const stuToDB = s => ({
-        id: s.id, waqf_id: s.waqfId, name: s.name, cls: s.cls || '', roll: s.roll || '',
-        pin: s.pin, color: s.color || '#128C7E', note: s.note || '',
-        father_name: s.fatherName || '', father_occupation: s.fatherOccupation || '',
-        contact: s.contact || '', district: s.district || '', upazila: s.upazila || '',
-        blood_group: s.bloodGroup || '', enrollment_date: s.enrollmentDate || '',
-        responsibility: s.responsibility || '',
-      });
-      await sb.rpc('madrasa_rel_upsert_student', { p_teacher_pin: _teacherPin, p_student: stuToDB(student) });
-    } catch (e) { console.warn('saveStudentRemote:', e); }
+    const stuToDB = s => ({
+      id: s.id, waqf_id: s.waqfId, name: s.name, cls: s.cls || '', roll: s.roll || '',
+      pin: s.pin, color: s.color || '#128C7E', note: s.note || '',
+      father_name: s.fatherName || '', father_occupation: s.fatherOccupation || '',
+      contact: s.contact || '', district: s.district || '', upazila: s.upazila || '',
+      blood_group: s.bloodGroup || '', enrollment_date: s.enrollmentDate || '',
+      responsibility: s.responsibility || '',
+    });
+    await rpcOrThrow(sb, 'madrasa_rel_upsert_student', { p_teacher_pin: _teacherPin, p_student: stuToDB(student) });
   }
 
   async function deleteTaskRemote(tid) {
     if (!usesSecureKv() || role() !== 'teacher' || !_teacherPin) return;
-    const sb = getClient(); if (!sb || !tid) return;
-    try {
-      await sb.rpc('madrasa_rel_delete_task', { p_teacher_pin: _teacherPin, p_task_id: tid });
-      if (mem.core && Array.isArray(mem.core.tasks))
-        mem.core.tasks = mem.core.tasks.filter(t => t.id !== tid);
-    } catch (e) { console.warn('deleteTaskRemote:', e); }
+    const sb = getClient(); if (!sb) throw new Error('remote_unavailable');
+    if (!tid) throw new Error('invalid_task');
+    await rpcOrThrow(sb, 'madrasa_rel_delete_task', { p_teacher_pin: _teacherPin, p_task_id: tid });
+    if (mem.core && Array.isArray(mem.core.tasks))
+      mem.core.tasks = mem.core.tasks.filter(t => t.id !== tid);
   }
 
   async function submitDailyScheduleProposalRemote(rows) {
     if (!usesSecureKv() || role() !== 'student' || !_studentWaqf || !_studentPin) return;
     const sb = getClient(); if (!sb) return;
     try {
-      await sb.rpc('madrasa_rel_submit_daily_schedule_proposal', {
+      await rpcOrThrow(sb, 'madrasa_rel_submit_daily_schedule_proposal', {
         p_waqf: normalizeWaqfForRpc(_studentWaqf),
         p_pin: String(_studentPin || ''),
         p_rows: rows,
@@ -801,7 +788,7 @@
     if (!usesSecureKv() || role() !== 'teacher' || !_teacherPin) return;
     const sb = getClient(); if (!sb) return;
     try {
-      await sb.rpc('madrasa_rel_set_daily_schedule', {
+      await rpcOrThrow(sb, 'madrasa_rel_set_daily_schedule', {
         p_teacher_pin: _teacherPin,
         p_student_id: sid,
         p_rows: rows,
@@ -813,32 +800,174 @@
   async function upsertTeacherNoteRemote(note, sid) {
     if (!usesSecureKv() || role() !== 'teacher' || !_teacherPin) return;
     const sb = getClient(); if (!sb) return;
-    try {
-      await sb.rpc('madrasa_rel_upsert_teacher_note', {
-        p_teacher_pin: _teacherPin,
-        p_id: note.id,
-        p_student_id: sid,
-        p_text: note.text || '',
-        p_date: note.date || null,
-        p_time: note.time || '',
-        p_edited_at: note.edited || null,
-      });
-    } catch (e) { console.warn('upsertTeacherNoteRemote:', e); }
+    await rpcOrThrow(sb, 'madrasa_rel_upsert_teacher_note', {
+      p_teacher_pin: _teacherPin,
+      p_id: note.id,
+      p_student_id: sid,
+      p_text: note.text || '',
+      p_date: note.date || null,
+      p_time: note.time || '',
+      p_edited_at: note.edited || null,
+    });
   }
 
   async function deleteTeacherNoteRemote(nid) {
     if (!usesSecureKv() || role() !== 'teacher' || !_teacherPin) return;
     const sb = getClient(); if (!sb || !nid) return;
-    try {
-      await sb.rpc('madrasa_rel_delete_teacher_note', { p_teacher_pin: _teacherPin, p_id: nid });
-    } catch (e) { console.warn('deleteTeacherNoteRemote:', e); }
+    await rpcOrThrow(sb, 'madrasa_rel_delete_teacher_note', { p_teacher_pin: _teacherPin, p_id: nid });
+  }
+
+  async function updateConfigRemote(info) {
+    if (!usesSecureKv() || role() !== 'teacher' || !_teacherPin) return;
+    const sb = getClient(); if (!sb) return;
+    await rpcOrThrow(sb, 'madrasa_rel_update_config', {
+      p_teacher_pin: _teacherPin,
+      p_teacher_name: String(info?.name || ''),
+      p_madrasa_name: String(info?.madrasa || ''),
+    });
+  }
+
+  async function upsertAcademicHistoryRemote(sid, record) {
+    if (!usesSecureKv() || role() !== 'teacher' || !_teacherPin) return;
+    const sb = getClient(); if (!sb) return;
+    await rpcOrThrow(sb, 'madrasa_rel_upsert_academic_history', {
+      p_teacher_pin: _teacherPin,
+      p_student_id: sid,
+      p_record: {
+        id: record.id,
+        year_class: record.yearClass || '',
+        grade: record.grade || '',
+        added_at: record.addedAt || '',
+      },
+    });
+  }
+
+  async function deleteAcademicHistoryRemote(sid, id) {
+    if (!usesSecureKv() || role() !== 'teacher' || !_teacherPin) return;
+    const sb = getClient(); if (!sb) return;
+    await rpcOrThrow(sb, 'madrasa_rel_delete_academic_history', {
+      p_teacher_pin: _teacherPin,
+      p_student_id: sid,
+      p_id: id,
+    });
+  }
+
+  async function upsertGoalRemote(goal, sid) {
+    if (!usesSecureKv() || role() !== 'student' || !_studentPin) return;
+    const sb = getClient(); if (!sb) return;
+    await rpcOrThrow(sb, 'madrasa_rel_upsert_goal', {
+      p_pin: _studentPin,
+      p_student_id: sid,
+      p_goal: {
+        id: goal.id,
+        title: goal.title,
+        cat: goal.cat || 'other',
+        deadline: goal.deadline || '',
+        note: goal.note || '',
+        done: !!goal.done,
+        created_at: goal.created || '',
+      },
+    });
+  }
+
+  async function deleteGoalRemote(sid, gid) {
+    if (!usesSecureKv() || role() !== 'student' || !_studentPin) return;
+    const sb = getClient(); if (!sb) return;
+    await rpcOrThrow(sb, 'madrasa_rel_delete_goal', {
+      p_pin: _studentPin,
+      p_student_id: sid,
+      p_goal_id: gid,
+    });
+  }
+
+  async function deleteDocumentRemote(id) {
+    if (!usesSecureKv() || !id) return;
+    const sb = getClient(); if (!sb) return;
+    const r = role();
+    const pin = r === 'teacher' ? _teacherPin : _studentPin;
+    if (!pin) return;
+    await rpcOrThrow(sb, 'madrasa_rel_delete_document', {
+      p_pin: pin,
+      p_role: r,
+      p_doc_id: id,
+    });
+  }
+
+  async function saveDocumentRemote(doc) {
+    if (!usesSecureKv() || !doc) return;
+    const sb = getClient(); if (!sb) return;
+    await _write.saveDocs(sb, [doc]);
+  }
+
+  async function submitQuizRemote(submission) {
+    if (!usesSecureKv() || role() !== 'student' || !_studentPin || !submission) return;
+    const sb = getClient(); if (!sb) return;
+    await rpcOrThrow(sb, 'madrasa_rel_submit_quiz', {
+      p_student_pin: _studentPin,
+      p_student_id: submission.studentId,
+      p_submission: {
+        id: submission.id,
+        quiz_id: submission.quizId,
+        student_name: submission.studentName || '',
+        answers: submission.answers || {},
+        score: submission.score || 0,
+        total: submission.total || 0,
+        passed: !!submission.passed,
+        needs_manual_grade: !!submission.needsManualGrade,
+        submitted_at: submission.submittedAt || null,
+      },
+    });
+  }
+
+  async function updateQuizScoreRemote(submissionId, score) {
+    if (!usesSecureKv() || role() !== 'teacher' || !_teacherPin) return;
+    const sb = getClient(); if (!sb) return;
+    await rpcOrThrow(sb, 'madrasa_rel_update_quiz_score', {
+      p_teacher_pin: _teacherPin,
+      p_submission_id: submissionId,
+      p_score: Number(score) || 0,
+    });
+  }
+
+  async function updateTaskStatusRemote(taskId, sid, status, completed) {
+    if (!usesSecureKv()) return;
+    const sb = getClient(); if (!sb) return;
+    const r = role();
+    const pin = r === 'teacher' ? _teacherPin : _studentPin;
+    if (!pin) return;
+    await rpcOrThrow(sb, 'madrasa_rel_update_task_status', {
+      p_pin: pin,
+      p_role: r,
+      p_task_id: taskId,
+      p_student_id: sid,
+      p_status: status,
+      p_completed_date: completed?.date || null,
+      p_completed_time: completed?.time || null,
+    });
+  }
+
+  async function completeOnetimeTaskRemote(row) {
+    if (!usesSecureKv() || !row) return;
+    const sb = getClient(); if (!sb) return;
+    const r = role();
+    const pin = r === 'teacher' ? _teacherPin : _studentPin;
+    if (!pin) return;
+    await rpcOrThrow(sb, 'madrasa_rel_complete_onetime_task', {
+      p_pin: pin,
+      p_role: r,
+      p_completion_id: row.id,
+      p_task_id: row.task_id,
+      p_student_id: row.student_id,
+      p_date: row.date,
+      p_completed_at: row.completed_at || null,
+    });
   }
 
   async function resolveDailyScheduleProposalRemote(sid, approve, note) {
     if (!usesSecureKv() || role() !== 'teacher' || !_teacherPin) return;
     const sb = getClient(); if (!sb) return;
     try {
-      await sb.rpc('madrasa_rel_resolve_daily_schedule_proposal', {
+      await rpcOrThrow(sb, 'madrasa_rel_resolve_daily_schedule_proposal', {
         p_teacher_pin: _teacherPin,
         p_student_id: sid,
         p_approve: !!approve,
@@ -861,7 +990,10 @@
     fetchGroupsRemote, upsertGroupRemote, deleteGroupRemote,
     fetchDiaryRemote, upsertDiaryRemote, deleteDiaryRemote,
     upsertTeacherNoteRemote, deleteTeacherNoteRemote,
-    saveTaskRemote, saveStudentRemote, updateStudentPinRemote,
+    updateConfigRemote, upsertAcademicHistoryRemote, deleteAcademicHistoryRemote,
+    upsertGoalRemote, deleteGoalRemote, saveDocumentRemote, deleteDocumentRemote,
+    submitQuizRemote, updateQuizScoreRemote, updateTaskStatusRemote, completeOnetimeTaskRemote,
+    saveTaskRemote, saveQuizRemote, saveStudentRemote, updateStudentPinRemote,
     submitDailyScheduleProposalRemote, setDailyScheduleTeacherRemote, resolveDailyScheduleProposalRemote,
     uploadFile, getSignedUrlForPath, consumeUploadResult,
     BUCKET, startRealtimeSync, pullRemoteSnapshot,

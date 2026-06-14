@@ -34,24 +34,32 @@
     find(tid, sid, date) {
       return this._all().find(c=>c.task_id===tid&&c.student_id===sid&&c.date===date)||null;
     },
-    upsert({ task_id, student_id, date, status, note='' }) {
+    prepare({ task_id, student_id, date, status, note='' }) {
       const list=this._all();
       const idx=list.findIndex(c=>c.task_id===task_id&&c.student_id===student_id&&c.date===date);
       const now=new Date().toISOString();
-      const row={ id:idx>=0?list[idx].id:_uid('tc'),
+      return { id:idx>=0?list[idx].id:_uid('tc'),
         task_id, student_id, date, status, completed_at:now, note,
         created_at:idx>=0?list[idx].created_at:now };
+    },
+    commit(row) {
+      const list=this._all();
+      const idx=list.findIndex(c=>c.task_id===row.task_id&&c.student_id===row.student_id&&c.date===row.date);
       if (idx>=0) list[idx]=row; else list.push(row);
       this._save(list);
-      const RS=_RS();
-      if (_isRemote()&&RS&&RS.upsertCompletionRemote) RS.upsertCompletionRemote(row);
       return row;
     },
-    delete(tid, sid, date) {
+    async upsert({ task_id, student_id, date, status, note='' }) {
+      const row=this.prepare({task_id,student_id,date,status,note});
+      const RS=_RS();
+      if (_isRemote()&&RS&&RS.upsertCompletionRemote) await RS.upsertCompletionRemote(row);
+      return this.commit(row);
+    },
+    async delete(tid, sid, date) {
+      const RS=_RS();
+      if (_isRemote()&&RS&&RS.deleteCompletionRemote) await RS.deleteCompletionRemote(tid,sid,date);
       const list=this._all().filter(c=>!(c.task_id===tid&&c.student_id===sid&&c.date===date));
       this._save(list);
-      const RS=_RS();
-      if (_isRemote()&&RS&&RS.deleteCompletionRemote) RS.deleteCompletionRemote(tid,sid,date);
     },
     getForStudent(sid, from=null, to=null) {
       let list=this._all().filter(c=>c.student_id===sid);
@@ -83,10 +91,10 @@
 
   // ── Public helpers ────────────────────────────────────────────
 
-  function markCompleted(tid, sid, { date, status='done', note='' }={}) {
+  async function markCompleted(tid, sid, { date, status='done', note='' }={}) {
     return Completions.upsert({ task_id:tid, student_id:sid, date:date||_today(), status, note });
   }
-  function unmarkCompleted(tid, sid, date) { Completions.delete(tid, sid, date||_today()); }
+  async function unmarkCompleted(tid, sid, date) { return Completions.delete(tid, sid, date||_today()); }
   function isCompleted(tid, sid, date)     { return Completions.find(tid, sid, date||_today())?.status==='done'; }
 
   function syncTodayFromCompletions(tasks) {

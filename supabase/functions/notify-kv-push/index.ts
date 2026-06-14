@@ -16,9 +16,9 @@ type SubJson = { endpoint?: string; keys?: { p256dh?: string; auth?: string } };
 function pickSubscription(v: unknown): SubJson | null {
   if (!v || typeof v !== "object") return null;
   const o = v as { subscription?: SubJson; endpoint?: string; keys?: unknown };
-  // pwa_subscriptions table: { subscription: { endpoint, keys } }
+  // waqf_pwa_subscriptions table: { subscription: { endpoint, keys } }
   if (o.subscription && typeof (o.subscription as SubJson).endpoint === "string") return o.subscription as SubJson;
-  // app_kv legacy: value is the subscription object directly or wrapped
+  // waqf_app_kv legacy: value is the subscription object directly or wrapped
   if (typeof o.endpoint === "string" && o.endpoint.length > 0) return o as SubJson;
   return null;
 }
@@ -41,18 +41,18 @@ function makePayload(body: string, target: "teacher" | "student", tag: string): 
   });
 }
 
-// ── Subscription lookup from pwa_subscriptions (new) + app_kv fallback ───────
+// ── Subscription lookup from waqf_pwa_subscriptions + waqf_app_kv fallback ──
 async function getTeacherSub(sb: ReturnType<typeof createClient>): Promise<SubJson | null> {
-  // Try new pwa_subscriptions table first
+  // Try waqf_pwa_subscriptions first
   const { data: rel } = await sb
-    .from("pwa_subscriptions").select("subscription").eq("id", "teacher").maybeSingle();
+    .from("waqf_pwa_subscriptions").select("subscription").eq("id", "teacher").maybeSingle();
   if (rel?.subscription) {
     const s = pickSubscription({ subscription: rel.subscription });
     if (s) return s;
   }
-  // Fallback: legacy app_kv
+  // Fallback: waqf_app_kv
   const { data: kv } = await sb
-    .from("app_kv").select("value").eq("key", "pwa_push_teacher").maybeSingle();
+    .from("waqf_app_kv").select("value").eq("key", "pwa_push_teacher").maybeSingle();
   return kv?.value ? pickSubscription(kv.value) : null;
 }
 
@@ -60,15 +60,15 @@ async function getAllStudentSubs(sb: ReturnType<typeof createClient>): Promise<S
   const subs: SubJson[] = [];
   // New table
   const { data: relRows } = await sb
-    .from("pwa_subscriptions").select("subscription").eq("role", "student");
+    .from("waqf_pwa_subscriptions").select("subscription").eq("role", "student");
   for (const row of relRows || []) {
     const s = pickSubscription({ subscription: row.subscription });
     if (s) subs.push(s);
   }
-  // Legacy app_kv fallback (deduplicate by endpoint)
+  // waqf_app_kv fallback (deduplicate by endpoint)
   const endpoints = new Set(subs.map((s) => s.endpoint));
   const { data: kvRows } = await sb
-    .from("app_kv").select("value").like("key", "pwa_push_student_%");
+    .from("waqf_app_kv").select("value").like("key", "pwa_push_student_%");
   for (const row of kvRows || []) {
     const s = pickSubscription(row.value);
     if (s && s.endpoint && !endpoints.has(s.endpoint)) { subs.push(s); endpoints.add(s.endpoint); }
@@ -78,20 +78,20 @@ async function getAllStudentSubs(sb: ReturnType<typeof createClient>): Promise<S
 
 async function getStudentSubByWaqf(sb: ReturnType<typeof createClient>, waqfId: string): Promise<SubJson | null> {
   const { data: rel } = await sb
-    .from("pwa_subscriptions").select("subscription").eq("id", waqfId).maybeSingle();
+    .from("waqf_pwa_subscriptions").select("subscription").eq("id", waqfId).maybeSingle();
   if (rel?.subscription) {
     const s = pickSubscription({ subscription: rel.subscription });
     if (s) return s;
   }
   const { data: kv } = await sb
-    .from("app_kv").select("value").eq("key", `pwa_push_student_${waqfId}`).maybeSingle();
+    .from("waqf_app_kv").select("value").eq("key", `pwa_push_student_${waqfId}`).maybeSingle();
   return kv?.value ? pickSubscription(kv.value) : null;
 }
 
 async function getAllSharedDeviceSubs(sb: ReturnType<typeof createClient>): Promise<SubJson[]> {
   // All rows whose id starts with 'shared_device_' are shared physical devices
   const { data: rows } = await sb
-    .from("pwa_subscriptions").select("subscription").like("id", "shared_device_%");
+    .from("waqf_pwa_subscriptions").select("subscription").like("id", "shared_device_%");
   const subs: SubJson[] = [];
   for (const row of rows || []) {
     const s = pickSubscription({ subscription: row.subscription });
@@ -149,14 +149,14 @@ Deno.serve(async (req: Request) => {
   async function removeStaleSubscriptions() {
     if (!staleEndpoints.length) return;
     for (const ep of staleEndpoints) {
-      await sb.from("pwa_subscriptions").delete()
+      await sb.from("waqf_pwa_subscriptions").delete()
         .filter("subscription->>'endpoint'", "eq", ep);
     }
     console.log("removed stale subs:", staleEndpoints.length);
   }
 
-  // ── NEW: messages table webhook ───────────────────────────────
-  if (table === "messages") {
+  // ── waqf_messages table webhook ───────────────────────────────
+  if (table === "waqf_messages") {
     const record = body.record as Record<string, unknown> | undefined;
     if (!record) return jsonResponse({ ok: true, skipped: "no_record" });
 
@@ -166,7 +166,7 @@ Deno.serve(async (req: Request) => {
     if (msgRole === "in") {
       // Student sent a message → notify teacher (tag per thread so each student stacks separately)
       const { data: stuInfo } = await sb
-        .from("students").select("name").eq("id", threadId).maybeSingle();
+        .from("waqf_students").select("name").eq("id", threadId).maybeSingle();
       const studentName = stuInfo?.name ? String(stuInfo.name) : "ছাত্র";
       const teacherSub = await getTeacherSub(sb);
       if (teacherSub) await trySend(teacherSub,
@@ -187,7 +187,7 @@ Deno.serve(async (req: Request) => {
         if (extra?.bc_copy) return jsonResponse({ ok: true, skipped: "bc_copy" });
         // Teacher → specific student: look up student's name and waqf_id
         const { data: stu } = await sb
-          .from("students").select("name, waqf_id").eq("id", threadId).maybeSingle();
+          .from("waqf_students").select("name, waqf_id").eq("id", threadId).maybeSingle();
         const waqfId = stu?.waqf_id ? String(stu.waqf_id) : null;
         const studentName = stu?.name ? String(stu.name) : null;
         const msgBody = studentName
@@ -216,11 +216,11 @@ Deno.serve(async (req: Request) => {
     }
 
     await removeStaleSubscriptions();
-    return jsonResponse({ ok: true, table: "messages", sent, failed });
+    return jsonResponse({ ok: true, table: "waqf_messages", sent, failed });
   }
 
-  // ── LEGACY: app_kv webhook (kept for transition period) ───────
-  if (table !== "app_kv") return jsonResponse({ ok: true, skipped: "unknown_table" });
+  // ── waqf_app_kv webhook (kept for transition period) ──────────
+  if (table !== "waqf_app_kv") return jsonResponse({ ok: true, skipped: "unknown_table" });
 
   const record = body.record as Record<string, unknown> | undefined;
   const key = record?.key != null ? String(record.key) : "";
@@ -251,7 +251,7 @@ Deno.serve(async (req: Request) => {
     await trySend(teacherSub, makePayload("ছাত্রের নতুন আপডেট এসেছে।", "teacher", `kv-teacher-${key}`));
 
   await removeStaleSubscriptions();
-  return jsonResponse({ ok: true, table: "app_kv", sent, failed,
+  return jsonResponse({ ok: true, table: "waqf_app_kv", sent, failed,
     teacher_targets: teacherSub ? 1 : 0,
     student_targets: dedupedStudentSubs.length });
 });

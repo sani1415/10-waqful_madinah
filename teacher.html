@@ -1093,15 +1093,20 @@ function closeGrpPanel(){
   currentGrpId=null;
   renderChatList();
 }
-function sendGrpMsg(){
+async function sendGrpMsg(){
   const text=document.getElementById('grpMsgIn').value.trim();
   if(!text||!currentGrpId) return;
-  const msgs=API.Groups.sendToGroup(currentGrpId,text);
-  if(!msgs.length){ showToast('গ্রুপে কোনো সদস্য নেই!'); return; }
-  document.getElementById('grpMsgIn').value='';
-  document.getElementById('grpMsgIn').style.height='auto';
-  showToast('✅ '+msgs.length+' জনকে বার্তা পাঠানো হয়েছে');
-  updateBadge(); renderChatList();
+  try{
+    const msgs=await API.Groups.sendToGroup(currentGrpId,text);
+    if(!msgs.length){ showToast('গ্রুপে কোনো সদস্য নেই!'); return; }
+    document.getElementById('grpMsgIn').value='';
+    document.getElementById('grpMsgIn').style.height='auto';
+    showToast('✅ '+msgs.length+' জনকে বার্তা পাঠানো হয়েছে');
+    updateBadge(); renderChatList();
+  }catch(e){
+    console.error(e);
+    showToast('❌ বার্তা পাঠানো হয়নি');
+  }
 }
 function openGrpModal(gid){
   const g=gid?API.Groups.getById(gid):null;
@@ -1119,25 +1124,28 @@ function openGrpModal(gid){
     : '<p style="font-size:13px;color:#94a3b8">কোনো ছাত্র নেই।</p>';
   openModal('grpModal');
 }
-function saveGrp(){
+async function saveGrp(){
   const name=document.getElementById('grpNameIn').value.trim();
   if(!name){ showToast('গ্রুপের নাম লিখুন!'); return; }
   const checked=[...document.querySelectorAll('#grpStuList input[type=checkbox]:checked')].map(el=>el.value);
   const gid=document.getElementById('grpEditingId').value;
-  if(gid){
-    API.Groups.update(gid,name,checked);
-    showToast('✅ গ্রুপ আপডেট হয়েছে');
-    if(currentGrpId===gid) openGrpPanel(gid);
-  } else {
-    API.Groups.add(name,checked);
-    showToast('✅ নতুন গ্রুপ তৈরি হয়েছে');
-  }
+  try{
+    if(gid){
+      await API.Groups.update(gid,name,checked);
+      showToast('✅ গ্রুপ আপডেট হয়েছে');
+      if(currentGrpId===gid) openGrpPanel(gid);
+    } else {
+      await API.Groups.add(name,checked);
+      showToast('✅ নতুন গ্রুপ তৈরি হয়েছে');
+    }
+  }catch(e){ console.error(e); showToast('❌ গ্রুপ সেভ হয়নি'); return; }
   closeModal('grpModal'); renderChatList();
 }
-function deleteGrpFromModal(){
+async function deleteGrpFromModal(){
   const gid=document.getElementById('grpEditingId').value; if(!gid) return;
   if(!confirm('এই গ্রুপটি মুছবেন?')) return;
-  API.Groups.delete(gid);
+  try{ await API.Groups.delete(gid); }
+  catch(e){ console.error(e); showToast('❌ গ্রুপ মোছা যায়নি'); return; }
   closeModal('grpModal');
   if(currentGrpId===gid) closeGrpPanel(); else renderChatList();
   showToast('গ্রুপ মুছে গেছে');
@@ -1212,7 +1220,7 @@ function renderChatExams(){
       <div class="csp-exam-title">${esc(q.title)}</div>
       <div class="csp-exam-meta">${esc(q.subject||'')} · ${q.questions?.length||0}টি প্রশ্ন · ${q.timeLimit} মিনিট${q.deadline?' · 📅 '+q.deadline:''}</div>
       ${statusHtml}
-      ${sub&&sub.needsManualGrade?`<div style="display:flex;align-items:center;gap:8px;margin-top:6px"><input class="marks-input" type="number" placeholder="নম্বর দিন" value="${sub.score||0}" min="0" max="${sub.total}" style="width:90px" onchange="API.Exams.updateScore('${sub.id}',parseInt(this.value)||0);renderChatExams();showToast('✅ নম্বর আপডেট')"><span style="font-size:12px;color:var(--gray-400)">/ ${sub.total}</span></div>`:''}
+      ${sub&&sub.needsManualGrade?`<div style="display:flex;align-items:center;gap:8px;margin-top:6px"><input class="marks-input" type="number" placeholder="নম্বর দিন" value="${sub.score||0}" min="0" max="${sub.total}" style="width:90px" onchange="updateChatExamScore('${sub.id}',this.value)"><span style="font-size:12px;color:var(--gray-400)">/ ${sub.total}</span></div>`:''}
     </div>`;
   }).join('');
 }
@@ -1239,10 +1247,11 @@ function renderChatNotes(){
       <button onclick="saveChatNote()">যোগ</button>
     </div>`;
 }
-function saveChatNote(){
+async function saveChatNote(){
   const inp=document.getElementById('chatNoteInput'); if(!inp||!curChat) return;
   const text=inp.value.trim(); if(!text){ showToast('নোট লিখুন!'); return; }
-  API.TeacherNotes.add(curChat,text); inp.value=''; renderChatNotes(); showToast('✅ নোট সংরক্ষিত');
+  try{ await API.TeacherNotes.add(curChat,text); inp.value=''; renderChatNotes(); showToast('✅ নোট সংরক্ষিত'); }
+  catch(e){ console.error(e); showToast('❌ নোট সেভ হয়নি'); }
 }
 
 /** Pending সময়সূচি প্রস্তাব — চ্যাটের মেসেজের নিচে, ইনপুটের উপরে */
@@ -1486,35 +1495,44 @@ function deleteBCMessage(mid){
     if(Math.abs(dx)>=THRESH) triggerReply(wrap.dataset.mid);
   });
 })();
-function openTeacherMsgEdit(mid){
+async function openTeacherMsgEdit(mid){
   const tid=curChat==='_broadcast'?'_bc':curChat;
   const msgs=API.Messages.getThread(tid);
   const m=msgs.find(x=>x.id===mid); if(!m||!API.Messages.canModifyOwnMessage(m,true)) return;
   const nv=prompt('মেসেজ সম্পাদনা করুন:',m.text||'');
   if(nv===null) return;
   const t=nv.trim(); if(!t){ showToast('খালি রাখা যাবে না'); return; }
-  const r=API.Messages.updateOwnText(tid,mid,t,true);
-  if(r.ok){ renderMsgs(curChat); showToast('✅ সম্পাদিত হয়েছে'); }
-  else showToast('❌ সম্পাদনা সম্ভব হয়নি');
+  try{
+    const r=await API.Messages.updateOwnText(tid,mid,t,true);
+    if(r.ok){ renderMsgs(curChat); showToast('✅ সম্পাদিত হয়েছে'); }
+    else showToast('❌ সম্পাদনা সম্ভব হয়নি');
+  }catch(e){ console.error(e); showToast('❌ সম্পাদনা সেভ হয়নি'); }
 }
-function openTeacherMsgDelete(mid){
+async function openTeacherMsgDelete(mid){
   if(!confirm('এই মেসেজ ছাত্রসহ সবার কাছ থেকে চিরতরে মুছে যাবে (শুধু আপনার ডিভাইসে নয়)। চালিয়ে যাবেন?')) return;
   const tid=curChat==='_broadcast'?'_bc':curChat;
-  const r=API.Messages.deleteOwn(tid,mid,true);
-  if(r.ok){ renderMsgs(curChat); renderChatList(); updateBadge(); showToast('✅ সবার কাছ থেকে মুছে গেছে'); }
-  else showToast('❌ মোছা হয়নি');
+  try{
+    const r=await API.Messages.deleteOwn(tid,mid,true);
+    if(r.ok){ renderMsgs(curChat); renderChatList(); updateBadge(); showToast('✅ সবার কাছ থেকে মুছে গেছে'); }
+    else showToast('❌ মোছা হয়নি');
+  }catch(e){ console.error(e); showToast('❌ মোছা হয়নি'); }
 }
-function sendMsg(){
+async function sendMsg(){
   if(!curChat) return;
   if(chatTeacherPendingFile){ sendTeacherChatFile(); return; }
   const inp=document.getElementById('msgIn'); const text=inp.value.trim(); if(!text) return;
   const rt=replyingTo?{...replyingTo}:null;
-  cancelReply();
-  if(curChat==='_broadcast') API.Messages.broadcast(text);
-  else API.Messages.send(curChat, text, 'text', rt?{replyTo:rt}:{});
-  inp.value=''; inp.style.height='auto'; renderMsgs(curChat==='_broadcast'?'_broadcast':curChat);
-  renderChatList(); updateBadge();
-  setTimeout(()=>document.getElementById('chatMsgs').scrollTop=9e9,50);
+  try{
+    if(curChat==='_broadcast') await API.Messages.broadcast(text);
+    else await API.Messages.send(curChat, text, 'text', rt?{replyTo:rt}:{});
+    cancelReply();
+    inp.value=''; inp.style.height='auto'; renderMsgs(curChat==='_broadcast'?'_broadcast':curChat);
+    renderChatList(); updateBadge();
+    setTimeout(()=>document.getElementById('chatMsgs').scrollTop=9e9,50);
+  }catch(e){
+    console.error(e);
+    showToast('❌ বার্তা পাঠানো হয়নি');
+  }
 }
 
 // ══ STUDENTS ═══════════════════════════════════════════════
@@ -1536,13 +1554,13 @@ function renderStudentList(f=''){
     </div>`;
   }).join('');
 }
-function addStudent(){
+async function addStudent(){
   const name=document.getElementById('ns_name').value.trim();
   const p=String(document.getElementById('ns_pin').value).trim();
   if(!name){ showToast('নাম লিখুন!'); return; }
   if(!/^\d{4}$/.test(p)){ showToast('৪ সংখ্যার পিন দিন!'); return; }
   try{
-    const s=API.Students.add({
+    const s=await API.Students.add({
       name, pin:p,
       cls:document.getElementById('ns_cls').value.trim(),
       roll:document.getElementById('ns_roll').value.trim(),
@@ -1562,7 +1580,7 @@ function addStudent(){
   } catch(e){ showToast(e.message||'ত্রুটি!'); }
 }
 function viewPin(id){ editSid=id; const s=API.Students.getById(id); document.getElementById('pinMTitle').textContent=(s.waqfId?API.Students.displayWaqfId(s.waqfId)+' · ':'')+s.name+'-এর পিন'; document.getElementById('pinDisp').textContent=s.pin||'----'; document.getElementById('newSPin').value=''; openModal('pinModal'); }
-function updateSPin(){ const p=String(document.getElementById('newSPin').value).trim(); if(!/^\d{4}$/.test(p)){ showToast('৪ সংখ্যার পিন দিন!'); return; } try{ API.Students.updatePin(editSid,p); document.getElementById('pinDisp').textContent=p; renderStudentList(); showToast('✅ পিন আপডেট'); } catch{ showToast('সেভ করা যায়নি'); } }
+async function updateSPin(){ const p=String(document.getElementById('newSPin').value).trim(); if(!/^\d{4}$/.test(p)){ showToast('৪ সংখ্যার পিন দিন!'); return; } try{ await API.Students.updatePin(editSid,p); document.getElementById('pinDisp').textContent=p; renderStudentList(); showToast('✅ পিন আপডেট'); } catch(e){ console.error(e); showToast('সেভ করা যায়নি'); } }
 function copyPin(){ const p=document.getElementById('pinDisp').textContent; navigator.clipboard?.writeText(p).catch(()=>{}); showToast('কপি: '+p); }
 
 // ══ TASKS ══════════════════════════════════════════════════
@@ -1634,7 +1652,7 @@ function renderTaskList(f){
 }
 function fTask(f,btn){ document.querySelectorAll('#amal-panel-list .stu-filter-pill').forEach(c=>c.classList.remove('active')); btn.classList.add('active'); renderTaskList(f); }
 function toggleA(){ showToast('✅ আমল সম্পন্ন করবে ছাত্র নিজে।'); }
-function deleteTask(tid){ if(!confirm('এই আমলটি মুছবেন?')) return; API.Tasks.delete(tid); renderTaskList(); updateBadge(); showToast('🗑 আমল মুছে ফেলা হয়েছে'); }
+async function deleteTask(tid){ if(!confirm('এই আমলটি মুছবেন?')) return; try{ await API.Tasks.delete(tid); renderTaskList(); updateBadge(); showToast('🗑 আমল মুছে ফেলা হয়েছে'); }catch(e){ console.error(e); showToast('❌ আমল মোছা যায়নি'); } }
 function updateBadge(){
   const n=API.Tasks.pendingCount();
   const b=document.getElementById('tBadge');
@@ -1763,10 +1781,11 @@ function openAddTask(preselectId=null){
   openModal('addTaskModal');
 }
 function toggleAll(cb){ document.querySelectorAll('#taskStudents input').forEach(c=>c.checked=cb.checked); }
-function addTask(){
+async function addTask(){
   const title=document.getElementById('t_title').value.trim(); if(!title){ showToast('শিরোনাম লিখুন!'); return; }
   const checked=[...document.querySelectorAll('#taskStudents input:checked')]; if(!checked.length){ showToast('কমপক্ষে একজন নির্বাচন করুন!'); return; }
-  API.Tasks.add({ title, desc:document.getElementById('t_desc').value.trim(), deadline:document.getElementById('t_dl').value, type:newTaskType, assigneeIds:checked.map(c=>c.value) });
+  try{ await API.Tasks.add({ title, desc:document.getElementById('t_desc').value.trim(), deadline:document.getElementById('t_dl').value, type:newTaskType, assigneeIds:checked.map(c=>c.value) }); }
+  catch(e){ console.error(e); showToast('❌ আমল সেভ হয়নি'); return; }
   closeModal('addTaskModal'); ['t_title','t_desc'].forEach(id=>document.getElementById(id).value=''); document.getElementById('t_dl').value=API.nextDate(3);
   renderAll(); showToast('📋 আমল দেওয়া হয়েছে');
 }
@@ -1855,12 +1874,12 @@ function addOption(i){ questions[i].options.push(''); renderQuestions(); }
 function removeOption(i,oi){ questions[i].options.splice(oi,1); renderQuestions(); }
 function deleteQuestion(i){ questions.splice(i,1); renderQuestions(); }
 
-function saveQuiz(){
+async function saveQuiz(){
   const title=document.getElementById('q_title').value.trim(); if(!title){ showToast('শিরোনাম লিখুন!'); return; }
   if(!questions.length){ showToast('কমপক্ষে একটি প্রশ্ন যোগ করুন!'); return; }
   const checked=[...document.querySelectorAll('#qStudents input:checked')];
   if(!checked.length){ showToast('কমপক্ষে একজন ছাত্র নির্বাচন করুন!'); return; }
-  API.Exams.addQuiz({
+  try{ await API.Exams.addQuiz({
     title, subject:document.getElementById('q_subject').value.trim(),
     desc:document.getElementById('q_desc').value.trim(),
     timeLimit:document.getElementById('q_time').value,
@@ -1868,7 +1887,7 @@ function saveQuiz(){
     deadline:document.getElementById('q_deadline').value,
     assigneeIds:checked.map(c=>c.value),
     questions,
-  });
+  }); }catch(e){ console.error(e); showToast('❌ পরীক্ষা সেভ হয়নি'); return; }
   showToast('✅ পরীক্ষা সংরক্ষিত হয়েছে!');
   goExamTab('list', document.querySelector('.exam-tab-btn'));
 }
@@ -1884,17 +1903,17 @@ function openAddExamForChat(sid){
   renderQuestions();
   openModal('addExamFromChatModal');
 }
-function saveExamFromChat(){
+async function saveExamFromChat(){
   const title=document.getElementById('ec_title').value.trim(); if(!title){ showToast('শিরোনাম লিখুন!'); return; }
   if(!questions.length){ showToast('কমপক্ষে একটি প্রশ্ন যোগ করুন!'); return; }
-  API.Exams.addQuiz({
+  try{ await API.Exams.addQuiz({
     title, subject:document.getElementById('ec_subject').value.trim(),
     desc:document.getElementById('ec_desc').value.trim(),
     timeLimit:document.getElementById('ec_time').value,
     passPercent:document.getElementById('ec_pass').value,
     deadline:document.getElementById('ec_deadline').value,
     assigneeIds:[examChatSid], questions,
-  });
+  }); }catch(e){ console.error(e); showToast('❌ পরীক্ষা সেভ হয়নি'); return; }
   closeModal('addExamFromChatModal');
   curQContainer='questionList'; questions=[];
   renderAll(); showToast('✅ পরীক্ষা সংরক্ষিত হয়েছে!');
@@ -1922,7 +1941,7 @@ function renderQuizList(){
     </div>`;
   }).join('');
 }
-function deleteQuiz(qid){ if(!confirm('এই পরীক্ষা মুছবেন?')) return; API.Exams.deleteQuiz(qid); renderQuizList(); showToast('🗑 মুছে ফেলা হয়েছে'); }
+async function deleteQuiz(qid){ if(!confirm('এই পরীক্ষা মুছবেন?')) return; try{ await API.Exams.deleteQuiz(qid); renderQuizList(); showToast('🗑 মুছে ফেলা হয়েছে'); }catch(e){ console.error(e); showToast('❌ পরীক্ষা মোছা যায়নি'); } }
 
 function initResultsQuizSelect(){
   const sel=document.getElementById('resultQuizSelect');
@@ -1951,9 +1970,13 @@ function renderResults(){
     </div>`;
   }).join('')}</div>`;
 }
-function updateScore(subId, score, total, passPercent){
-  API.Exams.updateScore(subId, parseInt(score)||0);
-  renderResults(); showToast('✅ নম্বর আপডেট');
+async function updateScore(subId, score, total, passPercent){
+  try{ await API.Exams.updateScore(subId, parseInt(score)||0); renderResults(); showToast('✅ নম্বর আপডেট'); }
+  catch(e){ console.error(e); showToast('❌ নম্বর সেভ হয়নি'); }
+}
+async function updateChatExamScore(subId, score){
+  try{ await API.Exams.updateScore(subId, parseInt(score)||0); renderChatExams(); showToast('✅ নম্বর আপডেট'); }
+  catch(e){ console.error(e); showToast('❌ নম্বর সেভ হয়নি'); }
 }
 
 // ══ DOCUMENTS ══════════════════════════════════════════════
@@ -2043,7 +2066,7 @@ function toggleDocGroup(grpId, sid){
   }
 }
 function previewDoc(id){ openDocPreview(id, true); }
-function markDocReviewed(id){ API.Docs.markReviewed(id); renderDocsGrouped(); updateDocBadge(); showToast('✅ পর্যালোচনা সম্পন্ন'); }
+async function markDocReviewed(id){ try{ await API.Docs.markReviewed(id); renderDocsGrouped(); updateDocBadge(); showToast('✅ পর্যালোচনা সম্পন্ন'); }catch(e){ console.error(e); showToast('❌ আপডেট হয়নি'); } }
 function markDocReviewedFromPreview(){ if(!curPreviewDocId) return; markDocReviewed(curPreviewDocId); document.getElementById('docReviewBtn').style.display='none'; const el=document.getElementById('ditem_'+curPreviewDocId); if(el) el.querySelector('.doc-pending-badge')?.remove(); }
 async function triggerDocDownload(){
   const meta=API.Docs.getById(curPreviewDocId);
@@ -2052,7 +2075,7 @@ async function triggerDocDownload(){
   if(!data) return;
   const a=document.createElement('a'); a.href=data; a.download=meta.fileName; a.click();
 }
-function deleteDoc(id){ if(!confirm('এই ডকুমেন্ট মুছবেন?')) return; API.Docs.delete(id); if(docViewTab==='sent') renderTeacherSentDocs(); else renderDocsGrouped(); updateDocBadge(); showToast('🗑 মুছে ফেলা হয়েছে'); }
+async function deleteDoc(id){ if(!confirm('এই ডকুমেন্ট মুছবেন?')) return; try{ await API.Docs.delete(id); if(docViewTab==='sent') renderTeacherSentDocs(); else renderDocsGrouped(); updateDocBadge(); showToast('🗑 মুছে ফেলা হয়েছে'); }catch(e){ console.error(e); showToast('❌ ডকুমেন্ট মোছা যায়নি'); } }
 function renderTeacherSentDocs(){
   const all=API.Docs.getAll().filter(d=>d.sentBy==='teacher');
   const el=document.getElementById('docsSentGrouped');
@@ -2129,9 +2152,9 @@ function renderStorageTree(){
 }
 
 // ══ SETTINGS ═══════════════════════════════════════════════
-function sendBC(){ const text=document.getElementById('bcText').value.trim(); if(!text){ showToast('বার্তা লিখুন!'); return; } API.Messages.broadcast(text); closeModal('bcModal'); document.getElementById('bcText').value=''; renderChatList(); showToast('📢 সবাইকে পাঠানো হয়েছে'); }
-function saveInfo(){ API.DB.saveTeacher({name:document.getElementById('tName').value.trim()||'শিক্ষক',madrasa:document.getElementById('tMadrasa').value.trim()||'Waqful Madinah'}); document.getElementById('hTitle').textContent=API.DB.getTeacher().madrasa; showToast('✅ সংরক্ষিত'); }
-function changeTPin(){ const p=String(document.getElementById('newTPin').value).trim(); if(!/^\d{4}$/.test(p)){ showToast('৪ সংখ্যার পিন দিন!'); return; } API.Auth.setTeacherPin(p); document.getElementById('newTPin').value=''; showToast('✅ পিন পরিবর্তন হয়েছে'); }
+async function sendBC(){ const text=document.getElementById('bcText').value.trim(); if(!text){ showToast('বার্তা লিখুন!'); return; } try{ await API.Messages.broadcast(text); closeModal('bcModal'); document.getElementById('bcText').value=''; renderChatList(); showToast('📢 সবাইকে পাঠানো হয়েছে'); }catch(e){ console.error(e); showToast('❌ বার্তা পাঠানো হয়নি'); } }
+async function saveInfo(){ try{ await API.DB.saveTeacher({name:document.getElementById('tName').value.trim()||'শিক্ষক',madrasa:document.getElementById('tMadrasa').value.trim()||'Waqful Madinah'}); document.getElementById('hTitle').textContent=API.DB.getTeacher().madrasa; showToast('✅ সংরক্ষিত'); }catch(e){ console.error(e); showToast('❌ সংরক্ষণ হয়নি'); } }
+async function changeTPin(){ const p=String(document.getElementById('newTPin').value).trim(); if(!/^\d{4}$/.test(p)){ showToast('৪ সংখ্যার পিন দিন!'); return; } try{ await API.Auth.setTeacherPin(p); document.getElementById('newTPin').value=''; showToast('✅ পিন পরিবর্তন হয়েছে'); }catch(e){ console.error(e); showToast('❌ পিন পরিবর্তন হয়নি'); } }
 function doExport(){ const b=new Blob([API.DB.exportJSON()],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=`madrasa_${API.today()}.json`; a.click(); showToast('✅ ব্যাকআপ হচ্ছে'); }
 function doImport(input){ const r=new FileReader(); r.onload=e=>{ try{ API.DB.importJSON(e.target.result).then(()=>{ renderAll(); showToast('✅ পুনরুদ্ধার সম্পন্ন!'); }).catch(()=>showToast('❌ পুনরুদ্ধার ব্যর্থ!')); }catch{ showToast('❌ ফাইল সঠিক নয়!'); } }; r.readAsText(input.files[0]); input.value=''; }
 
@@ -2274,20 +2297,23 @@ function openDiaryEntryModal(id){
   openModal('diaryEntryModal');
 }
 function editDiaryEntry(id){ openDiaryEntryModal(id); }
-function saveDiaryEntry(){
+async function saveDiaryEntry(){
   const id=document.getElementById('diaryEditingId').value;
   const text=document.getElementById('diaryEntryText').value.trim();
   const date=document.getElementById('diaryEntryDate').value;
   if(!text){ showToast('⚠️ কিছু লিখুন'); return; }
-  if(id) API.Diary.update(id,text);
-  else API.Diary.add(text,date);
+  try{
+    if(id) await API.Diary.update(id,text);
+    else await API.Diary.add(text,date);
+  }catch(e){ console.error(e); showToast('❌ ডায়েরি সেভ হয়নি'); return; }
   closeModal('diaryEntryModal');
   renderDiaryList();
   showToast('✅ ডায়েরি সেভ হয়েছে');
 }
-function deleteDiaryEntry(id){
+async function deleteDiaryEntry(id){
   if(!confirm('এই এন্ট্রিটি মুছবেন?')) return;
-  API.Diary.delete(id);
+  try{ await API.Diary.delete(id); }
+  catch(e){ console.error(e); showToast('❌ এন্ট্রি মোছা যায়নি'); return; }
   renderDiaryList();
   showToast('🗑 মুছে ফেলা হয়েছে');
 }
@@ -2487,11 +2513,11 @@ function renderNotesList(notes){
     </div>
   </div>`).join('');
 }
-function confirmClearStudentData(){
+async function confirmClearStudentData(){
   if(!curProfileSid) return;
   if(!confirm('এই ছাত্রের চ্যাট, আমল, পরীক্ষার জমা, ডকুমেন্ট, লক্ষ্য, একাডেমিক রেকর্ড ও শিক্ষকের নোট সব মুছে যাবে। ছাত্রের নাম, ওয়াকফ ও পিন অপরিবর্তিত থাকবে। চালিয়ে যাবেন?')) return;
   try{
-    API.Students.clearAllRelatedData(curProfileSid);
+    await API.Students.clearAllRelatedData(curProfileSid);
     closeStudentProfile();
     renderAll();
     showToast('✅ সংশ্লিষ্ট তথ্য মুছে ফেলা হয়েছে');
@@ -2500,14 +2526,14 @@ function confirmClearStudentData(){
     showToast('কাজটি ব্যর্থ হয়েছে');
   }
 }
-function confirmDeleteStudent(){
+async function confirmDeleteStudent(){
   if(!curProfileSid) return;
   const st=API.Students.getById(curProfileSid);
   if(!st) return;
   if(!confirm('«'+st.name+'» ('+(st.waqfId?API.Students.displayWaqfId(st.waqfId):'')+') সম্পূর্ণ মুছে যাবে। ডেটা ফিরিয়ে আনা যাবে না। চালিয়ে যাবেন?')) return;
   if(!confirm('শেষ নিশ্চিতকরণ: আপনি নিশ্চিত?')) return;
   try{
-    API.Students.deleteCompletely(curProfileSid);
+    await API.Students.deleteCompletely(curProfileSid);
     closeStudentProfile();
     renderAll();
     showToast('🗑 ছাত্র মুছে ফেলা হয়েছে');
@@ -2516,15 +2542,15 @@ function confirmDeleteStudent(){
     showToast('কাজটি ব্যর্থ হয়েছে');
   }
 }
-function saveProfileEdits(){
+async function saveProfileEdits(){
   if(!curProfileSid) return;
   const g=id=>document.getElementById(id)?.value.trim()||'';
-  API.Students.update(curProfileSid,{
+  try{ await API.Students.update(curProfileSid,{
     name:g('p_name'), responsibility:g('p_resp'), fatherName:g('p_father'), fatherOccupation:g('p_focc'),
     contact:g('p_contact'), bloodGroup:g('p_blood'),
     district:g('p_district'), upazila:g('p_upazila'),
     cls:g('p_cls'), roll:g('p_roll'), enrollmentDate:g('p_enroll'),
-  });
+  }); }catch(e){ console.error(e); showToast('❌ প্রোফাইল সেভ হয়নি'); return; }
   const s=API.Students.getById(curProfileSid);
   const batch=API.Students.getBatchYear(s.enrollmentDate);
   document.getElementById('profileHdName').textContent=s.name;
@@ -2536,12 +2562,12 @@ function showPinResetInProfile(){
   const el=document.getElementById('profilePinReset');
   el.style.display=el.style.display==='none'?'block':'none';
 }
-function saveProfilePin(){
+async function saveProfilePin(){
   if(!curProfileSid) return;
   const p=String(document.getElementById('profileNewPin').value).trim();
   if(!/^\d{4}$/.test(p)){ showToast('৪ সংখ্যার পিন দিন!'); return; }
   try{
-    API.Students.updatePin(curProfileSid,p);
+    await API.Students.updatePin(curProfileSid,p);
     document.getElementById('profilePinDisplay').textContent=p;
     document.getElementById('profileNewPin').value='';
     document.getElementById('profilePinReset').style.display='none';
@@ -2549,12 +2575,14 @@ function saveProfilePin(){
   } catch{ showToast('সেভ করা যায়নি'); }
 }
 // Academic history
-function addAcadRec(){
+async function addAcadRec(){
   if(!curProfileSid) return;
   const yearClass=document.getElementById('acadYear').value.trim();
   const grade=document.getElementById('acadGrade').value.trim();
   if(!yearClass||!grade){ showToast('বছর এবং নম্বর দুটোই লিখুন!'); return; }
-  const rec=API.AcademicHistory.add(curProfileSid,{yearClass,grade});
+  let rec;
+  try{ rec=await API.AcademicHistory.add(curProfileSid,{yearClass,grade}); }
+  catch(e){ console.error(e); showToast('❌ রেকর্ড সেভ হয়নি'); return; }
   document.getElementById('acadYear').value='';
   document.getElementById('acadGrade').value='';
   const list=document.getElementById('acadList');
@@ -2566,19 +2594,22 @@ function addAcadRec(){
   </div>`);
   showToast('✅ রেকর্ড যোগ হয়েছে');
 }
-function deleteAcadRec(rid){
+async function deleteAcadRec(rid){
   if(!curProfileSid) return;
-  API.AcademicHistory.delete(curProfileSid,rid);
+  try{ await API.AcademicHistory.delete(curProfileSid,rid); }
+  catch(e){ console.error(e); showToast('❌ রেকর্ড মোছা যায়নি'); return; }
   document.getElementById('acad_'+rid)?.remove();
   if(!document.getElementById('acadList').children.length)
     document.getElementById('acadList').innerHTML='<div style="padding:12px 14px;font-size:13px;color:var(--gray-400)">কোনো রেকর্ড নেই।</div>';
 }
 // Teacher notes
-function addNote(){
+async function addNote(){
   if(!curProfileSid) return;
   const text=document.getElementById('noteInput').value.trim();
   if(!text){ showToast('নোট লিখুন!'); return; }
-  const note=API.TeacherNotes.add(curProfileSid,text);
+  let note;
+  try{ note=await API.TeacherNotes.add(curProfileSid,text); }
+  catch(e){ console.error(e); showToast('❌ নোট সেভ হয়নি'); return; }
   document.getElementById('noteInput').value='';
   const list=document.getElementById('notesList');
   const empty=list.querySelector('[style*="color:var(--gray-400)"]');
@@ -2603,20 +2634,22 @@ function editNoteInline(nid){
     <button onclick="cancelNoteEdit('${nid}','${esc(cur)}')" style="background:var(--gray-100);border:none;border-radius:6px;padding:4px 12px;font-family:var(--font);font-size:12px;cursor:pointer">বাতিল</button>
   </div>`;
 }
-function saveNoteEdit(nid){
+async function saveNoteEdit(nid){
   if(!curProfileSid) return;
   const text=document.getElementById('noteedit_'+nid)?.value.trim();
   if(!text) return;
-  API.TeacherNotes.update(curProfileSid,nid,text);
+  try{ await API.TeacherNotes.update(curProfileSid,nid,text); }
+  catch(e){ console.error(e); showToast('❌ নোট সেভ হয়নি'); return; }
   // re-render notes section
   document.getElementById('notesList').innerHTML=renderNotesList(API.TeacherNotes.getAll(curProfileSid));
 }
 function cancelNoteEdit(nid,orig){
   document.getElementById('notesList').innerHTML=renderNotesList(API.TeacherNotes.getAll(curProfileSid));
 }
-function deleteNote(nid){
+async function deleteNote(nid){
   if(!curProfileSid) return;
-  API.TeacherNotes.delete(curProfileSid,nid);
+  try{ await API.TeacherNotes.delete(curProfileSid,nid); }
+  catch(e){ console.error(e); showToast('❌ নোট মোছা যায়নি'); return; }
   document.getElementById('note_'+nid)?.remove();
 }
 // ══ CSV IMPORT ══════════════════════════════════════════════
@@ -2624,9 +2657,9 @@ function handleCSVImport(input){
   if(!input.files?.length) return;
   const file=input.files[0]; input.value='';
   const reader=new FileReader();
-  reader.onload=e=>{
+  reader.onload=async e=>{
     try{
-      const results=API.Students.importFromCSV(e.target.result);
+      const results=await API.Students.importFromCSV(e.target.result);
       const el=document.getElementById('importResult');
       el.style.display='block';
       el.innerHTML=`<div class="import-result">

@@ -890,32 +890,41 @@ function renderChat(){
   });
   el.innerHTML=h; setTimeout(()=>el.scrollTop=9e9,50);
 }
-function openStudentMsgEdit(mid){
+async function openStudentMsgEdit(mid){
   if(!me) return;
   const msgs=API.Messages.getThread(me.id);
   const m=msgs.find(x=>x.id===mid); if(!m||!API.Messages.canModifyOwnMessage(m,false)) return;
   const nv=prompt('মেসেজ সম্পাদনা করুন:',m.text||'');
   if(nv===null) return;
   const t=nv.trim(); if(!t){ showToast('খালি রাখা যাবে না'); return; }
-  const r=API.Messages.updateOwnText(me.id,mid,t,false);
-  if(r.ok){ renderChat(); showToast('✅ সম্পাদিত হয়েছে'); }
-  else showToast('❌ সম্পাদনা সম্ভব হয়নি');
+  try{
+    const r=await API.Messages.updateOwnText(me.id,mid,t,false);
+    if(r.ok){ renderChat(); showToast('✅ সম্পাদিত হয়েছে'); }
+    else showToast('❌ সম্পাদনা সম্ভব হয়নি');
+  }catch(e){ console.error(e); showToast('❌ সম্পাদনা সেভ হয়নি'); }
 }
-function openStudentMsgDelete(mid){
+async function openStudentMsgDelete(mid){
   if(!me) return;
   if(!confirm('এই মেসেজ উস্তাদসহ সবার কাছ থেকে চিরতরে মুছে যাবে (শুধু আপনার নয়)। চালিয়ে যাবেন?')) return;
-  const r=API.Messages.deleteOwn(me.id,mid,false);
-  if(r.ok){ renderChat(); updateBadges(); showToast('✅ সবার কাছ থেকে মুছে গেছে'); }
-  else showToast('❌ মোছা হয়নি');
+  try{
+    const r=await API.Messages.deleteOwn(me.id,mid,false);
+    if(r.ok){ renderChat(); updateBadges(); showToast('✅ সবার কাছ থেকে মুছে গেছে'); }
+    else showToast('❌ মোছা হয়নি');
+  }catch(e){ console.error(e); showToast('❌ মোছা হয়নি'); }
 }
-function sendMsg(){
+async function sendMsg(){
   if(!me) return;
   if(chatPendingFile){ sendChatFile(); return; }
   const inp=document.getElementById('msgIn'); const text=inp.value.trim(); if(!text) return;
   const rt=replyingTo?{...replyingTo}:null;
-  cancelReply();
-  API.Messages.sendFromStudent(me.id, text, 'text', rt?{replyTo:rt}:{});
-  inp.value=''; inp.style.height='auto'; renderChat(); updateBadges();
+  try{
+    await API.Messages.sendFromStudent(me.id, text, 'text', rt?{replyTo:rt}:{});
+    cancelReply();
+    inp.value=''; inp.style.height='auto'; renderChat(); updateBadges();
+  }catch(e){
+    console.error(e);
+    showToast('❌ বার্তা পাঠানো হয়নি');
+  }
 }
 
 // ── Chat file attachment ─────────────────────────────────
@@ -1070,8 +1079,8 @@ function renderTaskList(f){
   el.innerHTML=h+'<div style="height:20px"></div>';
 }
 function fTask(f,btn){ document.querySelectorAll('#amal-panel-today .stu-filter-pill').forEach(c=>c.classList.remove('active')); btn.classList.add('active'); renderTaskList(f); }
-function markDailyDone(tid){ API.Tasks.markDailyDone(tid,me.id); renderAll(); showToast('مَا شَاءَ اللّٰه! আজকের আমল সম্পন্ন ✅'); }
-function markDone(tid){ API.Tasks.markDone(tid,me.id); renderAll(); showToast('مَا شَاءَ اللّٰه! আমল সম্পন্ন ✅'); }
+async function markDailyDone(tid){ try{ await API.Tasks.markDailyDone(tid,me.id); renderAll(); showToast('مَا شَاءَ اللّٰه! আজকের আমল সম্পন্ন ✅'); }catch(e){ console.error(e); showToast('❌ আমল সেভ হয়নি'); } }
+async function markDone(tid){ try{ await API.Tasks.markDone(tid,me.id); renderAll(); showToast('مَا شَاءَ اللّٰه! আমল সম্পন্ন ✅'); }catch(e){ console.error(e); showToast('❌ আমল সেভ হয়নি'); } }
 
 // ── আমল sub-tabs (ছাত্র) ─────────────────────────────────────
 let _amalTab='today';
@@ -1236,7 +1245,7 @@ function startQuizTimer(seconds){
     if(quizSecondsLeft<=0){ clearInterval(quizTimerInterval); submitQuiz(); }
   },1000);
 }
-function submitQuiz(){
+async function submitQuiz(){
   clearInterval(quizTimerInterval);
   if(!activeQuizId) return;
   const answered=Object.keys(quizAnswers).length;
@@ -1246,7 +1255,9 @@ function submitQuiz(){
     ? `${answered}/${total}টি প্রশ্নের উত্তর দিয়েছেন। এখনই জমা দেবেন?`
     : 'পরীক্ষা জমা দেবেন?';
   if(!confirm(confirmMsg)) return;
-  const sub=API.Exams.submitQuiz(activeQuizId,me.id,quizAnswers);
+  let sub;
+  try{ sub=await API.Exams.submitQuiz(activeQuizId,me.id,quizAnswers); }
+  catch(e){ console.error(e); showToast('❌ পরীক্ষা জমা হয়নি'); return; }
   exitQuiz();
   if(sub.needsManualGrade){
     showToast('✅ পরীক্ষা জমা হয়েছে! উস্তাদ নম্বর দেবেন।',4000);
@@ -1318,7 +1329,7 @@ async function confirmUpload(){
     const meta=await API.Docs.upload(me.id, pendingFile, { category:cat, note });
     progFill.style.width='100%';
     // Also add a doc message in chat
-    API.Messages.sendFromStudent(me.id, `📎 ${meta.fileName}`, 'doc', { fileName:meta.fileName, fileSize:meta.fileSize, docId:meta.id });
+    await API.Messages.sendFromStudent(me.id, `📎 ${meta.fileName}`, 'doc', { fileName:meta.fileName, fileSize:meta.fileSize, docId:meta.id });
     setTimeout(()=>{ progWrap.style.display='none'; progFill.style.width='0%'; },500);
     cancelUpload();
     renderSentDocs(); renderChat(); renderHome();
@@ -1387,10 +1398,10 @@ function renderGoals(){
 }
 function gItem(g){ return `<div class="goal-item"><div class="goal-check ${g.done?'done':''}" onclick="toggleGoal('${g.id}')"></div><div style="flex:1"><div class="goal-text ${g.done?'done':''}">${esc(g.title)}</div><div class="goal-meta">${catIc(g.cat)} ${g.cat||''} ${g.deadline?'· 📅 '+g.deadline:''} ${g.note?'· '+esc(g.note):''}</div></div><button class="goal-del" onclick="delGoal('${g.id}')">🗑</button></div>`; }
 function fGoal(f,btn){ document.querySelectorAll('#screen-goals .filter-chip').forEach(c=>c.classList.remove('active')); btn.classList.add('active'); gFilter=f; renderGoals(); }
-function quickGoal(){ const t=document.getElementById('goalIn').value.trim(); if(!t) return; API.Goals.add(me.id,{title:t,cat:'other'}); document.getElementById('goalIn').value=''; renderGoals(); renderHome(); showToast('🎯 লক্ষ্য যোগ হয়েছে!'); }
-function addGoalModal(){ const t=document.getElementById('gm_title').value.trim(); if(!t){ showToast('লক্ষ্যের বিবরণ লিখুন!'); return; } API.Goals.add(me.id,{title:t,cat:document.getElementById('gm_cat').value,deadline:document.getElementById('gm_dl').value,note:document.getElementById('gm_note').value.trim()}); closeModal('addGoalModal'); ['gm_title','gm_note'].forEach(id=>document.getElementById(id).value=''); document.getElementById('gm_dl').value=''; renderGoals(); renderHome(); showToast('🎯 লক্ষ্য যোগ হয়েছে!'); }
-function toggleGoal(id){ const g=API.Goals.toggle(me.id,id); renderGoals(); renderHome(); if(g?.done) showToast('مَا شَاءَ اللّٰه! লক্ষ্য সম্পন্ন ✅'); }
-function delGoal(id){ API.Goals.delete(me.id,id); renderGoals(); renderHome(); }
+async function quickGoal(){ const t=document.getElementById('goalIn').value.trim(); if(!t) return; try{ await API.Goals.add(me.id,{title:t,cat:'other'}); document.getElementById('goalIn').value=''; renderGoals(); renderHome(); showToast('🎯 লক্ষ্য যোগ হয়েছে!'); }catch(e){ console.error(e); showToast('❌ লক্ষ্য সেভ হয়নি'); } }
+async function addGoalModal(){ const t=document.getElementById('gm_title').value.trim(); if(!t){ showToast('লক্ষ্যের বিবরণ লিখুন!'); return; } try{ await API.Goals.add(me.id,{title:t,cat:document.getElementById('gm_cat').value,deadline:document.getElementById('gm_dl').value,note:document.getElementById('gm_note').value.trim()}); closeModal('addGoalModal'); ['gm_title','gm_note'].forEach(id=>document.getElementById(id).value=''); document.getElementById('gm_dl').value=''; renderGoals(); renderHome(); showToast('🎯 লক্ষ্য যোগ হয়েছে!'); }catch(e){ console.error(e); showToast('❌ লক্ষ্য সেভ হয়নি'); } }
+async function toggleGoal(id){ try{ const g=await API.Goals.toggle(me.id,id); renderGoals(); renderHome(); if(g?.done) showToast('مَا شَاءَ اللّٰه! লক্ষ্য সম্পন্ন ✅'); }catch(e){ console.error(e); showToast('❌ লক্ষ্য আপডেট হয়নি'); } }
+async function delGoal(id){ try{ await API.Goals.delete(me.id,id); renderGoals(); renderHome(); }catch(e){ console.error(e); showToast('❌ লক্ষ্য মোছা যায়নি'); } }
 
 // ══ IN-CHAT SEARCH (student) ════════════════════════════════
 let _stuIcsMatches=[], _stuIcsIdx=-1, _stuIcsQuery='';
@@ -1494,7 +1505,7 @@ async function saveStudentPin(){
     try{ await RemoteSync.updateStudentPinRemote(pinVal); }
     catch(e){ showToast('❌ পিন পরিবর্তন ব্যর্থ হয়েছে'); return; }
   }
-  API.Students.updatePin(me.id, pinVal);
+  await API.Students.updatePin(me.id, pinVal, { skipRemote:true });
   me=API.Students.getById(me.id);
   closeModal('studentProfileModal');
   showToast('✅ পিন পরিবর্তন হয়েছে');

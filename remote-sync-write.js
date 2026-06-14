@@ -4,6 +4,12 @@
   function init(ctx) {
     // ctx: { getPin, getStudentPin, getStudentWaqf, getStudentId, getRole, savedMsgIds }
 
+    async function rpcOrThrow(sb, name, params) {
+      const { data, error } = await sb.rpc(name, params);
+      if (error) throw error;
+      return data;
+    }
+
     function stuToDB(s) {
       return { id: s.id, waqf_id: s.waqfId, name: s.name, cls: s.cls || '', roll: s.roll || '',
         pin: s.pin, color: s.color || '#128C7E', note: s.note || '',
@@ -19,15 +25,15 @@
       const tPin = ctx.getPin();
       if (isTeacher && tPin) {
         for (const s of (core.students || []))
-          await sb.rpc('madrasa_rel_upsert_student', { p_teacher_pin: tPin, p_student: stuToDB(s) });
+          await rpcOrThrow(sb, 'madrasa_rel_upsert_student', { p_teacher_pin: tPin, p_student: stuToDB(s) });
         for (const t of (core.tasks || [])) {
           const p_task = { id: t.id, title: t.title, description: t.desc || '', type: t.type || 'onetime',
             deadline: t.deadline || '', created_at: t.created || '' };
-          await sb.rpc('madrasa_rel_upsert_task', { p_teacher_pin: tPin, p_task,
+          await rpcOrThrow(sb, 'madrasa_rel_upsert_task', { p_teacher_pin: tPin, p_task,
             p_assignee_ids: Object.keys(t.assignees || {}) });
           for (const [sid, status] of Object.entries(t.assignees || {})) {
             const cb = (t.completedBy || {})[sid] || {};
-            await sb.rpc('madrasa_rel_update_task_status', { p_pin: tPin, p_role: 'teacher',
+            await rpcOrThrow(sb, 'madrasa_rel_update_task_status', { p_pin: tPin, p_role: 'teacher',
               p_task_id: t.id, p_student_id: sid, p_status: status,
               p_completed_date: cb.date || null, p_completed_time: cb.time || null });
           }
@@ -42,7 +48,7 @@
             type: type || 'text', text: text || '', extra, is_read: read || false, sent_at: null,
             ...(isTeacher ? {} : { thread_id_waqf: ctx.getStudentWaqf() }) };
           try {
-            await sb.rpc('madrasa_rel_insert_message', {
+            await rpcOrThrow(sb, 'madrasa_rel_insert_message', {
               p_pin: isTeacher ? tPin : ctx.getStudentPin(),
               p_role: isTeacher ? 'teacher' : 'student', p_message });
             ctx.savedMsgIds.add(id);
@@ -57,7 +63,7 @@
       for (const g of ((goals || {})[sId] || [])) {
         const p_goal = { id: g.id, title: g.title, cat: g.cat || 'other', deadline: g.deadline || '',
           note: g.note || '', done: g.done || false, created_at: g.created || '' };
-        await sb.rpc('madrasa_rel_upsert_goal', { p_pin: sPin, p_student_id: sId, p_goal });
+        await rpcOrThrow(sb, 'madrasa_rel_upsert_goal', { p_pin: sPin, p_student_id: sId, p_goal });
       }
     }
 
@@ -71,7 +77,7 @@
         const p_questions = (q.questions || []).map(qq => ({ id: qq.id, type: qq.type, text: qq.text,
           options: qq.options || [], correct_answer: qq.correctAnswer, marks: qq.marks || 1,
           upload_instructions: qq.uploadInstructions || null }));
-        await sb.rpc('madrasa_rel_upsert_quiz', { p_teacher_pin: tPin, p_quiz,
+        await rpcOrThrow(sb, 'madrasa_rel_upsert_quiz', { p_teacher_pin: tPin, p_quiz,
           p_questions, p_assignee_ids: q.assigneeIds || [] });
       }
     }
@@ -87,14 +93,13 @@
           storage_path: d.storage_path || null, file_url: d.fileUrl || null,
           is_read: d.read || false, uploaded_at: null,
           review_status: d.reviewStatus || (d.sentBy === 'student' ? 'pending' : 'done') };
-        try { await sb.rpc('madrasa_rel_insert_document', { p_pin: pin, p_role: r, p_doc }); }
-        catch (e) { console.warn('doc insert:', d.id, e); }
+        await rpcOrThrow(sb, 'madrasa_rel_insert_document', { p_pin: pin, p_role: r, p_doc });
       }
     }
 
     async function saveKVImpl(sb, key, value, usesSecure) {
       if (!usesSecure) {
-        const { error } = await sb.from('app_kv').upsert(
+        const { error } = await sb.from('waqf_app_kv').upsert(
           { key, value: value === undefined ? {} : value, updated_at: new Date().toISOString() },
           { onConflict: 'key' });
         if (error) throw error;
@@ -109,33 +114,29 @@
         const newPin = value?.pin ? String(value.pin) : String(value || '');
         const oldPin = ctx.getPin();
         if (newPin && oldPin) {
-          const { error } = await sb.rpc('madrasa_rel_update_teacher_pin',
+          await rpcOrThrow(sb, 'madrasa_rel_update_teacher_pin',
             { p_old_pin: oldPin, p_new_pin: newPin });
-          if (!error) ctx.setPin(newPin);
+          ctx.setPin(newPin);
         }
       }
     }
 
     async function upsertCompletionRemote(sb, row, pin, roleStr) {
       if (!pin) return;
-      try {
-        await sb.rpc('madrasa_rel_upsert_completion', {
-          p_pin: pin, p_role: roleStr || 'teacher',
-          p_id: row.id, p_task_id: row.task_id, p_student_id: row.student_id,
-          p_date: row.date, p_status: row.status,
-          p_completed_at: row.completed_at || null, p_note: row.note || '',
-        });
-      } catch (e) { console.warn('upsertCompletionRemote:', e); }
+      await rpcOrThrow(sb, 'madrasa_rel_upsert_completion', {
+        p_pin: pin, p_role: roleStr || 'teacher',
+        p_id: row.id, p_task_id: row.task_id, p_student_id: row.student_id,
+        p_date: row.date, p_status: row.status,
+        p_completed_at: row.completed_at || null, p_note: row.note || '',
+      });
     }
 
     async function deleteCompletionRemote(sb, tid, sid, date, pin, roleStr) {
       if (!pin) return;
-      try {
-        await sb.rpc('madrasa_rel_delete_completion', {
-          p_pin: pin, p_role: roleStr || 'teacher',
-          p_task_id: tid, p_student_id: sid, p_date: date,
-        });
-      } catch (e) { console.warn('deleteCompletionRemote:', e); }
+      await rpcOrThrow(sb, 'madrasa_rel_delete_completion', {
+        p_pin: pin, p_role: roleStr || 'teacher',
+        p_task_id: tid, p_student_id: sid, p_date: date,
+      });
     }
 
     return { saveCore, saveGoals, saveExams, saveDocs, saveKVImpl,
