@@ -1,7 +1,8 @@
 /**
  * Vercel / CI: writes supabase-config.js from env (never commit secrets).
- * Set SUPABASE_URL and SUPABASE_ANON_KEY in the Vercel project.
+ * Local: .env.local or .env — Vercel dashboard: SUPABASE_URL + SUPABASE_ANON_KEY.
  */
+import './load-env.mjs';
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';

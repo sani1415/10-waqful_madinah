@@ -124,7 +124,45 @@
 .stu-amal-live{background:#E8F5E9;color:#2E7D32}
 #stuMainShell #screen-tasks .amal-panel>.list-scroll{padding-bottom:16px}
 
-/* ── দৈনিক সময়সূচি (হোম) ── */
+/* ── ছাত্র হোম ড্যাশবোর্ড ── */
+#screen-home{background:#f8faf9}
+.stu-home-scroll{padding:14px 12px 20px}
+.stu-home-alerts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.stu-home-alert{border:none;border-radius:12px;padding:10px 14px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:transform .12s,box-shadow .12s;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.stu-home-alert:active{transform:scale(.98)}
+.stu-home-alert--msg{background:#e8f1fb;color:#1565c0}
+.stu-home-alert--exam{background:#fef3e8;color:#c2410c}
+.stu-home-alert--amal{background:#ecf6ee;color:#2e7d32}
+.stu-home-all-clear{background:#fff;border:1px solid rgba(0,0,0,.06);border-radius:14px;padding:13px 16px;font-size:13px;font-weight:500;color:#64748b;text-align:center;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.03)}
+.stu-home-card{background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,.06);box-shadow:0 2px 12px rgba(15,23,42,.04);margin-bottom:12px;overflow:hidden}
+.stu-home-card-hd{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px 0}
+.stu-home-card-title{font-size:15px;font-weight:700;color:#1e293b;letter-spacing:-.01em}
+.stu-home-card-link{font-size:12px;font-weight:600;color:#2e7d32;background:none;border:none;cursor:pointer;padding:4px 0;font-family:var(--font);flex-shrink:0}
+.stu-home-card-body{padding:12px 16px 16px}
+.stu-home-card--click{cursor:pointer;transition:box-shadow .15s}
+.stu-home-card--click:active{box-shadow:0 1px 6px rgba(15,23,42,.06)}
+.stu-home-prog-bar{height:7px;background:#eef2f0;border-radius:99px;overflow:hidden;margin:10px 0 8px}
+.stu-home-prog-fill{height:100%;background:linear-gradient(90deg,#43a047,#2e7d32);border-radius:99px;transition:width .35s ease}
+.stu-home-prog-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12px;color:#64748b}
+.stu-home-prog-row strong{font-size:14px;font-weight:800;color:#1e293b}
+.stu-home-prog-sub{margin-top:4px;font-size:12px;color:#94a3b8;line-height:1.4}
+.stu-home-mini-stats{display:flex;gap:8px;margin-top:12px}
+.stu-home-stat{flex:1;background:#f8faf9;border-radius:10px;padding:10px 8px;text-align:center;border:1px solid #eef2f0}
+.stu-home-stat-val{font-size:15px;font-weight:800;color:#2e7d32;line-height:1.2}
+.stu-home-stat-lbl{font-size:10px;font-weight:600;color:#94a3b8;margin-top:3px;letter-spacing:.2px}
+.stu-home-empty{font-size:13px;color:#94a3b8;line-height:1.5;margin:0}
+.stu-home-notice{font-size:12px;font-weight:600;padding:8px 12px;border-radius:10px;margin-bottom:10px;line-height:1.4}
+.stu-home-notice--pending{background:#fff8e8;color:#b45309;border:1px solid #fde68a}
+.stu-home-notice--rejected{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+.stu-home-sched-table{width:100%;border-collapse:collapse;font-size:13px}
+.stu-home-sched-table th{text-align:left;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.45px;padding:0 0 8px;border-bottom:1px solid #eef2f0}
+.stu-home-sched-table th:last-child{text-align:right;width:34%}
+.stu-home-sched-table td{padding:9px 0;border-bottom:1px solid #f1f5f9;color:#334155;vertical-align:top;line-height:1.4}
+.stu-home-sched-table td:last-child{text-align:right;font-weight:600;color:#2e7d32;white-space:nowrap;font-variant-numeric:tabular-nums}
+.stu-home-sched-table tr:last-child td{border-bottom:none}
+.stu-home-sched-more{font-size:12px;color:#64748b;margin-top:8px}
+
+/* ── দৈনিক সময়সূচি (আমল ট্যাব) ── */
 .stu-sched-card{background:#fff;margin:0 12px 14px;border-radius:14px;border:1px solid var(--gray-200);box-shadow:var(--shadow-sm);overflow:hidden}
 .stu-sched-card-hd{padding:10px 14px;background:var(--gray-50);font-size:13px;font-weight:700;color:var(--gray-700);border-bottom:1px solid var(--gray-200)}
 .stu-sched-banner{font-size:12px;padding:8px 14px;line-height:1.45}
@@ -329,18 +367,17 @@ function skd(field){if(field==='id'){_skId=_skId.slice(0,-1);_skUpdateIdDisplay(
 </div>
 
 <!-- ══ HOME ══════════════════════════════════════════════ -->
-<div class="screen" id="screen-home">
-  <div class="list-scroll">
-    <div class="sec-hd">পরীক্ষা <span class="sec-link" onclick="goTab('exams')">সব দেখুন →</span></div>
-    <div id="homeExamPrev"></div>
-    <div class="sec-hd">আমার লক্ষ্য <span class="sec-link" onclick="goTab('goals')">সব দেখুন →</span></div>
-    <div id="homeGoalPrev"></div>
+<div class="screen active" id="screen-home">
+  <div class="list-scroll stu-home-scroll">
+    <div id="homeAlerts"></div>
+    <div id="homeAmalSummary"></div>
+    <div id="homeSchedulePreview"></div>
     <div style="height:20px"></div>
   </div>
 </div>
 
 <!-- ══ CHAT ══════════════════════════════════════════════ -->
-<div class="screen active" id="screen-chat">
+<div class="screen" id="screen-chat">
   <!-- In-chat search bar -->
   <div class="in-chat-search-bar" id="stuInChatSearchBar">
     <input type="search" id="stuInChatSearchIn" placeholder="রিসালা খুঁজুন…" autocomplete="off" oninput="onStuInChatSearch(this.value)" onkeydown="if(event.key==='Enter')stuInChatNav(1)">
@@ -484,8 +521,8 @@ function skd(field){if(field==='id'){_skId=_skId.slice(0,-1);_skUpdateIdDisplay(
 <!-- ══ ফ্লোটিং নিচের ট্যাব বার ═══════════════════════════════ -->
 <nav id="stuBottomNav" class="stu-float-nav-wrap" aria-label="প্রধান মেনু">
   <div class="stu-float-nav-inner">
-    <button type="button" class="tab-btn active" onclick="goTab('chat')"  id="tab-chat"><span class="tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21 11.5a8.5 8.5 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.5 8.5 0 01-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.5 8.5 0 013.8-.9h.5a8.5 8.5 0 018 8v.5z"/></svg></span><span class="tab-lbl">রিসালা</span><span class="tab-badge" id="urBadge"></span></button>
-    <button type="button" class="tab-btn"        onclick="goTab('home')"  id="tab-home"><span class="tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span><span class="tab-lbl">হোম</span></button>
+    <button type="button" class="tab-btn"        onclick="goTab('chat')"  id="tab-chat"><span class="tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21 11.5a8.5 8.5 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.5 8.5 0 01-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.5 8.5 0 013.8-.9h.5a8.5 8.5 0 018 8v.5z"/></svg></span><span class="tab-lbl">রিসালা</span><span class="tab-badge" id="urBadge"></span></button>
+    <button type="button" class="tab-btn active" onclick="goTab('home')"  id="tab-home"><span class="tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span><span class="tab-lbl">হোম</span></button>
     <button type="button" class="tab-btn"        onclick="goTab('tasks')" id="tab-tasks"><span class="tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 12h6M9 16h6"/></svg></span><span class="tab-lbl">আমল</span><span class="tab-badge" id="tBadge"></span></button>
     <button type="button" class="tab-btn"        onclick="goTab('exams')" id="tab-exams"><span class="tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/><line x1="9" y1="11" x2="15" y2="11"/></svg></span><span class="tab-lbl">পরীক্ষা</span><span class="tab-badge" id="examBadge"></span></button>
     <button type="button" class="tab-btn"        onclick="goTab('goals')" id="tab-goals"><span class="tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span><span class="tab-lbl">লক্ষ্য</span></button>
@@ -737,7 +774,7 @@ function onLogin(){
   const sb=document.getElementById('stuInChatSearchBtn'); if(sb) sb.style.display='flex';
   var _nav=document.getElementById('stuBottomNav'); if(_nav) _nav.style.display='block';
   renderAll();
-  goTab('chat');
+  goTab('home');
   void API.Pwa.enableNotificationsAfterAuth('student', { waqfId: me && me.waqfId });
 }
 function logout(){
@@ -753,21 +790,93 @@ function logout(){
   if(_lnEl) _lnEl.style.display='none';
   document.getElementById('lockScreen').style.display='flex';
   Promise.resolve(API.refreshStudentLockHints()).then(()=>renderPendingSection());
-  goTab('chat');
+  goTab('home');
 }
 function renderAll(){ renderHome(); renderTaskSchedulePanel(); renderChat(); renderTaskList(); renderAmalDashboard(); renderExamList(); renderSentDocs(); renderReceivedDocs(); renderGoals(); updateBadges(); }
 
 // ══ HOME ═══════════════════════════════════════════════════
+function homeAlertGo(type){
+  if(type==='msg') goTab('chat');
+  else if(type==='exam') goTab('exams');
+  else goTab('tasks');
+}
+function homeGoAmal(){ goTab('tasks'); }
+function homeGoSchedule(){
+  goTab('tasks');
+  const btn=document.querySelector('.amal-sub-tab[onclick*="schedule"]');
+  goAmalTab('schedule',btn);
+}
+function renderHomeAlerts(){
+  const el=document.getElementById('homeAlerts'); if(!el||!me) return;
+  const items=[];
+  const unread=API.Messages.unreadCount(me.id,'out');
+  const pendingAmal=API.Tasks.pendingCount(me.id);
+  const pendingExams=API.Exams.getQuizzesForStudent(me.id).filter(q=>!API.Exams.getSubmission(q.id,me.id)).length;
+  if(unread>0) items.push({type:'msg',label:unread+'টি নতুন রিসালা'});
+  if(pendingExams>0) items.push({type:'exam',label:pendingExams+'টি পরীক্ষা বাকি'});
+  if(pendingAmal>0) items.push({type:'amal',label:pendingAmal+'টি আমল বাকি'});
+  if(!items.length){ el.innerHTML='<div class="stu-home-all-clear">আজকের জন্য সব ঠিক আছে</div>'; return; }
+  el.innerHTML=`<div class="stu-home-alerts">${items.map(it=>`<button type="button" class="stu-home-alert stu-home-alert--${it.type}" onclick="homeAlertGo('${it.type}')">${esc(it.label)}</button>`).join('')}</div>`;
+}
+function renderHomeAmalSummary(){
+  const el=document.getElementById('homeAmalSummary'); if(!el||!me) return;
+  const dailyTasks=API.Tasks.getForStudent(me.id).filter(t=>t.type==='daily');
+  const todayDone=dailyTasks.filter(t=>API.Tasks.isDailyDoneToday(t,me.id)).length;
+  const streak=API.Tasks.getStreak(me.id);
+  const prog=API.Tasks.getProgressSummary(me.id);
+  const pct=Math.round(Math.min(100,Math.max(0,Number(prog.today.percent)||0)));
+  if(!dailyTasks.length){
+    el.innerHTML=`<div class="stu-home-card"><div class="stu-home-card-hd"><div class="stu-home-card-title">আজকের আমল</div></div><div class="stu-home-card-body"><p class="stu-home-empty">উস্তাদ দৈনিক আমল যোগ করলে এখানে অগ্রগতি দেখা যাবে।</p></div></div>`;
+    return;
+  }
+  const streakTxt=streak.current>1?` · ধারাবাহিক ${streak.current} দিন`:'';
+  el.innerHTML=`<div class="stu-home-card stu-home-card--click" onclick="homeGoAmal()" role="button" tabindex="0">
+    <div class="stu-home-card-hd">
+      <div class="stu-home-card-title">আজকের আমল</div>
+      <button type="button" class="stu-home-card-link" onclick="event.stopPropagation();homeGoAmal()">বিস্তারিত</button>
+    </div>
+    <div class="stu-home-card-body">
+      <div class="stu-home-prog-row"><span>আজ সম্পন্ন</span><strong>${todayDone}/${dailyTasks.length}</strong></div>
+      <div class="stu-home-prog-bar"><div class="stu-home-prog-fill" style="width:${pct}%"></div></div>
+      <div class="stu-home-prog-sub">${pct}% সম্পন্ন${streakTxt}</div>
+      <div class="stu-home-mini-stats">
+        <div class="stu-home-stat"><div class="stu-home-stat-val">${Math.round(prog.week.percent||0)}%</div><div class="stu-home-stat-lbl">সপ্তাহ</div></div>
+        <div class="stu-home-stat"><div class="stu-home-stat-val">${Math.round(prog.month.percent||0)}%</div><div class="stu-home-stat-lbl">মাস</div></div>
+        <div class="stu-home-stat"><div class="stu-home-stat-val">${prog.week.done||0}/${prog.week.total||0}</div><div class="stu-home-stat-lbl">৭ দিন</div></div>
+      </div>
+    </div>
+  </div>`;
+}
+function renderHomeSchedulePreview(){
+  const el=document.getElementById('homeSchedulePreview'); if(!el||!me) return;
+  if(!API.DailySchedule){
+    el.innerHTML=`<div class="stu-home-card"><div class="stu-home-card-hd"><div class="stu-home-card-title">দৈনিক সময়সূচি</div></div><div class="stu-home-card-body"><p class="stu-home-empty">সময়সূচি এখনো সেট করা হয়নি।</p></div></div>`;
+    return;
+  }
+  const ds=API.DailySchedule.getForStudent(me.id);
+  const rows=ds.rows||[];
+  const pend=ds.pending;
+  let notice='';
+  if(pend&&pend.status==='pending') notice='<div class="stu-home-notice stu-home-notice--pending">পরিবর্তনের অনুমোদনের অপেক্ষায় — নিচে বর্তমান সময়সূচি দেখানো হচ্ছে।</div>';
+  else if(pend&&pend.status==='rejected') notice='<div class="stu-home-notice stu-home-notice--rejected">শিক্ষক প্রত্যাখ্যান করেছেন'+(pend.teacherNote?(' · '+esc(pend.teacherNote)):'')+'</div>';
+  const preview=rows.slice(0,4);
+  const more=rows.length>4?`<div class="stu-home-sched-more">আরও ${rows.length-4}টি সারি</div>`:'';
+  const body=preview.length
+    ? `<table class="stu-home-sched-table"><thead><tr><th>কাজ</th><th>সময়</th></tr></thead><tbody>${preview.map(r=>`<tr><td>${esc(r.task)}</td><td>${esc(r.time)}</td></tr>`).join('')}</tbody></table>${more}`
+    : '<p class="stu-home-empty">সময়সূচি এখনো সেট করা হয়নি।</p>';
+  el.innerHTML=`<div class="stu-home-card">
+    <div class="stu-home-card-hd">
+      <div class="stu-home-card-title">দৈনিক সময়সূচি</div>
+      <button type="button" class="stu-home-card-link" onclick="homeGoSchedule()">সম্পূর্ণ</button>
+    </div>
+    <div class="stu-home-card-body">${notice}${body}</div>
+  </div>`;
+}
 function renderHome(){
-  const pendingExams=API.Exams.getQuizzesForStudent(me.id).filter(q=>!API.Exams.getSubmission(q.id,me.id)).slice(0,2);
-  document.getElementById('homeExamPrev').innerHTML=pendingExams.length
-    ? pendingExams.map(q=>`<div class="exam-card" style="margin:0 12px 8px"><div class="exam-card-hd"><div class="exam-card-icon">📝</div><div class="exam-card-info"><div class="exam-card-title">${esc(q.title)}</div><div class="exam-card-meta">${q.questions?.length||0}টি প্রশ্ন · ${q.timeLimit} মিনিট${q.deadline?' · 📅 '+q.deadline:''}</div></div></div></div>`).join('')
-    : '<div style="padding:12px 16px;font-size:13px;color:var(--gray-400)">কোনো পরীক্ষা নেই।</div>';
-
-  const goals=API.Goals.getAll(me.id).filter(g=>!g.done).slice(0,2);
-  document.getElementById('homeGoalPrev').innerHTML=goals.length
-    ? goals.map(g=>`<div class="goal-item" style="margin:0 12px 8px;border-radius:var(--radius);box-shadow:var(--shadow-sm)"><div class="goal-check ${g.done?'done':''}" onclick="toggleGoal('${g.id}')"></div><div style="flex:1"><div class="goal-text">${esc(g.title)}</div><div class="goal-meta">${catIc(g.cat)} ${g.deadline?'📅 '+g.deadline:''}</div></div></div>`).join('')
-    : '<div style="padding:12px 16px;font-size:13px;color:var(--gray-400)">🎯 নতুন লক্ষ্য যোগ করুন!</div>';
+  if(!me) return;
+  renderHomeAlerts();
+  renderHomeAmalSummary();
+  renderHomeSchedulePreview();
 }
 
 function renderTaskSchedulePanel(){
@@ -1533,6 +1642,7 @@ function goTab(tab){
   const sb=document.getElementById('stuInChatSearchBtn');
   if(sb) sb.style.display=tab==='chat'&&me?'flex':'none';
   if(tab!=='chat') closeStuInChatSearch();
+  if(tab==='home' && me) renderHome();
   if(tab==='chat' && me){ API.Messages.markRead(me.id,'out'); renderChat(); updateBadges(); setTimeout(()=>document.getElementById('chatMsgs').scrollTop=9e9,50); }
   if(tab==='exams') renderExamList();
   if(tab==='tasks' && me){ renderAmalDashboard(); renderTaskList(); }

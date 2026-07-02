@@ -1,7 +1,8 @@
 /**
  * Vercel / CI: writes pwa-config.js (VAPID public key only — safe to expose in the client).
- * Set PWA_VAPID_PUBLIC_KEY in the Vercel project for Web Push subscriptions.
+ * Local: .env.local — Vercel: PWA_VAPID_PUBLIC_KEY (optional).
  */
+import './load-env.mjs';
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';

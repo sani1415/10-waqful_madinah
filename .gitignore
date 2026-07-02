@@ -1,6 +1,11 @@
 # ── Dependencies ────────────────────────────────────────────
 node_modules/
 
+# ── Local env (copy from .env.example) ───────────────────────
+.env
+.env.local
+.env.*.local
+
 # ── Build-generated config (Vercel injects these at build time) ──
 supabase-config.js
 pwa-config.js

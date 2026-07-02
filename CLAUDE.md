@@ -21,7 +21,7 @@
 
 ## Service Worker Cache Rule
 - **`sw.js` এর `CACHE` version (`waqful-full-vN`) প্রতিবার যেকোনো file edit করলে N বাড়াতে হবে।**
-- Current version: **v76** (last bumped: fix waqf insert_document migration + student upload error toasts)
+- Current version: **v77** (last bumped: student home dashboard — amal summary, schedule preview, alert strip)
 - যেকোনো `.html`, `.css`, `.js` file বদলালে → `sw.js` খুলে `waqful-full-vN` → `vN+1` করো।
 - নতুন file তৈরি হলে `LOCAL_SHELL` array-তেও যোগ করো।
 
@@ -76,6 +76,7 @@
   - Read: `student_completions(pin, role, student_id, from, to)`, `daily_completions(teacher_pin, date)`
 - **`remote-sync.js` + `remote-sync-write.js`:** Together replace the old single-file sync. `remote-sync.js` (≤400 lines) handles bootstrap, assembly, schedule/flush, realtime; `remote-sync-write.js` (≤400 lines) handles all relational write operations. `window.RemoteSync` public API is **unchanged** — same method names, same `mem` object shape (`core`, `goals`, `exams`, `docs`, `academic`, `tnotes`, `teacherPin`, `lockHints`, `loaded`). Bootstrap assembles relational rows back into the old blob format so `api.js` reads identically. `schedule(key, getter)` routes to `madrasa_rel_*` RPCs instead of `app_kv` upserts. `markMessagesReadRemote(threadId, role)` is a new method called from `Messages.markRead()` in `api.js`. Load order: `remote-sync-write.js` before `remote-sync.js`.
 - **In-app instant sync:** `remote-sync.js` subscribes to Supabase Realtime **`postgres_changes`** on `messages`, `students`, `tasks`, `task_assignments`, `task_completions`, `quizzes`, `daily_schedule_rows`, `daily_schedule_proposals` tables (channel `madrasa_rel_changes`). On change, calls `pullRemoteSnapshot` and dispatches `madrasa-remote-sync`. Realtime must be enabled on those tables (added to `supabase_realtime` publication). This is not OS push — it requires the page open and online.
+- **Local (real app test):** `.env.local`-এ `SUPABASE_URL` + `SUPABASE_ANON_KEY`, তারপর **`npm start`** (build + `vercel dev` on port 3000). ফাইল gitignore-এ।
 - **Vercel:** Set env `SUPABASE_URL` and `SUPABASE_ANON_KEY`. Optional: **`PWA_VAPID_PUBLIC_KEY`** (Web Push subscription). Build runs `npm run build` → writes `supabase-config.js` and **`pwa-config.js`** (VAPID public only). If env is missing and the target file already exists locally, each script leaves it unchanged.
 - **Storage:** Bucket `waqf-files` is private; uploads use signed URLs (short TTL). Document previews use `API.Docs.resolveFileUrl()`. Document **metadata** lives in the `documents` table; file **bytes** are only in Storage. Per-file upload limit **10 MB** (`API.MAX_UPLOAD_BYTES`, enforced in `api.js` + `remote-sync.js`). Multiple selected **images** are merged to one PDF in the browser (`pdf-merge.js`, jsPDF from CDN in `student.html` / `teacher.html`).
 - **Teacher → ছাত্র প্রোফাইল:** `API.Students.clearAllRelatedData(sid)` keeps the row (name/waqf/pin) but wipes chat, tasks, quiz submissions, doc metadata, goals, academic history, teacher notes. `API.Students.deleteCompletely(sid)` removes the student and the same data (CASCADE in DB); `getNextWaqfId()` reuses the smallest free `waqf_NNN` number. **Student profile body** uses **layout 2** (settings-style rows, `profile-v2-*` in `style.css`).
