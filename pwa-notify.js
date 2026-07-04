@@ -44,7 +44,7 @@
 
   function register() {
     if (!('serviceWorker' in navigator)) return Promise.resolve(null);
-    return navigator.serviceWorker.register('sw.js').then(function (reg) {
+    return navigator.serviceWorker.register('/sw.js').then(function (reg) {
       if (!reg) return null;
 
       // waiting SW-কে activate করো এবং banner দেখাও

@@ -1,5 +1,5 @@
 /* Waqful Madinah — full-app shell cache + Web Push display */
-var CACHE = 'waqful-full-v78';
+var CACHE = 'waqful-full-v79';
 
 var CDN_ASSETS = [
   'https://unpkg.com/@supabase/supabase-js@2.49.8/dist/umd/supabase.js',
@@ -95,8 +95,10 @@ self.addEventListener('fetch', function (e) {
             var name = path.split('/').pop() || '';
             if (path === '/' || /index\.html$/i.test(path))
               return caches.match(absLocal('index.html'));
-            if (/teacher\.html$/i.test(name)) return caches.match(absLocal('teacher.html'));
-            if (/student\.html$/i.test(name)) return caches.match(absLocal('student.html'));
+            if (/\/teacher\/?$/i.test(path) || /teacher\.html$/i.test(name))
+              return caches.match(absLocal('teacher.html'));
+            if (/\/student\/?$/i.test(path) || /student\.html$/i.test(name))
+              return caches.match(absLocal('student.html'));
             return caches.match(absLocal('index.html'));
           });
         })

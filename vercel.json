@@ -1,6 +1,16 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": ".",
+  "redirects": [
+    { "source": "/teacher.html", "destination": "/teacher/", "permanent": false },
+    { "source": "/student.html", "destination": "/student/", "permanent": false },
+    { "source": "/teacher", "destination": "/teacher/", "permanent": false },
+    { "source": "/student", "destination": "/student/", "permanent": false }
+  ],
+  "rewrites": [
+    { "source": "/teacher/", "destination": "/teacher.html" },
+    { "source": "/student/", "destination": "/student.html" }
+  ],
   "headers": [
     {
       "source": "/(.*)",

@@ -306,7 +306,7 @@ body {
 
   <div class="panel-buttons" id="panelButtons">
 
-    <a class="panel-btn btn-teacher" href="teacher.html" id="btnTeacher">
+    <a class="panel-btn btn-teacher" href="/teacher/" id="btnTeacher">
       <div class="panel-btn-inner">
         <div class="btn-icon">📖</div>
         <div class="btn-text">
@@ -317,7 +317,7 @@ body {
       </div>
     </a>
 
-    <a class="panel-btn btn-student" href="student.html" id="btnStudent">
+    <a class="panel-btn btn-student" href="/student/" id="btnStudent">
       <div class="panel-btn-inner">
         <div class="btn-icon">🎒</div>
         <div class="btn-text">
@@ -347,8 +347,8 @@ body {
     return;
   }
   // Auto-redirect instantly — card stays hidden so no flash
-  if(last === 'teacher') { location.replace('teacher.html'); return; }
-  if(last === 'student') { location.replace('student.html'); return; }
+  if(last === 'teacher') { location.replace('/teacher/'); return; }
+  if(last === 'student') { location.replace('/student/'); return; }
   document.getElementById('card').style.opacity = '1';
 })();
 </script>

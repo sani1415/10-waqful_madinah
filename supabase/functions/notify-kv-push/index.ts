@@ -36,7 +36,7 @@ function makePayload(body: string, target: "teacher" | "student", tag: string): 
   return JSON.stringify({
     title: "Waqful Madinah",
     body,
-    url: target === "teacher" ? "./teacher.html" : "./student.html",
+    url: target === "teacher" ? "/teacher/" : "/student/",
     tag,
   });
 }
