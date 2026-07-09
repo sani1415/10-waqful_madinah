@@ -3,7 +3,21 @@
     "allow": [
       "mcp__claude_ai_Supabase__list_projects",
       "mcp__claude_ai_Supabase__apply_migration",
-      "mcp__claude_ai_Supabase__execute_sql"
+      "mcp__claude_ai_Supabase__execute_sql",
+      "mcp__claude_ai_Supabase__deploy_edge_function",
+      "Bash(ls:*)",
+      "Bash(git add:*)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(grep -E \"\\\\.js$|\\\\.sql$|migrations|sql\")",
+      "Bash(find /storage/emulated/0/Documents/programming/10-task -name *.sql -maxdepth 2)",
+      "Bash(grep -E '\\\\.\\(sql|js\\)$')",
+      "Bash(git ls-tree:*)",
+      "Bash(grep -E '\\\\.sql$')",
+      "Bash(find /storage/emulated/0/Documents/programming/10-task -name *.sql -type f)",
+      "Bash(git:*)",
+      "mcp__claude_ai_Supabase__list_tables",
+      "Bash(python3:*)",
+      "mcp__claude_ai_Supabase__get_logs"
     ]
   },
   "enabledPlugins": {

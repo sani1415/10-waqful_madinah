@@ -528,20 +528,44 @@ function skd(field){if(field==='id'){_skId=_skId.slice(0,-1);_skUpdateIdDisplay(
 
 <!-- ══ GOALS ══════════════════════════════════════════════ -->
 <div class="screen" id="screen-goals">
-  <div class="goal-add-bar">
-    <button type="button" class="goal-add-btn" style="width:100%" onclick="openModal('addGoalModal')"><span class="goal-btn-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 5v14M5 12h14"/></svg></span>নতুন লক্ষ্য যোগ করুন</button>
+  <div class="goal-inner-tabs" role="tablist" aria-label="লক্ষ্য মেনু">
+    <button type="button" id="goalInnerTabBiboron" class="goal-inner-tab active" role="tab" aria-selected="true" onclick="switchGoalInnerTab('biboron')">বিবরণ</button>
+    <button type="button" id="goalInnerTabGoals" class="goal-inner-tab" role="tab" aria-selected="false" onclick="switchGoalInnerTab('goals')">লক্ষ্য</button>
   </div>
-  <div class="list-scroll">
-    <div id="goalProgress"></div>
-    <div class="filter-bar">
-      <button type="button" class="filter-chip active" onclick="fGoal('all',this)">সব</button>
-      <button type="button" class="filter-chip goal-chip-ilm" onclick="fGoal('ilm',this)">ইলম</button>
-      <button type="button" class="filter-chip goal-chip-amal" onclick="fGoal('amal',this)">আমল</button>
-      <button type="button" class="filter-chip goal-chip-akhlaq" onclick="fGoal('akhlaq',this)">আখলাক</button>
-      <button type="button" class="filter-chip goal-chip-afkar" onclick="fGoal('afkar',this)">আফকার</button>
+
+  <div id="goalBiboronPane" class="goal-inner-pane active" role="tabpanel" aria-labelledby="goalInnerTabBiboron">
+    <div class="goal-add-bar">
+      <button type="button" class="goal-add-btn" style="width:100%" onclick="openDailyNoteModal()"><span class="goal-btn-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 5v14M5 12h14"/></svg></span>নতুন নোট</button>
     </div>
-    <div id="goalList"></div>
-    <div style="height:20px"></div>
+    <div class="list-scroll">
+      <div class="daily-note-intro">
+        <div class="daily-note-intro-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 1v11"/><path d="M19 10a7 7 0 01-14 0"/><path d="M12 19v4M8 23h8"/></svg></div>
+        <div>
+          <div class="daily-note-intro-title">দৈনিক বিবরণ</div>
+          <div class="daily-note-intro-text">আজ কী করেছ, কী শিখেছ, কোথায় ভুল হয়েছে বা ভালো হয়েছে - সংক্ষেপে লিখে রাখো।</div>
+        </div>
+      </div>
+      <div id="dailyNoteList"></div>
+      <div style="height:20px"></div>
+    </div>
+  </div>
+
+  <div id="goalListPane" class="goal-inner-pane" role="tabpanel" aria-labelledby="goalInnerTabGoals">
+    <div class="goal-add-bar">
+      <button type="button" class="goal-add-btn" style="width:100%" onclick="openModal('addGoalModal')"><span class="goal-btn-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 5v14M5 12h14"/></svg></span>নতুন লক্ষ্য যোগ করুন</button>
+    </div>
+    <div class="list-scroll">
+      <div id="goalProgress"></div>
+      <div class="filter-bar">
+        <button type="button" class="filter-chip active" onclick="fGoal('all',this)">সব</button>
+        <button type="button" class="filter-chip goal-chip-ilm" onclick="fGoal('ilm',this)">ইলম</button>
+        <button type="button" class="filter-chip goal-chip-amal" onclick="fGoal('amal',this)">আমল</button>
+        <button type="button" class="filter-chip goal-chip-akhlaq" onclick="fGoal('akhlaq',this)">আখলাক</button>
+        <button type="button" class="filter-chip goal-chip-afkar" onclick="fGoal('afkar',this)">আফকার</button>
+      </div>
+      <div id="goalList"></div>
+      <div style="height:20px"></div>
+    </div>
   </div>
 </div>
 
@@ -569,6 +593,26 @@ function skd(field){if(field==='id'){_skId=_skId.slice(0,-1);_skUpdateIdDisplay(
   <div class="form-group"><label class="form-label">নোট</label><textarea class="form-input" id="gm_note" rows="2" placeholder="কোনো পরিকল্পনা..."></textarea></div>
   <button class="btn-primary" onclick="addGoalModal()">লক্ষ্য যোগ করুন</button>
   <button class="btn-secondary" onclick="closeModal('addGoalModal')">বাতিল</button>
+</div></div>
+
+<div class="modal-overlay" id="dailyNoteModal"><div class="modal-sheet">
+  <div class="modal-handle"></div><div class="modal-title">নতুন বিবরণ</div>
+  <div class="daily-recorder">
+    <button type="button" id="dailyRecordBtn" class="daily-record-btn" onclick="toggleDailyRecording()" aria-label="রেকর্ড শুরু করুন">
+      <span class="daily-record-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 1v11"/><path d="M19 10a7 7 0 01-14 0"/><path d="M12 19v4M8 23h8"/></svg></span>
+    </button>
+    <div class="daily-record-status">
+      <div id="dailyRecordTitle" class="daily-record-title">ভয়েস টাইপিং শুরু করুন</div>
+      <div id="dailyRecordHint" class="daily-record-hint">সর্বোচ্চ ২ মিনিট রেকর্ড হবে। পরে ট্রান্সক্রিপশন এডিট করে সেভ করুন।</div>
+      <div id="dailyRecordTimer" class="daily-record-timer">02:00</div>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="form-label">ট্রান্সক্রিপশন</label>
+    <textarea class="form-input" id="dailyNoteText" rows="7" placeholder="রেকর্ডিং শেষে লেখা এখানে আসবে। চাইলে হাতে লিখেও সেভ করতে পারো।" oninput="updateDailyNoteSaveState()"></textarea>
+  </div>
+  <button id="dailyNoteSaveBtn" class="btn-primary" onclick="saveDailyNote()" disabled>নোট সেভ করুন</button>
+  <button class="btn-secondary" onclick="closeDailyNoteModal()">বাতিল</button>
 </div></div>
 
 <!-- Student self-profile modal -->
@@ -644,10 +688,11 @@ function skd(field){if(field==='id'){_skId=_skId.slice(0,-1);_skUpdateIdDisplay(
 <script src="pwa-notify.js"></script>
 <script>
 // ══ State ══════════════════════════════════════════════════
-let me=null, tFilter='all', gFilter='all', replyingTo=null, studentDocTab='sent';
+let me=null, tFilter='all', gFilter='all', goalInnerTab='biboron', replyingTo=null, studentDocTab='sent';
 let activeQuizId=null, quizAnswers={}, quizTimerInterval=null, quizSecondsLeft=0;
 let pendingFile=null, chatPendingFile=null;
 let studentChatPreviewDocId=null;
+let dailyNoteTimer=null, dailyNoteSecondsLeft=120, dailySpeechRec=null, dailyRecording=false, dailyFinalTranscript='';
 
 function showUploadPrepError(e){
   const m=e && e.message;
@@ -673,7 +718,7 @@ function init(){
   Promise.resolve(API.DB.init()).then(()=>{
     void API.Pwa.registerServiceWorker();
     API.Tasks.resetDailyForToday();
-    document.querySelectorAll('.modal-overlay').forEach(el=>el.addEventListener('click',e=>{ if(e.target===el) closeModal(el.id); }));
+    document.querySelectorAll('.modal-overlay').forEach(el=>el.addEventListener('click',e=>{ if(e.target===el){ if(el.id==='dailyNoteModal') closeDailyNoteModal(); else closeModal(el.id); } }));
     renderPendingSection();
     updateNotifBtn();
     // Remote bootstrap শেষে lock hints refresh করো
@@ -863,7 +908,7 @@ function logout(){
   Promise.resolve(API.refreshStudentLockHints()).then(()=>renderPendingSection());
   goTab('tasks');
 }
-function renderAll(){ updateHeaderStats(); renderTaskSchedulePanel(); renderChat(); renderTaskList(); renderAmalDashboard(); renderExamList(); renderSentDocs(); renderReceivedDocs(); renderGoals(); updateBadges(); }
+function renderAll(){ updateHeaderStats(); renderTaskSchedulePanel(); renderChat(); renderTaskList(); renderAmalDashboard(); renderExamList(); renderSentDocs(); renderReceivedDocs(); renderGoals(); renderDailyNotes(); updateBadges(); }
 
 function renderTaskSchedulePanel(){
   const el=document.getElementById('taskSchedulePanel');
@@ -1537,7 +1582,8 @@ function renderReceivedDocs(){
   }).join('');
 }
 
-// ══ GOALS ══════════════════════════════════════════════════
+// ══ GOALS + DAILY NOTES ════════════════════════════════════
+const DAILY_NOTES_KEY='madrasa_student_daily_notes';
 const _goalCatLbl={ilm:'ইলম',amal:'আমল',akhlaq:'আখলাক',afkar:'আফকার',quran:'কুরআন',study:'ইলম',ibadah:'আমল',other:'অন্যান্য'};
 const _svgGoalBook='<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>';
 const _svgGoalClip='<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 12h6M9 16h6"/></svg>';
@@ -1549,6 +1595,170 @@ const _svgGoalTrash='<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
 function catIc(c){
   const map={ilm:_svgGoalBook,study:_svgGoalBook,amal:_svgGoalClip,ibadah:_svgGoalClip,akhlaq:_svgGoalHeart,afkar:_svgGoalBulb,quran:_svgGoalBook,other:_svgGoalTarget};
   return `<span class="goal-meta-ic" aria-hidden="true">${map[c]||_svgGoalTarget}</span>`;
+}
+function switchGoalInnerTab(tab){
+  goalInnerTab=tab==='goals'?'goals':'biboron';
+  const isBib=goalInnerTab==='biboron';
+  document.getElementById('goalInnerTabBiboron').classList.toggle('active',isBib);
+  document.getElementById('goalInnerTabBiboron').setAttribute('aria-selected',isBib?'true':'false');
+  document.getElementById('goalInnerTabGoals').classList.toggle('active',!isBib);
+  document.getElementById('goalInnerTabGoals').setAttribute('aria-selected',!isBib?'true':'false');
+  document.getElementById('goalBiboronPane').classList.toggle('active',isBib);
+  document.getElementById('goalListPane').classList.toggle('active',!isBib);
+  if(isBib) renderDailyNotes(); else renderGoals();
+}
+function dailyNotesAll(){
+  try{ return JSON.parse(localStorage.getItem(DAILY_NOTES_KEY)||'{}')||{}; }catch(e){ return {}; }
+}
+function saveDailyNotesAll(all){
+  localStorage.setItem(DAILY_NOTES_KEY,JSON.stringify(all||{}));
+}
+function getDailyNotes(){
+  if(!me) return [];
+  const all=dailyNotesAll();
+  return Array.isArray(all[me.id])?all[me.id]:[];
+}
+function putDailyNotes(notes){
+  if(!me) return;
+  const all=dailyNotesAll();
+  all[me.id]=notes;
+  saveDailyNotesAll(all);
+}
+function dailyNoteDateLabel(date){
+  if(!date) return '';
+  try{ return new Date(date+'T12:00:00').toLocaleDateString('bn-BD',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); }catch(e){ return date; }
+}
+function renderDailyNotes(){
+  const el=document.getElementById('dailyNoteList');
+  if(!el||!me) return;
+  const notes=getDailyNotes();
+  if(!notes.length){
+    el.innerHTML=`<div class="empty-state"><div class="icon goal-empty-ic" aria-hidden="true">${_svgGoalClip}</div><p>এখনো কোনো বিবরণ নেই।<br>উপরে নতুন নোট থেকে শুরু করুন।</p></div>`;
+    return;
+  }
+  el.innerHTML=notes.map(n=>`<div class="daily-note-item">
+    <div class="daily-note-head"><div class="daily-note-date">${esc(dailyNoteDateLabel(n.date))}</div><div class="daily-note-time">${esc(n.time||'')}</div></div>
+    <div class="daily-note-body">${esc(n.text)}</div>
+    <div class="daily-note-actions"><button type="button" class="daily-note-del" onclick="deleteDailyNote('${n.id}')">মুছুন</button></div>
+  </div>`).join('');
+}
+function formatDailyTimer(sec){
+  const m=String(Math.floor(sec/60)).padStart(2,'0');
+  const s=String(sec%60).padStart(2,'0');
+  return m+':'+s;
+}
+function setDailyRecorderState(state,msg){
+  const wrap=document.querySelector('#dailyNoteModal .daily-recorder');
+  const btn=document.getElementById('dailyRecordBtn');
+  const title=document.getElementById('dailyRecordTitle');
+  const hint=document.getElementById('dailyRecordHint');
+  const timer=document.getElementById('dailyRecordTimer');
+  if(wrap) wrap.classList.toggle('recording',state==='recording');
+  if(btn){
+    btn.classList.toggle('recording',state==='recording');
+    btn.setAttribute('aria-label',state==='recording'?'রেকর্ড বন্ধ করুন':'রেকর্ড শুরু করুন');
+  }
+  if(title) title.textContent=state==='recording'?'রেকর্ড হচ্ছে':state==='ready'?'ট্রান্সক্রিপশন প্রস্তুত':'ভয়েস টাইপিং শুরু করুন';
+  if(hint) hint.textContent=msg||(state==='recording'?'ধীরে স্পষ্ট করে বলুন। ২ মিনিট হলে নিজে বন্ধ হবে।':'সর্বোচ্চ ২ মিনিট রেকর্ড হবে। পরে ট্রান্সক্রিপশন এডিট করে সেভ করুন।');
+  if(timer) timer.textContent=formatDailyTimer(dailyNoteSecondsLeft);
+}
+function updateDailyNoteSaveState(){
+  const btn=document.getElementById('dailyNoteSaveBtn');
+  const txt=document.getElementById('dailyNoteText');
+  if(btn&&txt) btn.disabled=!txt.value.trim();
+}
+function openDailyNoteModal(){
+  dailyNoteSecondsLeft=120;
+  dailyFinalTranscript='';
+  dailyRecording=false;
+  const txt=document.getElementById('dailyNoteText');
+  if(txt) txt.value='';
+  setDailyRecorderState('idle');
+  updateDailyNoteSaveState();
+  openModal('dailyNoteModal');
+}
+function closeDailyNoteModal(){
+  stopDailyRecording(false);
+  closeModal('dailyNoteModal');
+}
+function makeSpeechRecognition(){
+  const Ctor=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!Ctor) return null;
+  const rec=new Ctor();
+  rec.lang='bn-BD';
+  rec.interimResults=true;
+  rec.continuous=true;
+  rec.onresult=(event)=>{
+    let interim='';
+    for(let i=event.resultIndex;i<event.results.length;i++){
+      const chunk=event.results[i][0].transcript;
+      if(event.results[i].isFinal) dailyFinalTranscript+=chunk+' ';
+      else interim+=chunk;
+    }
+    const txt=document.getElementById('dailyNoteText');
+    if(txt) txt.value=(dailyFinalTranscript+interim).trim();
+    updateDailyNoteSaveState();
+  };
+  rec.onerror=()=>{};
+  rec.onend=()=>{ if(dailyRecording){ try{ rec.start(); }catch(e){} } };
+  return rec;
+}
+function toggleDailyRecording(){
+  if(dailyRecording) stopDailyRecording(true);
+  else startDailyRecording();
+}
+function startDailyRecording(){
+  if(dailyRecording) return;
+  dailyRecording=true;
+  dailyNoteSecondsLeft=120;
+  dailyFinalTranscript=(document.getElementById('dailyNoteText')?.value||'').trim();
+  if(dailyFinalTranscript) dailyFinalTranscript+=' ';
+  dailySpeechRec=makeSpeechRecognition();
+  if(dailySpeechRec){ try{ dailySpeechRec.start(); }catch(e){} }
+  else setDailyRecorderState('recording','এই ব্রাউজারে সরাসরি ভয়েস টাইপিং নেই। আপাতত হাতে লিখে সেভ করতে পারবেন।');
+  setDailyRecorderState('recording',dailySpeechRec?'ধীরে স্পষ্ট করে বলুন। ২ মিনিট হলে নিজে বন্ধ হবে।':'এই ব্রাউজারে সরাসরি ভয়েস টাইপিং নেই। আপাতত হাতে লিখে সেভ করতে পারবেন।');
+  clearInterval(dailyNoteTimer);
+  dailyNoteTimer=setInterval(()=>{
+    dailyNoteSecondsLeft=Math.max(0,dailyNoteSecondsLeft-1);
+    const timer=document.getElementById('dailyRecordTimer');
+    if(timer) timer.textContent=formatDailyTimer(dailyNoteSecondsLeft);
+    if(dailyNoteSecondsLeft<=0) stopDailyRecording(true);
+  },1000);
+}
+function stopDailyRecording(showDone){
+  const wasRecording=dailyRecording;
+  dailyRecording=false;
+  clearInterval(dailyNoteTimer);
+  dailyNoteTimer=null;
+  if(dailySpeechRec){
+    try{ dailySpeechRec.stop(); }catch(e){}
+    dailySpeechRec=null;
+  }
+  dailyNoteSecondsLeft=120;
+  if(showDone&&wasRecording){
+    const hasText=!!(document.getElementById('dailyNoteText')?.value||'').trim();
+    setDailyRecorderState(hasText?'ready':'idle',hasText?'লেখা দেখে প্রয়োজন হলে ঠিক করে সেভ করুন।':'ট্রান্সক্রিপশন আসেনি। API যুক্ত হলে এখানে লেখা আসবে, আপাতত হাতে লিখুন।');
+  } else setDailyRecorderState('idle');
+  updateDailyNoteSaveState();
+}
+async function saveDailyNote(){
+  const txt=document.getElementById('dailyNoteText');
+  const text=(txt?.value||'').trim();
+  if(!text){ showToast('নোট লিখুন বা রেকর্ড করুন'); return; }
+  stopDailyRecording(false);
+  const notes=getDailyNotes();
+  notes.unshift({id:API.uid('dn'),date:API.today(),time:API.nowTime(),text});
+  putDailyNotes(notes);
+  closeModal('dailyNoteModal');
+  renderDailyNotes();
+  showToast('বিবরণ সেভ হয়েছে');
+}
+async function deleteDailyNote(id){
+  const ok=await showConfirm('এই বিবরণটি মুছে ফেলবেন?',{title:'বিবরণ মুছুন',okText:'মুছে ফেলুন',danger:true});
+  if(!ok) return;
+  putDailyNotes(getDailyNotes().filter(n=>n.id!==id));
+  renderDailyNotes();
+  showToast('বিবরণ মুছে ফেলা হয়েছে');
 }
 function renderGoals(){
   const goals=API.Goals.getAll(me.id); const el=document.getElementById('goalList'); const wp=document.getElementById('goalProgress');
@@ -1702,6 +1912,7 @@ function goTab(tab){
   if(tab==='exams') renderExamList();
   if(tab==='tasks' && me){ renderAmalDashboard(); renderTaskList(); }
   if(tab==='docs'){ renderSentDocs(); renderReceivedDocs(); }
+  if(tab==='goals'){ switchGoalInnerTab('biboron'); renderDailyNotes(); }
   });
 }
 
