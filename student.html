@@ -507,12 +507,10 @@ function skd(field){if(field==='id'){_skId=_skId.slice(0,-1);_skUpdateIdDisplay(
     <div class="list-scroll stu-amal-list" id="taskList"></div>
   </div>
   <div id="amal-panel-biboron" class="amal-panel" style="display:none">
-    <div class="goal-add-bar">
-      <button type="button" class="goal-add-btn" style="width:100%" onclick="openDailyNoteModal()"><span class="goal-btn-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 5v14M5 12h14"/></svg></span>নতুন নোট</button>
-    </div>
     <div class="list-scroll">
-      <div class="daily-note-intro">
-        <div class="daily-note-intro-text">আজকের অর্জন, ভালো কি হলো?, ভুল কি হলো? সংক্ষেপে লেখো।</div>
+      <div class="daily-note-topbar">
+        <button type="button" class="daily-note-add-btn" onclick="openDailyNoteModal()"><span class="goal-btn-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 5v14M5 12h14"/></svg></span>নতুন নোট</button>
+        <p class="daily-note-intro-text">আজকের অর্জন, ভালো কি হলো?, ভুল কি হলো? সংক্ষেপে লেখো।</p>
       </div>
       <div class="daily-note-filter" id="dailyNoteFilter"></div>
       <div id="dailyNoteList"></div>
