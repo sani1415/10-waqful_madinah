@@ -15,15 +15,17 @@
   function _uid(p) {
     return (p || 'sn') + Date.now() + Math.random().toString(36).slice(2, 5);
   }
+  // বাংলাদেশ সময় (Asia/Dhaka, UTC+6, DST নেই) — API লোড না হলে fallback হিসেবে
+  const BD_OFFSET_MS = 6 * 60 * 60 * 1000;
   function _today() {
-    return w.API && w.API.today ? w.API.today() : new Date().toISOString().slice(0, 10);
+    return w.API && w.API.today ? w.API.today() : new Date(Date.now() + BD_OFFSET_MS).toISOString().slice(0, 10);
   }
   function _nowTime() {
     return w.API && w.API.nowTime
       ? w.API.nowTime()
       : (() => {
-          const d = new Date();
-          return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+          const d = new Date(Date.now() + BD_OFFSET_MS);
+          return String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0');
         })();
   }
 

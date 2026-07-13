@@ -8,9 +8,13 @@ const API = (() => {
   const _useRemote = typeof window !== 'undefined' && window.RemoteSync && window.RemoteSync.isRemote();
   const RS = typeof window !== 'undefined' ? window.RemoteSync : null;
 
-  const today  = () => new Date().toISOString().split('T')[0];
-  const nowTime= () => { const d=new Date(); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
-  const nextDate= d => { const dt=new Date(); dt.setDate(dt.getDate()+d); return dt.toISOString().split('T')[0]; };
+  // বাংলাদেশ সময় (Asia/Dhaka, UTC+6, কোনো DST নেই) — ডিভাইসের টাইমজোন/ঘড়ি যাই থাকুক, সবসময় এই অফসেট ব্যবহার হয়
+  const BD_OFFSET_MS = 6 * 60 * 60 * 1000;
+  const bdNow    = () => new Date(Date.now() + BD_OFFSET_MS);
+  const bdDateStr= ts => new Date((ts!=null ? new Date(ts).getTime() : Date.now()) + BD_OFFSET_MS).toISOString().split('T')[0];
+  const today  = () => bdDateStr();
+  const nowTime= () => { const d=bdNow(); return `${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}`; };
+  const nextDate= d => { const dt=bdNow(); dt.setUTCDate(dt.getUTCDate()+d); return dt.toISOString().split('T')[0]; };
   const uid    = p => (p||'id')+Date.now()+Math.random().toString(36).slice(2,5);
   const safeFilePart = name => String(name||'file').replace(/[^a-zA-Z0-9._-]/g,'_').slice(0,80);
   /** একক আপলোড সর্বোচ্চ আকার (রিমোট: Supabase Storage; মেটা `docs_meta` এ KV তে) */
@@ -1390,11 +1394,7 @@ const API = (() => {
 
   // ── বিবরণ (জিম্মাদার ড্যাশবোর্ড) ───────────────────────────
   // দৈনিক আমল সারি/সারাংশ = গতকাল (দিন শেষ হওয়া স্থির তথ্য)
-  const _yesterday = () => {
-    const d = new Date();
-    d.setDate(d.getDate() - 1);
-    return d.toISOString().split('T')[0];
-  };
+  const _yesterday = () => nextDate(-1);
   const Biboron = {
     yesterdayDate() { return _yesterday(); },
     _dayProgress(sid) {
@@ -1420,7 +1420,7 @@ const API = (() => {
       const DS = typeof window !== 'undefined' ? window.API?.DailySchedule : null;
       const pendingSched = DS && DS.pendingApprovalCount ? DS.pendingApprovalCount() : 0;
       const cfg = ProgressSettings.get();
-      const yLabel = new Date(y + 'T12:00:00').toLocaleDateString('bn-BD', { weekday: 'long', day: 'numeric', month: 'long' });
+      const yLabel = new Date(y + 'T12:00:00Z').toLocaleDateString('bn-BD', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Dhaka' });
       return {
         dayPct: dayTotal > 0 ? Math.round(dayDone / dayTotal * 100) : 0,
         dayDone, dayTotal, behindDay, pendingDocs, pendingSched,
@@ -1463,7 +1463,7 @@ const API = (() => {
   };
 
   return {
-    Auth, DB, Students, Messages, Tasks, Goals, Exams, Docs, AcademicHistory, TeacherNotes, Diary, Groups, ProgressSettings, Biboron, today, nowTime, nextDate, uid,
+    Auth, DB, Students, Messages, Tasks, Goals, Exams, Docs, AcademicHistory, TeacherNotes, Diary, Groups, ProgressSettings, Biboron, today, nowTime, nextDate, bdDateStr, uid,
     MAX_UPLOAD_BYTES,
     prepareFilesForUpload,
     unlockTeacherRemote(pin) {
@@ -1528,4 +1528,4 @@ function closeModal(id){
   el.classList.remove('open','modal-closing');
 }
 function formatBytes(b){ if(!b) return ''; if(b<1024) return b+' B'; if(b<1048576) return (b/1024).toFixed(1)+' KB'; return (b/1048576).toFixed(1)+' MB'; }
-function formatDate(iso){ if(!iso) return ''; return new Date(iso).toLocaleDateString('bn-BD',{year:'numeric',month:'short',day:'numeric'}); }
+function formatDate(iso){ if(!iso) return ''; return new Date(iso).toLocaleDateString('bn-BD',{year:'numeric',month:'short',day:'numeric',timeZone:'Asia/Dhaka'}); }

@@ -1527,7 +1527,7 @@ function renderChatDocs(){
   const docs=API.Docs.getForStudent(curChat);
   if(!docs.length){ el.innerHTML='<div class="csp-empty">কোনো ডকুমেন্ট নেই।</div>'; return; }
   el.innerHTML=docs.map(d=>{
-    const when=d.uploadedAt?d.uploadedAt.slice(0,10):'';
+    const when=d.uploadedAt?API.bdDateStr(d.uploadedAt):'';
     const note=d.note?` · ${esc(d.note)}`:'';
     return `<div class="csp-row clickable" onclick="teacherPreviewChatDoc('${d.id}',true);switchChatTab('doc',document.getElementById('cst-doc'))">
       <div class="csp-row-main">${esc(d.fileName)}</div>
@@ -1621,9 +1621,9 @@ function renderMsgs(id){
   if(!msgs.length){
     el.innerHTML='<div style="text-align:center;padding:30px;color:var(--gray-400);font-size:13px">কথোপকথন শুরু করুন 👋</div>';
   } else {
-  const todayStr=new Date().toISOString().split('T')[0];
-  function _msgDateStr(m){ const ts=m._ts||parseInt(/^m(\d{13})/.exec(m.id)?.[1]||'0'); if(!ts) return null; return new Date(ts).toISOString().split('T')[0]; }
-  function _dateSepLabel(ds){ if(!ds) return null; if(ds===todayStr) return 'আজ'; const d=new Date(ds); return `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`; }
+  const todayStr=API.today();
+  function _msgDateStr(m){ const ts=m._ts||parseInt(/^m(\d{13})/.exec(m.id)?.[1]||'0'); if(!ts) return null; return API.bdDateStr(ts); }
+  function _dateSepLabel(ds){ if(!ds) return null; if(ds===todayStr) return 'আজ'; const d=new Date(ds+'T00:00:00Z'); return `${d.getUTCDate()}/${d.getUTCMonth()+1}/${d.getUTCFullYear()}`; }
   let h='', lastDs=null;
   msgs.forEach(m=>{
     const ds=_msgDateStr(m);
@@ -2180,9 +2180,9 @@ function renderAmalOverview(dateStr){
   let totalDone=0,totalAsgn=0;
   overview.forEach(o=>{totalDone+=o.completed.length;totalAsgn+=o.completed.length+o.pending.length;});
   const pct=totalAsgn>0?Math.round(totalDone/totalAsgn*100):0;
-  const prev=(()=>{const d=new Date(date);d.setDate(d.getDate()-1);return d.toISOString().split('T')[0];})();
-  const next=(()=>{const d=new Date(date);d.setDate(d.getDate()+1);return d.toISOString().split('T')[0];})();
-  const displayDate=new Date(date).toLocaleDateString('bn-BD',{weekday:'long',day:'numeric',month:'long'});
+  const prev=(()=>{const d=new Date(date+'T00:00:00Z');d.setUTCDate(d.getUTCDate()-1);return d.toISOString().split('T')[0];})();
+  const next=(()=>{const d=new Date(date+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+1);return d.toISOString().split('T')[0];})();
+  const displayDate=new Date(date+'T12:00:00Z').toLocaleDateString('bn-BD',{weekday:'long',day:'numeric',month:'long',timeZone:'Asia/Dhaka'});
   let h=`<div class="summary-cards">
     <div class="summary-card blue"><div class="sc-val">${pct}%</div><div class="sc-lbl">সম্পন্নের হার</div></div>
     <div class="summary-card green"><div class="sc-val">${totalDone}</div><div class="sc-lbl">সম্পন্ন</div></div>
@@ -2246,12 +2246,12 @@ function renderAmalLeaderboard(period){
 function _stuWeekGrid(sid){
   const today=API.today();
   const dates=[];
-  for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);dates.push(d.toISOString().split('T')[0]);}
+  for(let i=6;i>=0;i--){dates.push(API.nextDate(-i));}
   const tasks=API.Tasks.getForStudent(sid).filter(t=>t.type==='daily');
   const cells=dates.map(date=>{
     const comps=window.ApiAmal?window.ApiAmal.Completions.getForDate(date).filter(c=>c.student_id===sid&&c.status==='done'):[];
     const done=comps.filter(c=>tasks.find(t=>t.id===c.task_id)).length;
-    const lbl=new Date(date).toLocaleDateString('bn-BD',{weekday:'short'});
+    const lbl=new Date(date+'T12:00:00Z').toLocaleDateString('bn-BD',{weekday:'short',timeZone:'Asia/Dhaka'});
     const cls=date===today?'today':!tasks.length?'empty':done===0?'miss':done<tasks.length?'partial':'done';
     return `<div class="wk-cell ${cls}"><div class="wk-day">${lbl}</div><div class="wk-dot"></div></div>`;
   }).join('');
@@ -2831,8 +2831,8 @@ function diaryDateLabel(iso){
     return d+'/'+mo+'/'+yy;
   }
   try{
-    const dt=new Date(iso+'T12:00:00');
-    if(!isNaN(dt.getTime())) return dt.getDate()+'/'+(dt.getMonth()+1)+'/'+String(dt.getFullYear()).slice(-2);
+    const dt=new Date(iso+'T12:00:00Z');
+    if(!isNaN(dt.getTime())) return dt.getUTCDate()+'/'+(dt.getUTCMonth()+1)+'/'+String(dt.getUTCFullYear()).slice(-2);
   }catch(_){}
   return String(iso);
 }

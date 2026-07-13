@@ -4,18 +4,21 @@
 
   function _isRemote() { return !!(w.RemoteSync && w.RemoteSync.isRemote()); }
   function _RS()       { return w.RemoteSync || null; }
-  function _today()    { return new Date().toISOString().split('T')[0]; }
+  // বাংলাদেশ সময় (Asia/Dhaka, UTC+6, DST নেই) — ডিভাইসের টাইমজোন যাই থাকুক
+  const BD_OFFSET_MS = 6 * 60 * 60 * 1000;
+  function _bdNow()    { return new Date(Date.now() + BD_OFFSET_MS); }
+  function _today()    { return _bdNow().toISOString().split('T')[0]; }
   function _uid(p)     { return (p||'tc')+Date.now()+Math.random().toString(36).slice(2,5); }
   function _pad(n)     { return String(n).padStart(2,'0'); }
 
   function _weekStart() {
-    const d = new Date(), day = d.getDay();
-    d.setDate(d.getDate() - ((day+1)%7)); // back to last Saturday
+    const d = _bdNow(), day = d.getUTCDay();
+    d.setUTCDate(d.getUTCDate() - ((day+1)%7)); // back to last Saturday
     return d.toISOString().split('T')[0];
   }
   function _monthStart() {
-    const d = new Date();
-    return `${d.getFullYear()}-${_pad(d.getMonth()+1)}-01`;
+    const d = _bdNow();
+    return `${d.getUTCFullYear()}-${_pad(d.getUTCMonth()+1)}-01`;
   }
   function _daysBetween(from, to) {
     return Math.round((new Date(to) - new Date(from)) / 86400000);
@@ -115,7 +118,7 @@
     if (!checkTasks.length) return { current:0, longest:0 };
     let streak=0, longest=0;
     for (let i=1; i<=365; i++) {
-      const d=new Date(); d.setDate(d.getDate()-i);
+      const d=_bdNow(); d.setUTCDate(d.getUTCDate()-i);
       const dateStr=d.toISOString().split('T')[0];
       const dayComps=Completions.getForDate(dateStr).filter(c=>c.student_id===sid&&c.status==='done');
       if (checkTasks.some(t=>dayComps.find(c=>c.task_id===t.id))) {

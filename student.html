@@ -1179,9 +1179,9 @@ async function downloadStudentChatDoc(){
 function renderChat(){
   const msgs=API.Messages.getThread(me.id); const el=document.getElementById('chatMsgs');
   if(!msgs.length){ el.innerHTML='<div style="text-align:center;padding:40px;color:var(--gray-400);font-size:14px">📖 উস্তাদকে সালাম দিন! 👋</div>'; return; }
-  const _todayStr=new Date().toISOString().split('T')[0];
-  function _mds(m){ const ts=m._ts||parseInt(/^m(\d{13})/.exec(m.id)?.[1]||'0'); if(!ts) return null; return new Date(ts).toISOString().split('T')[0]; }
-  function _dlbl(ds){ if(!ds) return null; if(ds===_todayStr) return 'আজ'; const d=new Date(ds); return `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`; }
+  const _todayStr=API.today();
+  function _mds(m){ const ts=m._ts||parseInt(/^m(\d{13})/.exec(m.id)?.[1]||'0'); if(!ts) return null; return API.bdDateStr(ts); }
+  function _dlbl(ds){ if(!ds) return null; if(ds===_todayStr) return 'আজ'; const d=new Date(ds+'T00:00:00Z'); return `${d.getUTCDate()}/${d.getUTCMonth()+1}/${d.getUTCFullYear()}`; }
   let h='', _lastDs=null;
   msgs.forEach(m=>{
     const _ds=_mds(m); if(_ds&&_ds!==_lastDs){ const _l=_dlbl(_ds); if(_l) h+=`<div class="msg-date-sep"><span>${_l}</span></div>`; _lastDs=_ds; }
@@ -1471,9 +1471,7 @@ async function undoTaskDone(tid){
 let _amalTab='today';
 const _svgAmalCal='<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>';
 function amalYesterdayDate(){
-  const d=new Date();
-  d.setDate(d.getDate()-1);
-  return d.toISOString().slice(0,10);
+  return API.nextDate(-1);
 }
 function getAmalWorkDate(){ return amalWorkDate||API.today(); }
 function isAmalYesterdayMode(){ return getAmalWorkDate()!==API.today(); }
@@ -1485,7 +1483,7 @@ function toggleAmalYesterday(){
 function amalDashDateLabel(){
   const d=getAmalWorkDate();
   try{
-    return new Date(d+'T12:00:00').toLocaleDateString('bn-BD',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    return new Date(d+'T12:00:00Z').toLocaleDateString('bn-BD',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'Asia/Dhaka'});
   }catch(e){ return d; }
 }
 function amalDashHeaderHtml(){
@@ -1560,7 +1558,7 @@ function closeAmalCalendar(){
 }
 function renderAmalCalendar(){
   const el=document.getElementById('amalCalendarContent'); if(!el||!me) return;
-  if(!window._calYear){const d=new Date();window._calYear=d.getFullYear();window._calMonth=d.getMonth()+1;}
+  if(!window._calYear){const t=API.today().split('-');window._calYear=Number(t[0]);window._calMonth=Number(t[1]);}
   const y=window._calYear,m=window._calMonth;
   const data=API.Tasks.getCalendarData(me.id,y,m);
   const dInM=new Date(y,m,0).getDate(),firstDay=new Date(y,m-1,1).getDay(),today=API.today();
@@ -1848,7 +1846,7 @@ function getDailyNotes(){
 }
 function dailyNoteDateLabel(date){
   if(!date) return '';
-  try{ return new Date(date+'T12:00:00').toLocaleDateString('bn-BD',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); }catch(e){ return date; }
+  try{ return new Date(date+'T12:00:00Z').toLocaleDateString('bn-BD',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'Asia/Dhaka'}); }catch(e){ return date; }
 }
 function renderDailyNoteFilter(){
   const el=document.getElementById('dailyNoteFilter');
