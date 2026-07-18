@@ -21,7 +21,7 @@
 
 ## Service Worker Cache Rule
 - **`sw.js` এর `CACHE` version (`waqful-full-vN`) প্রতিবার যেকোনো file edit করলে N বাড়াতে হবে।**
-- Current version: **v176** (last bumped: নিজামুল আওকাত ডিলিট+ডিফ ভিউ, বিবরণ রিভিউ ওয়ার্কফ্লো)
+- Current version: **v187** (last bumped: role-aware badge কাউন্টার + notification click ভুল PWA খোলা fix)
 - যেকোনো `.html`, `.css`, `.js` file বদলালে → `sw.js` খুলে `waqful-full-vN` → `vN+1` করো।
 - নতুন file তৈরি হলে `LOCAL_SHELL` array-তেও যোগ করো।
 

@@ -1,5 +1,5 @@
 /* Waqful Madinah — full-app shell cache + Web Push display */
-var CACHE = 'waqful-full-v186';
+var CACHE = 'waqful-full-v187';
 
 var CDN_ASSETS = [
   'https://unpkg.com/@supabase/supabase-js@2.49.8/dist/umd/supabase.js',
@@ -185,6 +185,33 @@ function _idbClear() {
   }).catch(function () {});
 }
 
+// দুই PWA (শিক্ষক/ছাত্র) একই SW শেয়ার করে — tag prefix দিয়ে কার badge সেটা আলাদা রাখা হয়
+function tagRole(tag) {
+  var t = String(tag || '');
+  if (t.indexOf('msg-in-') === 0 || t.indexOf('kv-teacher-') === 0 || t === '__app_teacher__') return 'teacher';
+  if (t.indexOf('msg-out-') === 0 || t.indexOf('kv-student-') === 0 || t === '__app_student__') return 'student';
+  return null;
+}
+// role-এর নিজের tag + role-less tag মুছে দেয়; অন্য role-এর কাউন্ট অক্ষত থাকে
+function _idbClearRole(role) {
+  if (role !== 'teacher' && role !== 'student') return _idbClear();
+  return _idbOpen().then(function (db) {
+    return new Promise(function (res) {
+      var tx = db.transaction('counts', 'readwrite');
+      var store = tx.objectStore('counts');
+      var req = store.getAllKeys();
+      req.onsuccess = function () {
+        (req.result || []).forEach(function (k) {
+          var r = tagRole(k);
+          if (r === role || r === null) store.delete(k);
+        });
+      };
+      tx.oncomplete = function () { res(); };
+      tx.onerror = function () { res(); };
+    });
+  }).catch(function () {});
+}
+
 function setBadgeCount(n) {
   var count = Math.max(0, Number(n) || 0);
   try {
@@ -271,6 +298,8 @@ self.addEventListener('notificationclick', function (e) {
     }).then(function () {
       return self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     }).then(function (list) {
+      // শুধু টার্গেট URL-এর উইন্ডো focus করা যাবে — অন্য PWA (যেমন ছাত্র অ্যাপ) খোলা
+      // থাকলেও সেটাকে সামনে আনা যাবে না, নাহলে ভুল অ্যাপ খুলে যায়
       for (var j = 0; j < list.length; j++) {
         var tc = list[j];
         if (tc.url && tc.url.indexOf(targetUrl) === 0 && 'focus' in tc) {
@@ -279,15 +308,7 @@ self.addEventListener('notificationclick', function (e) {
           });
         }
       }
-      for (var i = 0; i < list.length; i++) {
-        var c = list[i];
-        if (c.url && 'focus' in c) {
-          return c.focus().then(function (fc) {
-            if (fc) fc.postMessage({ type: 'REFRESH_DATA' });
-          });
-        }
-      }
-      if (self.clients.openWindow) return self.clients.openWindow(url);
+      if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
     })
   );
 });
@@ -296,16 +317,25 @@ self.addEventListener('notificationclick', function (e) {
 self.addEventListener('message', function (e) {
   if (!e.data) return;
   if (e.data.type === 'CLEAR_BADGE') {
-    var clearP = _idbClear().then(function () { return setBadgeCount(0); });
+    var clearP = _idbClearRole(e.data.role).then(function () {
+      return _idbTotal();
+    }).then(function (total) {
+      return setBadgeCount(total);
+    });
     if (e.waitUntil) e.waitUntil(clearP);
   }
   if (e.data.type === 'SET_BADGE') {
-    // Page knows the real unread total — replace SW tag counters so push + open-app stay in sync
+    // Page knows its own unread total — replace only that role's tag counters,
+    // so the open student app can't wipe the teacher badge (and vice versa)
     var abs = Math.max(0, Number(e.data.count) || 0);
-    var setP = _idbClear().then(function () {
-      if (abs > 0) return _idbSet('__app__', abs);
+    var role = e.data.role === 'teacher' || e.data.role === 'student' ? e.data.role : null;
+    var slot = role ? '__app_' + role + '__' : '__app__';
+    var setP = _idbClearRole(role).then(function () {
+      if (abs > 0) return _idbSet(slot, abs);
     }).then(function () {
-      return setBadgeCount(abs);
+      return _idbTotal();
+    }).then(function (total) {
+      return setBadgeCount(total);
     });
     if (e.waitUntil) e.waitUntil(setP);
   }

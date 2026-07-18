@@ -2519,7 +2519,7 @@ function syncAppBadge(){
       else if('clearAppBadge' in navigator) navigator.clearAppBadge();
     }
   }catch(e){}
-  function post(sw){ if(sw) try{ sw.postMessage({type:'SET_BADGE',count:n}); }catch(e){} }
+  function post(sw){ if(sw) try{ sw.postMessage({type:'SET_BADGE',count:n,role:'student'}); }catch(e){} }
   if(navigator.serviceWorker){
     if(navigator.serviceWorker.controller) post(navigator.serviceWorker.controller);
     else navigator.serviceWorker.ready.then(reg=>post(reg&&reg.active)).catch(()=>{});
