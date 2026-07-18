@@ -45,7 +45,15 @@ const API = (() => {
     for (const f of files) {
       if (!fileWithinUploadLimit(f)) throw new Error('file_too_large');
     }
-    if (files.length === 1) return files[0];
+    const compressor = typeof window !== 'undefined' ? window.compressImageFileForUpload : null;
+    if (files.length === 1) {
+      let one = files[0];
+      if (looksLikeImageFile(one) && compressor) {
+        try { one = await compressor(one); } catch (e) { /* keep original if compress fails */ }
+        if (!fileWithinUploadLimit(one)) throw new Error('file_too_large');
+      }
+      return one;
+    }
     const allImg = files.every(looksLikeImageFile);
     if (!allImg) throw new Error('mixed_or_non_image');
     const merger = typeof window !== 'undefined' && window.mergeImageFilesToPdf;

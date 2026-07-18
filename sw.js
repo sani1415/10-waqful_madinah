@@ -1,5 +1,5 @@
 /* Waqful Madinah — full-app shell cache + Web Push display */
-var CACHE = 'waqful-full-v185';
+var CACHE = 'waqful-full-v186';
 
 var CDN_ASSETS = [
   'https://unpkg.com/@supabase/supabase-js@2.49.8/dist/umd/supabase.js',
@@ -189,11 +189,15 @@ function setBadgeCount(n) {
   var count = Math.max(0, Number(n) || 0);
   try {
     if (count > 0) {
-      if (self.registration && self.registration.setAppBadge) return self.registration.setAppBadge(count);
-      if (self.navigator && self.navigator.setAppBadge) return self.navigator.setAppBadge(count);
+      if (self.registration && self.registration.setAppBadge)
+        return Promise.resolve(self.registration.setAppBadge(count)).catch(function () {});
+      if (self.navigator && self.navigator.setAppBadge)
+        return Promise.resolve(self.navigator.setAppBadge(count)).catch(function () {});
     } else {
-      if (self.registration && self.registration.clearAppBadge) return self.registration.clearAppBadge();
-      if (self.navigator && self.navigator.clearAppBadge) return self.navigator.clearAppBadge();
+      if (self.registration && self.registration.clearAppBadge)
+        return Promise.resolve(self.registration.clearAppBadge()).catch(function () {});
+      if (self.navigator && self.navigator.clearAppBadge)
+        return Promise.resolve(self.navigator.clearAppBadge()).catch(function () {});
     }
   } catch (e) {}
   return Promise.resolve();
@@ -292,12 +296,18 @@ self.addEventListener('notificationclick', function (e) {
 self.addEventListener('message', function (e) {
   if (!e.data) return;
   if (e.data.type === 'CLEAR_BADGE') {
-    _idbClear().then(function () {
-      setBadgeCount(0);
-    });
+    var clearP = _idbClear().then(function () { return setBadgeCount(0); });
+    if (e.waitUntil) e.waitUntil(clearP);
   }
   if (e.data.type === 'SET_BADGE') {
-    setBadgeCount(e.data.count);
+    // Page knows the real unread total — replace SW tag counters so push + open-app stay in sync
+    var abs = Math.max(0, Number(e.data.count) || 0);
+    var setP = _idbClear().then(function () {
+      if (abs > 0) return _idbSet('__app__', abs);
+    }).then(function () {
+      return setBadgeCount(abs);
+    });
+    if (e.waitUntil) e.waitUntil(setP);
   }
   // Page থেকে force-activate অনুরোধ এলে নতুন SW সক্রিয় করো
   if (e.data.type === 'SKIP_WAITING') {

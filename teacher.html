@@ -2986,11 +2986,17 @@ function teacherAppBadgeCount(){
 }
 function syncAppBadge(){
   const n=teacherAppBadgeCount();
-  if('setAppBadge' in navigator){
-    try{ if(n>0) navigator.setAppBadge(n); else if('clearAppBadge' in navigator) navigator.clearAppBadge(); }catch(e){}
+  try{
+    if('setAppBadge' in navigator){
+      if(n>0) navigator.setAppBadge(n);
+      else if('clearAppBadge' in navigator) navigator.clearAppBadge();
+    }
+  }catch(e){}
+  function post(sw){ if(sw) try{ sw.postMessage({type:'SET_BADGE',count:n}); }catch(e){} }
+  if(navigator.serviceWorker){
+    if(navigator.serviceWorker.controller) post(navigator.serviceWorker.controller);
+    else navigator.serviceWorker.ready.then(reg=>post(reg&&reg.active)).catch(()=>{});
   }
-  if(navigator.serviceWorker&&navigator.serviceWorker.controller)
-    navigator.serviceWorker.controller.postMessage({type:'SET_BADGE',count:n});
 }
 
 // ── আমল sub-tabs ─────────────────────────────────────────────
