@@ -42,9 +42,47 @@
     });
   }
 
+  var _registrationPromise = null;
+  var _registrationScope = null;
+
+  function currentRole() {
+    return w.__MADRASA_ROLE__ === 'teacher' || w.__MADRASA_ROLE__ === 'student'
+      ? w.__MADRASA_ROLE__
+      : null;
+  }
+
+  function currentScope() {
+    var role = currentRole();
+    return role ? '/' + role + '/' : '/';
+  }
+
+  function waitForActive(reg) {
+    if (!reg || reg.active) return Promise.resolve(reg);
+    return new Promise(function (resolve) {
+      var settled = false;
+      var worker = reg.installing || reg.waiting;
+      function done() {
+        if (settled) return;
+        settled = true;
+        resolve(reg);
+      }
+      if (!worker) { done(); return; }
+      worker.addEventListener('statechange', function () {
+        if (worker.state === 'activated' || reg.active) done();
+      });
+      setTimeout(done, 5000);
+    });
+  }
+
   function register() {
     if (!('serviceWorker' in navigator)) return Promise.resolve(null);
-    return navigator.serviceWorker.register('/sw.js').then(function (reg) {
+    var scope = currentScope();
+    if (_registrationPromise && _registrationScope === scope) return _registrationPromise;
+    _registrationScope = scope;
+    _registrationPromise = navigator.serviceWorker.register('/sw.js', {
+      scope: scope,
+      updateViaCache: 'none',
+    }).then(function (reg) {
       if (!reg) return null;
 
       // waiting SW-কে activate করো এবং banner দেখাও
@@ -88,13 +126,15 @@
         }
       });
 
-      return reg;
+      return waitForActive(reg);
     }).catch(function () {
+      _registrationPromise = null;
       return null;
     });
+    return _registrationPromise;
   }
 
-  // PIN the RPC needs to gate this slot: teacher slot → teacher PIN,
+  // PIN the RPC needs to gate this slot: teacher device slot → teacher PIN,
   // personal-student slot (id=waqf_id) → that student's PIN,
   // shared_device_* → none (registered pre-login; server leaves it open).
   function authPinForSlot(role, id) {
@@ -103,25 +143,6 @@
     if (id === 'teacher' || role === 'teacher') return (RS.mem && RS.mem.teacherPin) || null;
     if (/^shared_device_/.test(String(id))) return null;
     return (RS.getStudentPin && RS.getStudentPin()) || null;
-  }
-
-  function saveSubscriptionToRemote(role, studentWaqf, subJson) {
-    var id = role === 'teacher' ? 'teacher' : (studentWaqf ? String(studentWaqf) : null);
-    if (!id) return Promise.resolve(false);
-    var sb = getSupabaseClient();
-    if (!sb) return Promise.resolve(false);
-    return sb.rpc('madrasa_rel_save_pwa_subscription', {
-      p_id: id,
-      p_role: role,
-      p_subscription: subJson,
-      p_pin: authPinForSlot(role, id),
-    }).then(function (res) {
-      if (res.error) { console.warn('MadrasaPwa sub save:', res.error); return false; }
-      return true;
-    }).catch(function (e) {
-      console.warn('MadrasaPwa sub save exception:', e);
-      return false;
-    });
   }
 
   function getSupabaseClient() {
@@ -158,8 +179,8 @@
     }
   }
 
-  // একই origin-এ teacher + student PWA = একটাই push endpoint (এক SW)।
-  // তাই role mirror করলে একই browser/PWA-তে দুই দিকের notification মিশে যায়।
+  // Teacher/student use separate SW scopes, so each installed PWA owns its own
+  // push endpoint and Android can attribute notifications to the correct app.
   var SLOT_TEACHER = 'madrasa_push_slot_teacher';
   var SLOT_STUDENT = 'madrasa_push_slot_student';
   var LAST_STUDENT_WAQF = 'madrasa_last_student_waqf';
@@ -180,7 +201,7 @@
       seen[id] = 1;
       targets.push({ role: r, id: String(id) });
     }
-    if (role === 'teacher') add('teacher', 'teacher');
+    if (role === 'teacher') add('teacher', getTeacherDeviceId());
     else if (role === 'student') {
       if (opts.waqfId) add('student', opts.waqfId);
       else if (opts.idOverride) add('student', opts.idOverride);
@@ -219,7 +240,11 @@
     var key = urlB64ToUint8Array(vapid.trim());
     var subOpts = { userVisibleOnly: true, applicationServerKey: key };
     var existing = await reg.pushManager.getSubscription();
-    if (existing) return existing;
+    if (existing) {
+      var existingKey = existing.options && existing.options.applicationServerKey;
+      if (!existingKey || equalBytes(new Uint8Array(existingKey), key)) return existing;
+      await existing.unsubscribe();
+    }
     try {
       return await reg.pushManager.subscribe(subOpts);
     } catch (e1) {
@@ -228,23 +253,10 @@
     }
   }
 
-  async function subscribeToPush(role, idOverride) {
-    if (!('Notification' in w)) return;
-    markPushSlot(role);
-    await register();
-    var reg = await navigator.serviceWorker.ready;
-    var perm = Notification.permission;
-    if (perm === 'default') perm = await Notification.requestPermission();
-    if (perm !== 'granted') return;
-
-    try {
-      var sub = await getOrCreatePushSubscription(reg);
-      if (!sub) return;
-      var subJson = sub.toJSON();
-      await persistPushTargetsWithRetry(subJson, getDevicePushTargets(role, { idOverride: idOverride }));
-    } catch (err) {
-      console.warn('MadrasaPwa push subscribe:', err);
-    }
+  function equalBytes(a, b) {
+    if (!a || !b || a.length !== b.length) return false;
+    for (var i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+    return true;
   }
 
   async function dropExistingPushSubscription(reg) {
@@ -260,7 +272,8 @@
     opts = opts || {};
     if (!('Notification' in w)) return false;
     markPushSlot(role);
-    await register();
+    var reg = await register();
+    if (!reg) return false;
     var perm = Notification.permission;
     if (perm === 'default' && requestPermission) perm = await Notification.requestPermission();
     if (perm !== 'granted') return false;
@@ -268,15 +281,13 @@
     if (!w.__PWA_VAPID_PUBLIC_KEY__ || typeof w.__PWA_VAPID_PUBLIC_KEY__ !== 'string' || !w.__PWA_VAPID_PUBLIC_KEY__.trim()) return false;
 
     try {
-      var reg = await navigator.serviceWorker.ready;
       var sub = await getOrCreatePushSubscription(reg);
       if (!sub) return false;
       var subJson = sub.toJSON();
       if (role === 'student' && opts.waqfId) {
         try { localStorage.setItem(LAST_STUDENT_WAQF, String(opts.waqfId)); } catch (e) {}
       }
-      await persistPushTargetsWithRetry(subJson, getDevicePushTargets(role, opts));
-      return true;
+      return await persistPushTargetsWithRetry(subJson, getDevicePushTargets(role, opts));
     } catch (err) {
       console.warn('MadrasaPwa push subscribe:', err);
       return false;
@@ -304,6 +315,10 @@
       try { localStorage.setItem(key, id); } catch(e) {}
     }
     return id;
+  }
+
+  function getTeacherDeviceId() {
+    return 'teacher_device_' + getOrCreateSharedDeviceId().replace(/^shared_device_/, '');
   }
 
   // Kept only for explicit legacy calls. Do not auto-register anonymous shared devices;

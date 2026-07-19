@@ -21,7 +21,7 @@
 
 ## Service Worker Cache Rule
 - **`sw.js` এর `CACHE` version (`waqful-full-vN`) প্রতিবার যেকোনো file edit করলে N বাড়াতে হবে।**
-- Current version: **v187** (last bumped: role-aware badge কাউন্টার + notification click ভুল PWA খোলা fix)
+- Current version: **v189** (last bumped: scoped SW + per-device teacher push + direct WorkerNavigator badge count)
 - যেকোনো `.html`, `.css`, `.js` file বদলালে → `sw.js` খুলে `waqful-full-vN` → `vN+1` করো।
 - নতুন file তৈরি হলে `LOCAL_SHELL` array-তেও যোগ করো।
 
@@ -87,7 +87,7 @@
 - **Teacher → ছাত্র প্রোফাইল:** `API.Students.clearAllRelatedData(sid)` keeps the row (name/waqf/pin) but wipes chat, tasks, quiz submissions, doc metadata, goals, academic history, teacher notes. `API.Students.deleteCompletely(sid)` removes the student and the same data (CASCADE in DB); `getNextWaqfId()` reuses the smallest free `waqf_NNN` number. **Student profile body** uses **layout 2** (settings-style rows, `profile-v2-*` in `style.css`).
 - **Security note:** PINs are verified on the server via `private.verify_teacher_pin()` for all `madrasa_rel_*` RPCs, but anyone with the anon key can still call RPCs by brute force — protect the anon key, use HTTPS, and treat this as appropriate for a small trusted cohort (not open internet anonymity).
 - `supabase-config.js` is **gitignored**; copy from `supabase-config.example.js` for local dev. Never commit real keys.
-- **Web Push subscriptions:** Stored in `pwa_subscriptions` table (`id = 'teacher'` or student `waqf_id`, `role`, `subscription` jsonb). Legacy `app_kv.pwa_push_*` keys still work as fallback until users re-open the app. Save via `madrasa_rel_save_pwa_subscription(id, role, subscription)` RPC.
+- **Web Push subscriptions:** Stored in `pwa_subscriptions` table (teacher IDs use `teacher_device_<device-id>`; student IDs use `waqf_id`; plus `role` and `subscription` jsonb). Teacher/student PWAs register `/sw.js` with separate `/teacher/` and `/student/` scopes so their push endpoints and OS app attribution do not collide. Legacy `id='teacher'` and `app_kv.pwa_push_*` rows still work as fallback until users re-open the app. Save via `madrasa_rel_save_pwa_subscription(id, role, subscription)` RPC.
 - **Background push (app closed):** Edge Function **`notify-kv-push`** (`supabase/functions/notify-kv-push/index.ts`) handles two webhooks: (1) **`messages` table INSERT** — routes by `role`: `'in'` notifies teacher, `'out'` notifies the target student (or all students for `_bc`); (2) **`app_kv` table** — legacy path, fires only when `core._notifyAt` changes. Subscriptions read from `pwa_subscriptions` first, `app_kv` fallback. **Supabase Dashboard → Edge Functions → Secrets:** `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `NOTIFY_WEBHOOK_SECRET`, optional `WEB_PUSH_CONTACT`. **Database → Webhooks:** two webhooks to the same Edge Function URL — one on `public.messages` (INSERT), one on `public.app_kv` (Insert + Update). Header `Authorization: Bearer <NOTIFY_WEBHOOK_SECRET>`. If the private key is ever leaked, generate a new VAPID pair, update Vercel + Supabase secrets, redeploy, and have users open the app once to re-subscribe.
 
 ## Self-Maintenance

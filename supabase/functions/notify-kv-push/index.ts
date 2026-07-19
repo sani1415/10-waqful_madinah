@@ -76,18 +76,24 @@ async function countStudentUnread(
 }
 
 // ── Subscription lookup from waqf_pwa_subscriptions + waqf_app_kv fallback ──
-async function getTeacherSub(sb: ReturnType<typeof createClient>): Promise<SubJson | null> {
-  // Try waqf_pwa_subscriptions first
-  const { data: rel } = await sb
-    .from("waqf_pwa_subscriptions").select("subscription").eq("id", "teacher").maybeSingle();
-  if (rel?.subscription) {
-    const s = pickSubscription({ subscription: rel.subscription });
-    if (s) return s;
+async function getTeacherSubs(sb: ReturnType<typeof createClient>): Promise<SubJson[]> {
+  const subs: SubJson[] = [];
+  const endpoints = new Set<string>();
+  const { data: rows } = await sb
+    .from("waqf_pwa_subscriptions").select("subscription").eq("role", "teacher");
+  for (const row of rows || []) {
+    const sub = pickSubscription({ subscription: row.subscription });
+    if (!sub?.endpoint || endpoints.has(sub.endpoint)) continue;
+    subs.push(sub);
+    endpoints.add(sub.endpoint);
   }
-  // Fallback: waqf_app_kv
+
+  // Keep the legacy KV endpoint during the migration to per-device rows.
   const { data: kv } = await sb
     .from("waqf_app_kv").select("value").eq("key", "pwa_push_teacher").maybeSingle();
-  return kv?.value ? pickSubscription(kv.value) : null;
+  const legacy = kv?.value ? pickSubscription(kv.value) : null;
+  if (legacy?.endpoint && !endpoints.has(legacy.endpoint)) subs.push(legacy);
+  return subs;
 }
 
 async function getAllStudentSubs(sb: ReturnType<typeof createClient>): Promise<SubJson[]> {
@@ -203,9 +209,9 @@ Deno.serve(async (req: Request) => {
       const { data: stuInfo } = await sb
         .from("waqf_students").select("name").eq("id", threadId).maybeSingle();
       const studentName = stuInfo?.name ? String(stuInfo.name) : "ছাত্র";
-      const teacherSub = await getTeacherSub(sb);
+      const teacherSubs = await getTeacherSubs(sb);
       const teacherUnread = await countTeacherUnread(sb);
-      if (teacherSub) {
+      for (const teacherSub of teacherSubs) {
         await trySend(
           teacherSub,
           makePayload(
@@ -286,11 +292,11 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ ok: true, skipped: "no_notify_event" });
   }
 
-  const teacherSub = await getTeacherSub(sb);
+  const teacherSubs = await getTeacherSubs(sb);
   const allStudentSubs = await getAllStudentSubs(sb);
-  const teacherEndpoint = teacherSub?.endpoint ?? null;
+  const teacherEndpoints = new Set(teacherSubs.map((sub) => sub.endpoint).filter(Boolean));
   const dedupedStudentSubs = allStudentSubs.filter(
-    (s) => !teacherEndpoint || s.endpoint !== teacherEndpoint
+    (s) => !s.endpoint || !teacherEndpoints.has(s.endpoint)
   );
 
   const teacherUnreadKv = await countTeacherUnread(sb);
@@ -300,7 +306,7 @@ Deno.serve(async (req: Request) => {
       makePayload("জিম্মাদারের নতুন আপডেট এসেছে। অ্যাপ খুলুন।", "student", `kv-student-${key}`, 1),
     );
   }
-  if (teacherSub) {
+  for (const teacherSub of teacherSubs) {
     await trySend(
       teacherSub,
       makePayload("ছাত্রের নতুন আপডেট এসেছে।", "teacher", `kv-teacher-${key}`, teacherUnreadKv),
@@ -309,6 +315,6 @@ Deno.serve(async (req: Request) => {
 
   await removeStaleSubscriptions();
   return jsonResponse({ ok: true, table: "waqf_app_kv", sent, failed,
-    teacher_targets: teacherSub ? 1 : 0,
+    teacher_targets: teacherSubs.length,
     student_targets: dedupedStudentSubs.length });
 });

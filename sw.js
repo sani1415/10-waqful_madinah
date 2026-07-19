@@ -1,5 +1,5 @@
 /* Waqful Madinah — full-app shell cache + Web Push display */
-var CACHE = 'waqful-full-v188';
+var CACHE = 'waqful-full-v189';
 
 var CDN_ASSETS = [
   'https://unpkg.com/@supabase/supabase-js@2.49.8/dist/umd/supabase.js',
@@ -192,6 +192,15 @@ function tagRole(tag) {
   if (t.indexOf('msg-out-') === 0 || t.indexOf('kv-student-') === 0 || t === '__app_student__') return 'student';
   return null;
 }
+
+function registrationRole() {
+  try {
+    var path = new URL(self.registration.scope).pathname;
+    if (path.indexOf('/teacher/') === 0) return 'teacher';
+    if (path.indexOf('/student/') === 0) return 'student';
+  } catch (e) {}
+  return null;
+}
 // role-এর নিজের tag + role-less tag মুছে দেয়; অন্য role-এর কাউন্ট অক্ষত থাকে
 function _idbClearRole(role) {
   if (role !== 'teacher' && role !== 'student') return _idbClear();
@@ -216,15 +225,15 @@ function setBadgeCount(n) {
   var count = Math.max(0, Number(n) || 0);
   try {
     if (count > 0) {
-      if (self.registration && self.registration.setAppBadge)
-        return Promise.resolve(self.registration.setAppBadge(count)).catch(function () {});
       if (self.navigator && self.navigator.setAppBadge)
         return Promise.resolve(self.navigator.setAppBadge(count)).catch(function () {});
+      if (self.registration && self.registration.setAppBadge)
+        return Promise.resolve(self.registration.setAppBadge(count)).catch(function () {});
     } else {
-      if (self.registration && self.registration.clearAppBadge)
-        return Promise.resolve(self.registration.clearAppBadge()).catch(function () {});
       if (self.navigator && self.navigator.clearAppBadge)
         return Promise.resolve(self.navigator.clearAppBadge()).catch(function () {});
+      if (self.registration && self.registration.clearAppBadge)
+        return Promise.resolve(self.registration.clearAppBadge()).catch(function () {});
     }
   } catch (e) {}
   return Promise.resolve();
@@ -264,13 +273,13 @@ self.addEventListener('push', function (e) {
       if (role) {
         await _idbClearRole(role);
         await _idbSet('__app_' + role + '__', serverCount);
-        await setBadgeCount(await _idbTotal());
+        await setBadgeCount(registrationRole() === role ? serverCount : await _idbTotal());
       } else {
         await setBadgeCount(serverCount);
       }
     } else if (serverCount === 0) {
       if (role) await _idbClearRole(role);
-      await setBadgeCount(await _idbTotal());
+      await setBadgeCount(registrationRole() === role ? 0 : await _idbTotal());
     } else {
       // Fallback when older Edge Function has no count
       try {
@@ -322,7 +331,7 @@ self.addEventListener('message', function (e) {
     var clearP = _idbClearRole(e.data.role).then(function () {
       return _idbTotal();
     }).then(function (total) {
-      return setBadgeCount(total);
+      return setBadgeCount(registrationRole() === e.data.role ? 0 : total);
     });
     if (e.waitUntil) e.waitUntil(clearP);
   }
@@ -337,7 +346,7 @@ self.addEventListener('message', function (e) {
     }).then(function () {
       return _idbTotal();
     }).then(function (total) {
-      return setBadgeCount(total);
+      return setBadgeCount(registrationRole() === role ? abs : total);
     });
     if (e.waitUntil) e.waitUntil(setP);
   }
