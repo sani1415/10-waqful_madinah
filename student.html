@@ -502,7 +502,7 @@ function skd(field){if(field==='id'){_skId=_skId.slice(0,-1);_skUpdateIdDisplay(
 <!-- ══ TASKS ══════════════════════════════════════════════ -->
 <div class="screen active" id="screen-tasks">
   <div class="amal-sub-tabs">
-    <button type="button" class="amal-sub-tab active" onclick="goAmalTab('today',this)"><span class="amal-sub-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 12h6M9 16h6"/></svg></span><span class="amal-sub-lbl">সপ্তাহ</span></button>
+    <button type="button" class="amal-sub-tab active" onclick="goAmalTab('today',this)"><span class="amal-sub-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 12h6M9 16h6"/></svg></span><span class="amal-sub-lbl">মুহাসাবা</span></button>
     <button type="button" class="amal-sub-tab"        onclick="goAmalTab('biboron',this)"><span class="amal-sub-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 1v11"/><path d="M19 10a7 7 0 01-14 0"/><path d="M12 19v4M8 23h8"/></svg></span><span class="amal-sub-lbl">বিবরণ</span></button>
     <button type="button" class="amal-sub-tab"        onclick="goAmalTab('schedule',this)"><span class="amal-sub-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span class="amal-sub-lbl">নিজামুল আওকাত</span></button>
   </div>
@@ -759,7 +759,6 @@ let dailyNoteCatId='general';
 let dailyNoteListFilter='all';
 let dailyNoteForced=false;
 let amalWorkDate=null; /* null = আজ; YYYY-MM-DD = নির্বাচিত দিন */
-let weeklyAmalDraft=null;
 
 function showUploadPrepError(e){
   const m=e && e.message;
@@ -1493,8 +1492,11 @@ function weekDatesFor(date){
 function canEditWeeklyDate(date){
   return String(date||'')<=String(API.today());
 }
-function weekShortLabel(date){
-  return new Date(date+'T12:00:00Z').toLocaleDateString('bn-BD',{weekday:'short',day:'numeric',timeZone:'Asia/Dhaka'});
+function weekDateLabel(date){
+  return new Date(date+'T12:00:00Z').toLocaleDateString('bn-BD',{day:'numeric',timeZone:'Asia/Dhaka'});
+}
+function weekDayLabel(date){
+  return new Date(date+'T12:00:00Z').toLocaleDateString('bn-BD',{weekday:'short',timeZone:'Asia/Dhaka'});
 }
 function weeklyNoteTitle(dates){
   return `সাপ্তাহিক আমল: ${dates[0]} - ${dates[6]}`;
@@ -1512,120 +1514,56 @@ function getWeeklyReceiptNote(dates){
 }
 function buildWeeklyDraft(){
   if(!me) return null;
-  const dates=weekDatesFor(API.today());
+  const end=getAmalWorkDate();
+  const dates=Array.from({length:7},(_,i)=>{
+    const d=new Date(end+'T12:00:00Z');
+    d.setUTCDate(d.getUTCDate()-(6-i));
+    return d.toISOString().split('T')[0];
+  });
   const tasks=API.Tasks.getForStudent(me.id).filter(t=>t.type==='daily');
   const cells={};
   tasks.forEach(t=>dates.forEach(d=>{ cells[`${t.id}|${d}`]=canEditWeeklyDate(d)&&!!API.Tasks.isCompleted(t.id,me.id,d); }));
-  return { dates, tasks, cells, dirty:false };
+  return { dates, tasks, cells };
 }
 function renderWeeklyAmalEntry(){
   const el=document.getElementById('weeklyAmalEntry');
   if(!el||!me) return;
-  if(!weeklyAmalDraft||!weeklyAmalDraft.dates) weeklyAmalDraft=buildWeeklyDraft();
-  const d=weeklyAmalDraft;
+  const d=buildWeeklyDraft();
   if(!d||!d.tasks.length){ el.innerHTML=''; return; }
-  const activeDates=d.dates.filter(canEditWeeklyDate);
-  let done=0,total=d.tasks.length*activeDates.length;
-  d.tasks.forEach(t=>activeDates.forEach(date=>{ if(d.cells[`${t.id}|${date}`]) done++; }));
+  let done=0,total=d.tasks.length*d.dates.length;
+  d.tasks.forEach(t=>d.dates.forEach(date=>{ if(d.cells[`${t.id}|${date}`]) done++; }));
   const pct=total?Math.round(done/total*100):0;
-  const receipt=getWeeklyReceiptNote(d.dates);
-  const status=receipt?(receipt.reviewStatus==='done'?'পর্যালোচনা সম্পন্ন':'জমা আছে, পর্যালোচনাধীন'):(done>0?'টিক ডাটা সেভ আছে':'এখনো জমা হয়নি');
-  const activeInfo=`আজ পর্যন্ত ${activeDates.length} দিন`;
   el.innerHTML=`<div class="weekly-amal-card">
     <div class="weekly-amal-head">
-      <div><div class="weekly-amal-title">সাপ্তাহিক আমল জমা</div><div class="weekly-amal-sub">${esc(d.dates[0])} - ${esc(d.dates[6])} · ${esc(activeInfo)} · ${done}/${total} · ${pct}%</div></div>
-      <span class="weekly-amal-status ${receipt&&receipt.reviewStatus==='done'?'done':receipt?'pending':done>0?'data':''}">${esc(status)}</span>
+      <div><div class="weekly-amal-title">৭ দিনের আমল</div><div class="weekly-amal-sub">${esc(d.dates[0])} – ${esc(d.dates[6])} · ${done}/${total} · ${pct}%</div></div>
     </div>
     <div class="weekly-amal-grid-wrap">
       <div class="weekly-amal-grid" style="--week-cols:${d.dates.length}">
         <div class="weekly-amal-corner">আমল</div>
-        ${d.dates.map(date=>`<div class="weekly-amal-day ${canEditWeeklyDate(date)?'':'future'}">${esc(weekShortLabel(date))}</div>`).join('')}
+        ${d.dates.map(date=>`<div class="weekly-amal-day ${canEditWeeklyDate(date)?'':'future'}"><span class="weekly-amal-date">${esc(weekDateLabel(date))}</span><span class="weekly-amal-weekday">${esc(weekDayLabel(date))}</span></div>`).join('')}
         ${d.tasks.map(t=>`<div class="weekly-amal-task">${esc(t.title)}</div>${d.dates.map(date=>{
           const key=`${t.id}|${date}`;
           const on=!!d.cells[key];
-          const locked=!canEditWeeklyDate(date);
-          return `<button type="button" class="weekly-amal-cell ${on?'on':''} ${locked?'locked':''}" ${locked?'disabled':''} onclick="toggleWeeklyAmalCell('${esc(t.id)}','${esc(date)}')" aria-label="${esc(t.title)} ${esc(date)}">${locked?'':on?'✓':''}</button>`;
+          return `<button type="button" class="weekly-amal-cell ${on?'on':'off'}" onclick="toggleWeeklyAmalCell('${esc(t.id)}','${esc(date)}',this)" aria-label="${esc(t.title)} ${esc(date)} ${on?'সম্পন্ন':'অসম্পন্ন'}">${on?'✓':'✕'}</button>`;
         }).join('')}`).join('')}
       </div>
     </div>
-    <div class="weekly-amal-actions">
-      <button type="button" class="weekly-amal-btn secondary" onclick="resetWeeklyAmalDraft()">রিসেট</button>
-      <button type="button" class="weekly-amal-btn" onclick="saveWeeklyAmalEntry()">${d.dirty?'সেভ করুন':'আজ পর্যন্ত জমা'}</button>
-      <button type="button" class="weekly-amal-btn note" onclick="openWeeklyMuhasaba()">মুহাসাবা</button>
-    </div>
   </div>`;
 }
-function toggleWeeklyAmalCell(tid,date){
-  if(!canEditWeeklyDate(date)){ showToast('আজকের পরের দিনের টিক দেওয়া যাবে না'); return; }
-  if(!weeklyAmalDraft) weeklyAmalDraft=buildWeeklyDraft();
-  const key=`${tid}|${date}`;
-  weeklyAmalDraft.cells[key]=!weeklyAmalDraft.cells[key];
-  weeklyAmalDraft.dirty=true;
-  renderWeeklyAmalEntry();
-}
-function resetWeeklyAmalDraft(){
-  weeklyAmalDraft=buildWeeklyDraft();
-  renderWeeklyAmalEntry();
-}
-function weeklySummaryText(dates,tasks,cells){
-  let total=0,done=0;
-  const activeDates=dates.filter(canEditWeeklyDate);
-  const lines=activeDates.map(date=>{
-    const d=tasks.filter(t=>cells[`${t.id}|${date}`]).length;
-    total+=tasks.length; done+=d;
-    return `${date}: ${d}/${tasks.length}`;
-  });
-  return `সাপ্তাহিক আমল জমা\nসপ্তাহ: ${dates[0]} - ${dates[6]}\nহিসাব: আজ পর্যন্ত ${activeDates.length} দিন\nমোট: ${done}/${total}\n\nদিনভিত্তিক:\n${lines.join('\n')}`;
-}
-async function saveWeeklyReceipt(dates,tasks,cells){
-  if(!API.StudentNotes||!me) return;
-  const prev=getWeeklyReceiptNote(dates);
-  const title=weeklyNoteTitle(dates);
-  const text=weeklySummaryText(dates,tasks,cells);
-  const categoryId='general';
-  if(prev&&prev.reviewStatus!=='done') await API.StudentNotes.update(me.id,prev.id,{title,text,categoryId});
-  else await API.StudentNotes.add(me.id,{title,text,categoryId});
-}
-async function saveWeeklyAmalEntry(){
-  if(!weeklyAmalDraft||!me) return;
-  const d=weeklyAmalDraft;
+async function toggleWeeklyAmalCell(tid,date,btn){
+  if(!me||!canEditWeeklyDate(date)) return;
+  const have=!!API.Tasks.isCompleted(tid,me.id,date);
+  if(btn) btn.disabled=true;
   try{
-    for(const t of d.tasks){
-      for(const date of d.dates){
-        const want=!!d.cells[`${t.id}|${date}`];
-        const have=!!API.Tasks.isCompleted(t.id,me.id,date);
-        if(!canEditWeeklyDate(date)){
-          if(have) await API.Tasks.unmarkCompleted(t.id,me.id,date);
-          continue;
-        }
-        if(want&&!have) await API.Tasks.markCompleted(t.id,me.id,{date,status:'done'});
-        if(!want&&have) await API.Tasks.unmarkCompleted(t.id,me.id,date);
-      }
-    }
-    let receiptSaved=true;
-    try{
-      await saveWeeklyReceipt(d.dates,d.tasks,d.cells);
-    }catch(receiptErr){
-      receiptSaved=false;
-      console.warn('weekly receipt save failed', receiptErr);
-    }
-    weeklyAmalDraft=null;
-    renderAll();
-    showToast(receiptSaved?'সাপ্তাহিক আমল জমা হয়েছে':'সাপ্তাহিক আমল সেভ হয়েছে, রিভিউ রসিদ সেভ হয়নি');
-  }catch(e){ console.error(e); showToast('সাপ্তাহিক আমল সেভ হয়নি'); }
-}
-function openWeeklyMuhasaba(){
-  const dates=weekDatesFor(API.today());
-  openDailyNoteModal();
-  setTimeout(()=>{
-    dailyNoteCatId=weeklyNoteCategoryId();
-    renderDailyNoteCats();
-    const title=document.getElementById('dailyNoteTitle');
-    const txt=document.getElementById('dailyNoteText');
-    if(title&&!title.value) title.value=`সাপ্তাহিক মুহাসাবা: ${dates[0]} - ${dates[6]}`;
-    if(txt&&!txt.value) txt.placeholder='এই সপ্তাহে সবচেয়ে ভালো কী হয়েছে?\nসবচেয়ে বড় ঘাটতি কী ছিল?\nআগামী সপ্তাহে কোন একটি জিনিস ঠিক করব?';
-    updateDailyNoteSaveState();
-  },0);
+    if(have) await API.Tasks.unmarkCompleted(tid,me.id,date);
+    else await API.Tasks.markCompleted(tid,me.id,{date,status:'done'});
+    renderAmalDashboard();
+    if(document.getElementById('amalCalPopover')?.classList.contains('open')) renderAmalCalendar();
+  }catch(e){
+    console.error(e);
+    if(btn) btn.disabled=false;
+    showToast('আমল আপডেট হয়নি');
+  }
 }
 function fTask(f,btn){ document.querySelectorAll('#amal-panel-today .stu-filter-pill').forEach(c=>c.classList.remove('active')); btn.classList.add('active'); renderTaskList(f); }
 async function markDailyDone(tid){
@@ -1660,13 +1598,20 @@ async function undoTaskDone(tid){
 // ── আমল sub-tabs (ছাত্র) ─────────────────────────────────────
 let _amalTab='today';
 const _svgAmalCal='<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>';
-function amalYesterdayDate(){
-  return API.nextDate(-1);
-}
 function getAmalWorkDate(){ return amalWorkDate||API.today(); }
 function isAmalYesterdayMode(){ return getAmalWorkDate()!==API.today(); }
-function toggleAmalYesterday(){
-  amalWorkDate=isAmalYesterdayMode()?null:amalYesterdayDate();
+function shiftAmalWorkDate(delta){
+  const d=new Date(getAmalWorkDate()+'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate()+Number(delta||0));
+  const next=d.toISOString().split('T')[0];
+  amalWorkDate=next>=API.today()?null:next;
+  renderAmalDashboard();
+  renderTaskList();
+}
+function selectAmalCalendarDate(date){
+  if(!date||date>API.today()) return;
+  amalWorkDate=date===API.today()?null:date;
+  closeAmalCalendar();
   renderAmalDashboard();
   renderTaskList();
 }
@@ -1678,8 +1623,9 @@ function amalDashDateLabel(){
 }
 function amalDashHeaderHtml(){
   return `<div class="stu-amal-dash-hd">
+    <button type="button" class="stu-amal-yday-btn" onclick="shiftAmalWorkDate(-1)" title="এক দিন পেছনে" aria-label="এক দিন পেছনে"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
     <div class="stu-amal-dash-title-wrap">
-      <div class="stu-amal-dash-title">আমলের বিবরণ</div>
+      <div class="stu-amal-dash-title">মুহাসাবা</div>
       <div class="stu-amal-dash-date">${esc(amalDashDateLabel())}</div>
     </div>
     <button type="button" class="stu-amal-cal-btn" onclick="openAmalCalendar()" title="আমল ইতিহাস" aria-label="আমল ইতিহাস ক্যালেন্ডার">${_svgAmalCal}</button>
@@ -1720,12 +1666,11 @@ function renderAmalDashboard(){
     const weeklyEl=document.getElementById('weeklyAmalEntry'); if(weeklyEl) weeklyEl.innerHTML='';
     return;
   }
-  weeklyAmalDraft=null;
   const all=prog.all||{percent:0};
   const wd=getAmalWorkDate();
   const yMode=isAmalYesterdayMode();
   const dayProg=yMode?API.Tasks.getRangeProgress(me.id,wd,wd):prog.today;
-  const dayLbl=yMode?'গতকাল':'আজ';
+  const dayLbl=yMode?'নির্বাচিত':'আজ';
   el.innerHTML=`<div class="stu-amal-dash-wrap">
     <div class="stu-amal-dash-card">
       ${hd}
@@ -1766,9 +1711,11 @@ function renderAmalCalendar(){
   for(let i=0;i<firstDay;i++) h+=`<div class="s-cal-cell empty"></div>`;
   for(let d=1;d<=dInM;d++){
     const date=`${y}-${pad(m)}-${pad(d)}`, cell=data[date], isT=date===today;
-    if(!cell){ h+=`<div class="s-cal-cell${isT?' cal-today':''}"><span class="s-cal-date">${d}</span></div>`; continue; }
+    const selected=date===getAmalWorkDate();
+    if(date>today){ h+=`<div class="s-cal-cell future${isT?' cal-today':''}"><span class="s-cal-date">${d}</span></div>`; continue; }
+    if(!cell){ h+=`<button type="button" class="s-cal-cell selectable${isT?' cal-today':''}${selected?' selected':''}" onclick="selectAmalCalendarDate('${date}')"><span class="s-cal-date">${d}</span></button>`; continue; }
     const st=cell.status||cell, pct=typeof cell.percent==='number'?cell.percent:(st==='done'?100:st==='partial'?50:0);
-    h+=`<div class="s-cal-cell ${st}${isT?' cal-today':''}"><span class="s-cal-date">${d}</span><span class="s-cal-pct">${pct}%</span></div>`;
+    h+=`<button type="button" class="s-cal-cell selectable ${st}${isT?' cal-today':''}${selected?' selected':''}" onclick="selectAmalCalendarDate('${date}')"><span class="s-cal-date">${d}</span><span class="s-cal-pct">${pct}%</span></button>`;
   }
   h+=`</div>`;
   el.innerHTML=h;
