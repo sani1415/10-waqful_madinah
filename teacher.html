@@ -290,7 +290,7 @@
 .biboron-hint--tools{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:38px}
 .biboron-hint-text{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.35}
 .biboron-hint strong{color:var(--gray-700);font-weight:700}
-#biboronSummary .summary-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:8px 14px 0}
+#biboronSummary .summary-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:8px 14px 0}
 #biboronSummary .summary-card{min-width:0;border-radius:12px;padding:9px 4px 8px}
 #biboronSummary .sc-val{font-size:17px;line-height:1}
 #biboronSummary .sc-lbl{font-size:10px;font-weight:700;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1832,7 +1832,7 @@ function renderChatInfo(){
   const academic=API.AcademicHistory.getAll(s.id);
   const subLine=[s.waqfId?API.Students.displayWaqfId(s.waqfId):'',batchLbl||'',s.cls||''].filter(Boolean).join(' · ')||'পরিচয়';
   const quizCount=(row.pendingQuiz||0)+(row.manualQuiz||0);
-  const latestStudentNote=(API.StudentNotes?API.StudentNotes.getAll(s.id):[]).filter(n=>!isWeeklyReceiptNote(n)||n.reviewStatus!=='done')[0];
+  const latestStudentNote=(API.StudentNotes?API.StudentNotes.getAll(s.id):[]).filter(n=>!isWeeklyReceiptNote(n))[0];
   const actions=[];
   if(row.unreadMessages>0) actions.push(stuDashAction(`${row.unreadMessages}টি অপঠিত রিসালা আছে`,'msg'));
   if(row.pendingSchedule) actions.push(stuDashAction('সময়সূচি অনুমোদন বাকি','msg'));
@@ -2218,56 +2218,8 @@ function teacherWeekDateAdd(date,delta){
   d.setUTCDate(d.getUTCDate()+delta);
   return d.toISOString().split('T')[0];
 }
-function teacherWeekDatesFromNote(n){
-  const text=[n.title||'',n.text||''].join('\n');
-  const m=text.match(/(\d{4}-\d{2}-\d{2})\s*-\s*(\d{4}-\d{2}-\d{2})/);
-  if(m) return Array.from({length:7},(_,i)=>teacherWeekDateAdd(m[1],i));
-  if(window.ApiAmal&&ApiAmal.getWeekDates) return ApiAmal.getWeekDates(n.date||API.today());
-  const start=teacherWeekDateAdd(n.date||API.today(),0);
-  return Array.from({length:7},(_,i)=>teacherWeekDateAdd(start,i));
-}
-function teacherWeekShortLabel(date){
-  try{ return new Date(date+'T12:00:00Z').toLocaleDateString('bn-BD',{weekday:'short',day:'numeric',timeZone:'Asia/Dhaka'}); }
-  catch(e){ return date.slice(5); }
-}
 function isWeeklyReceiptNote(n){
   return /^সাপ্তাহিক আমল:/.test(String(n.title||'')) || /^সাপ্তাহিক আমল জমা/.test(String(n.text||''));
-}
-function getWeeklyReceiptNotes(sid){
-  if(!API.StudentNotes) return [];
-  return API.StudentNotes.getAll(sid).filter(isWeeklyReceiptNote)
-    .sort((a,b)=>String((b.title||'')+(b.date||'')+(b.time||'')).localeCompare(String((a.title||'')+(a.date||'')+(a.time||''))));
-}
-function renderWeeklyReceiptNote(n,cat){
-  const dates=teacherWeekDatesFromNote(n);
-  const tasks=API.Tasks.getForStudent(curChat).filter(t=>t.type==='daily');
-  const activeDates=dates.filter(d=>d<=API.today());
-  let done=0,total=tasks.length*activeDates.length;
-  tasks.forEach(t=>activeDates.forEach(date=>{ if(API.Tasks.isCompleted(t.id,curChat,date)) done++; }));
-  const pct=total?Math.round(done/total*100):0;
-  const pending=n.reviewStatus!=='done';
-  const title=n.title||`সাপ্তাহিক আমল: ${dates[0]} - ${dates[6]}`;
-  return `<div class="csp-week-grid-card">
-    <div class="csp-week-grid-head">
-      <div><div class="csp-week-grid-title">${esc(title)}</div><div class="csp-week-grid-meta">${esc(dates[0])} - ${esc(dates[6])} · ${done}/${total} · ${pct}%</div></div>
-      <span class="csp-week-grid-status ${pending?'pending':''}">${pending?'পর্যালোচনাধীন':'অনুমোদিত'}</span>
-    </div>
-    <div class="csp-week-grid-wrap">
-      <div class="csp-week-grid" style="--week-cols:${dates.length}">
-        <div class="csp-week-corner">আমল</div>
-        ${dates.map(date=>`<div class="csp-week-day ${date>API.today()?'future':''}">${esc(teacherWeekShortLabel(date))}</div>`).join('')}
-        ${tasks.map(t=>`<div class="csp-week-task">${esc(t.title)}</div>${dates.map(date=>{
-          const future=date>API.today();
-          const on=!future&&API.Tasks.isCompleted(t.id,curChat,date);
-          return `<div class="csp-week-cell ${on?'on':''} ${future?'future':''}">${future?'':on?'✓':'-'}</div>`;
-        }).join('')}`).join('')}
-      </div>
-    </div>
-    <div class="csp-week-review-row">
-      <div class="csp-note-time"><span class="csp-note-cat">${esc(cat)}</span> ${n.date||''} ${n.time||''}</div>
-      ${pending?`<button type="button" class="doc-btn done" onclick="markNoteReviewed('${esc(n.id)}')">অনুমোদন</button>`:''}
-    </div>
-  </div>`;
 }
 function renderChatNotes(){
   const el=document.getElementById('csp-note'); if(!el||!curChat) return;
@@ -2277,11 +2229,10 @@ function renderChatNotes(){
     <button type="button" class="${view==='teacher'?'active':''}" onclick="setChatNoteView('teacher')">জিম্মাদারের নোট</button>
   </div>`;
   if(view==='student'){
-    const notes=(API.StudentNotes?API.StudentNotes.getAll(curChat):[]).filter(n=>!isWeeklyReceiptNote(n)||n.reviewStatus!=='done').slice().sort((a,b)=>String((b.date||'')+(b.time||'')).localeCompare(String((a.date||'')+(a.time||''))));
+    const notes=(API.StudentNotes?API.StudentNotes.getAll(curChat):[]).filter(n=>!isWeeklyReceiptNote(n)).slice().sort((a,b)=>String((b.date||'')+(b.time||'')).localeCompare(String((a.date||'')+(a.time||''))));
     el.innerHTML=sourceBar+(notes.length?notes.map(n=>{
       const cat=API.StudentNotes&&API.StudentNotes.catLabel?API.StudentNotes.catLabel(n.categoryId):'বিবরণ';
       const pending=n.reviewStatus!=='done';
-      if(isWeeklyReceiptNote(n)) return renderWeeklyReceiptNote(n,cat);
       return `<div class="csp-note-item">
         ${n.title?`<div class="csp-note-title">${esc(n.title)}</div>`:''}
         <div class="csp-note-body">${esc(n.text)}</div>
@@ -2656,7 +2607,7 @@ function closeBiboronMenu(){
   if(menu){ menu.style.display='none'; menu.innerHTML=''; }
 }
 function showBiboronDetail(mode){
-  biboronDetailMode=['amal','msg','quiz','behind','doc','studentNote','teacherNote','weekly'].includes(mode)?mode:'';
+  biboronDetailMode=['amal','msg','quiz','behind','doc','studentNote','teacherNote'].includes(mode)?mode:'';
   renderBiboronDetailPanel();
   stuRowMenuId=null;
 }
@@ -2665,11 +2616,11 @@ function biboronTargetTab(mode,sid){
   if(mode==='doc') return 'doc';
   if(mode==='quiz') return 'exam';
   if(mode==='amal'||mode==='behind') return 'task';
-  if(mode==='studentNote'||mode==='teacherNote'||mode==='weekly') return 'note';
+  if(mode==='studentNote'||mode==='teacherNote') return 'note';
   return 'info';
 }
 function openBiboronTarget(sid,mode){
-  if(mode==='studentNote'||mode==='weekly') chatNoteView='student';
+  if(mode==='studentNote') chatNoteView='student';
   else if(mode==='teacherNote') chatNoteView='teacher';
   const tab=biboronTargetTab(mode,sid);
   openChat(sid,tab);
@@ -2690,13 +2641,10 @@ function stuRowAction(action,sid,ev){
 function renderBiboronSummary(){
   const el=document.getElementById('biboronSummary'); if(!el||!API.Biboron) return;
   const s=API.Biboron.getSummary();
-  const w=API.Biboron.getWeeklySummary?API.Biboron.getWeeklySummary():null;
-  const weeklyNeed=w?((w.missing||0)+(w.pendingReview||0)):0;
   const msgNeed=(s.unreadMessages||0)+(s.pendingSched||0);
   el.innerHTML=`<div class="biboron-meta">গতকাল · ${esc(s.dateLabel)} · ${esc(s.progressLabel)}</div>
   <div class="summary-cards">
     ${biboronSummaryCard('blue',`${s.dayPct!=null?s.dayPct:s.todayPct}%`,'আমল','amal')}
-    ${biboronSummaryCard('orange',weeklyNeed,'সাপ্তাহিক','weekly')}
     ${biboronSummaryCard('green',msgNeed,'রিসালা','msg')}
     ${biboronSummaryCard('red',(s.pendingQuiz||0)+(s.manualQuiz||0),'পরীক্ষা','quiz')}
   </div>
@@ -2729,11 +2677,6 @@ function renderBiboronHint(list){
     </span>`;
 }
 function biboronStudentMeta(s,row,mode){
-  if(mode==='weekly'&&row.weekly){
-    const w=row.weekly;
-    const st=w.reviewed?'পর্যালোচনা সম্পন্ন':w.pendingReview?'পর্যালোচনাধীন':w.hasReceipt?'জমা আছে':w.submitted?'টিক ডাটা আছে':'জমা হয়নি';
-    return `${st} · ${w.done}/${w.total} · ${w.percent}%`;
-  }
   const batch=API.Students.formatBatchYear(s.enrollmentDate);
   return [s.waqfId?API.Students.displayWaqfId(s.waqfId):'',batch||'',s.cls||''].filter(Boolean).join(' · ');
 }
@@ -2747,7 +2690,6 @@ function biboronDetailRows(mode){
     doc:x=>x.row.pendingDocs>0,
     studentNote:x=>x.row.studentNoteCount>0,
     teacherNote:x=>x.row.teacherNoteCount>0,
-    weekly:x=>!x.row.weekly?.submitted||x.row.weekly?.pendingReview,
   };
   return rows.filter(filters[mode]||(()=>false)).sort((a,b)=>{
     if(mode==='amal'||mode==='behind') return (a.row.dayDone/a.row.dayTotal||0)-(b.row.dayDone/b.row.dayTotal||0);
@@ -2758,7 +2700,6 @@ function biboronDetailRows(mode){
       return String(a.s.name||'').localeCompare(String(b.s.name||''),'bn');
     }
     const key={quiz:'pendingQuiz',doc:'pendingDocs',studentNote:'studentNoteCount',teacherNote:'teacherNoteCount'}[mode];
-    if(mode==='weekly') return (a.row.weekly?.submitted?1:0)-(b.row.weekly?.submitted?1:0)||String(a.s.name||'').localeCompare(String(b.s.name||''),'bn');
     if(key&&typeof a.row[key]==='number'&&a.row[key]!==b.row[key]) return b.row[key]-a.row[key];
     return String(a.s.name||'').localeCompare(String(b.s.name||''),'bn');
   });
@@ -2778,7 +2719,7 @@ function renderBiboronDetailPanel(){
     setBiboronListVisible(true);
     return;
   }
-  const titles={amal:'আমল অবস্থা',msg:'রিসালা ও সময়সূচি',quiz:'পরীক্ষা বাকি',behind:'গতকাল বাকি',doc:'ডক বাকি',studentNote:'ছাত্রের বিবরণ',teacherNote:'জিম্মাদারের নোট',weekly:'সাপ্তাহিক আমল জমা'};
+  const titles={amal:'আমল অবস্থা',msg:'রিসালা ও সময়সূচি',quiz:'পরীক্ষা বাকি',behind:'গতকাল বাকি',doc:'ডক বাকি',studentNote:'ছাত্রের বিবরণ',teacherNote:'জিম্মাদারের নোট'};
   const rows=biboronDetailRows(biboronDetailMode);
   setBiboronListVisible(false);
   el.style.display='flex';

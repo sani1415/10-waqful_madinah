@@ -1499,20 +1499,6 @@ function weekDateLabel(date){
 function weekDayLabel(date){
   return new Date(date+'T12:00:00Z').toLocaleDateString('bn-BD',{weekday:'short',timeZone:'Asia/Dhaka'});
 }
-function weeklyNoteTitle(dates){
-  return `সাপ্তাহিক আমল: ${dates[0]} - ${dates[6]}`;
-}
-function weeklyNoteCategoryId(){
-  if(!API.StudentNotes) return 'general';
-  const cats=API.StudentNotes.getCategories();
-  const found=cats.find(c=>/সাপ্তাহিক|মুহাসাবা|বিবরণ/.test(c.label||''));
-  return (found&&found.id)||'general';
-}
-function getWeeklyReceiptNote(dates){
-  if(!API.StudentNotes||!me) return null;
-  const title=weeklyNoteTitle(dates);
-  return API.StudentNotes.getAll(me.id).find(n=>String(n.title||'')===title)||null;
-}
 function buildWeeklyDraft(){
   if(!me) return null;
   const end=getAmalWorkDate();
@@ -2057,7 +2043,7 @@ function catIc(c){
 }
 function getDailyNotes(){
   if(!me||!API.StudentNotes) return [];
-  return API.StudentNotes.getAll(me.id).filter(n=>!isWeeklyReceiptNote(n)||n.reviewStatus!=='done');
+  return API.StudentNotes.getAll(me.id).filter(n=>!isWeeklyReceiptNote(n));
 }
 function isWeeklyReceiptNote(n){
   return /^সাপ্তাহিক আমল:/.test(String(n&&n.title||'')) || /^সাপ্তাহিক আমল জমা/.test(String(n&&n.text||''));
