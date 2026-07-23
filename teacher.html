@@ -14,12 +14,35 @@
 <link rel="icon" href="icons/icon-teacher-192.png">
 <link rel="apple-touch-icon" href="icons/icon-teacher-192.png">
 <title>জিম্মাদার প্যানেল · Waqful Madinah</title>
+<script>
+/* সেশন থাকলে প্রথম পেইন্টের আগে লক স্ক্রিন লুকাও — লগইন ফ্ল্যাশ এড়াতে */
+(function(){
+  try{
+    var p=String(localStorage.getItem('madrasa_teacher_session')||'').trim();
+    if(/^\d{4}$/.test(p)) document.documentElement.classList.add('tea-autologin');
+  }catch(e){}
+})();
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@300;400;500;600;700&family=Noto+Naskh+Arabic:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="tablet-desktop.css">
 <link rel="stylesheet" href="amal.css">
 <style>
 /* ── Teacher theme ── */
+/* সেশন অটো-লগইন: লক স্ক্রিন ফ্ল্যাশ বন্ধ */
+html.tea-autologin #lockScreen{display:none!important}
+html.tea-autologin #teaBootSplash{display:flex!important}
+#teaBootSplash{
+  display:none;position:absolute;inset:0;z-index:998;
+  flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  background:linear-gradient(180deg,#064e47 0%,#075E54 45%,#0a6b60 100%);
+  color:#fff;padding:24px 20px;
+}
+#teaBootSplash .tea-boot-name{
+  font-family:'Noto Naskh Arabic',serif;font-size:28px;font-weight:700;
+  direction:rtl;line-height:1.3;
+}
+#teaBootSplash .tea-boot-sub{font-size:13px;opacity:.85;font-weight:500}
 /* লগইন: সফট লাইট — জিম্মাদার: ঠান্ডা ব্লু-স্লেট */
 #lockScreen.lock-screen-soft{
   background:linear-gradient(180deg,#e0e9f4 0%,#f5f8fc 46%,#dbe7f3 100%);
@@ -587,6 +610,10 @@
     </div>
     <button type="button" class="change-pin-btn" onclick="showToast('ডিফল্ট পিন: 1234 · সেটিং থেকে পরিবর্তন করুন')">পিন ভুলে গেছেন?</button>
   </div>
+</div>
+<div id="teaBootSplash" aria-live="polite" aria-busy="true">
+  <div class="tea-boot-name" dir="rtl" lang="ar">وقف المدينة</div>
+  <div class="tea-boot-sub">খুলছে…</div>
 </div>
 
 <!-- ══ MAIN (হেডার + স্ক্রিন + চ্যাট ভিউ — নিচে ফ্লোটিং ট্যাব) ══ -->
@@ -1287,8 +1314,14 @@ function showUploadPrepError(e){
 }
 
 // ══ Init ═══════════════════════════════════════════════════
+function clearTeacherBootUi(){
+  document.documentElement.classList.remove('tea-autologin');
+  const splash=document.getElementById('teaBootSplash');
+  if(splash){ splash.style.display='none'; splash.setAttribute('aria-busy','false'); }
+}
 function enterTeacherApp(){
   localStorage.setItem('madrasa_lastPanel','teacher');
+  clearTeacherBootUi();
   document.getElementById('lockScreen').style.display='none';
   var _tn=document.getElementById('teaBottomNav'); if(_tn) _tn.style.display='block';
   const err=document.getElementById('pinErr'); if(err) err.textContent='';
@@ -1300,15 +1333,22 @@ function setLockStatus(msg){
   const err=document.getElementById('pinErr');
   if(err) err.textContent=msg||'';
 }
+function showTeacherLockScreen(){
+  clearTeacherBootUi();
+  document.getElementById('lockScreen').style.display='flex';
+  var _tn=document.getElementById('teaBottomNav'); if(_tn) _tn.style.display='none';
+  pin=''; dots(); setLockStatus('');
+}
 async function tryRestoreTeacherSession(){
   const saved=API.Auth.getTeacherSessionPin();
-  if(!saved) return false;
+  if(!saved){ clearTeacherBootUi(); return false; }
   try{
     if(window.RemoteSync && RemoteSync.isRemote() && RemoteSync.usesSecureKv()){
       await API.unlockTeacherRemote(saved);
       await API.DB.finalizeRemoteTeacherAfterUnlock();
     } else if(!API.Auth.checkTeacherPin(saved)){
       API.Auth.clearTeacherSession();
+      showTeacherLockScreen();
       return false;
     }
     enterTeacherApp();
@@ -1316,6 +1356,7 @@ async function tryRestoreTeacherSession(){
   } catch(e){
     console.warn('teacher session restore failed', e);
     API.Auth.clearTeacherSession();
+    showTeacherLockScreen();
     return false;
   }
 }
@@ -1329,9 +1370,7 @@ async function teacherLogout(){
   try{ if(document.getElementById('chatView')?.classList.contains('open')) closeChat(); }catch(e){}
   try{ closeInChatSearch(); }catch(e){}
   goTab('chats');
-  var _tn=document.getElementById('teaBottomNav'); if(_tn) _tn.style.display='none';
-  pin=''; dots(); setLockStatus('');
-  document.getElementById('lockScreen').style.display='flex';
+  showTeacherLockScreen();
   showToast('লগআউট হয়েছে');
 }
 function init(){
@@ -1351,8 +1390,14 @@ function init(){
     document.addEventListener('visibilitychange',()=>{
       if(document.visibilityState==='visible') void API.Pwa.refreshPushSubscription('teacher').then(updateTeacherNotifBtn);
     });
-    await tryRestoreTeacherSession();
-  }).catch(e=>{ console.error(e); const la=document.getElementById('lockAppName'); if(la){ la.textContent='সার্ভার সংযোগ ব্যর্থ'; la.removeAttribute('dir'); la.removeAttribute('lang'); la.classList.add('lock-soft-app-name--err'); } });
+    const restored=await tryRestoreTeacherSession();
+    if(!restored) clearTeacherBootUi();
+  }).catch(e=>{
+    console.error(e);
+    clearTeacherBootUi();
+    const la=document.getElementById('lockAppName');
+    if(la){ la.textContent='সার্ভার সংযোগ ব্যর্থ'; la.removeAttribute('dir'); la.removeAttribute('lang'); la.classList.add('lock-soft-app-name--err'); }
+  });
 }
 window.addEventListener('madrasa-remote-sync',()=>{
   void API.Pwa.refreshPushSubscription('teacher').then(updateTeacherNotifBtn);
