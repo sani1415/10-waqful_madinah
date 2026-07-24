@@ -44,7 +44,7 @@
     };
   }
 
-  function normalizeFind(value) { return String(value || '').toLocaleLowerCase('bn-BD').replace(/[^\p{L}\p{N}]+/gu, ' ').trim(); }
+  function normalizeFind(value) { return String(value || '').toLocaleLowerCase('bn-BD').normalize('NFC').replace(/[^\p{L}\p{M}\p{N}]+/gu, ' ').trim(); }
   function asksForUnreadMessages(message) {
     const value=normalizeFind(message);
     const mentionsMessages=/(মেসেজ|বার্তা|রিসালা|message|messages)/.test(value);
@@ -86,6 +86,20 @@
       snapshotAt:new Date().toISOString()
     },'database',0);
   }
+  function buildMessageAnalytics(allStudents) {
+    return allStudents.map((student)=>{
+      const incoming=(w.API.Messages?.getThread?.(student.id)||[]).filter((m)=>m&&m.role==='in');
+      const longest=incoming.reduce((best,message)=>{
+        const text=String(message.text||message.fileName||message.extra?.fileName||'').trim();
+        if(!text||text.length<best.length) return best;
+        return {messageId:message.id||'',text:clip(text,5000),length:text.length,time:message.time||'',sentAt:message._ts||null};
+      },{messageId:'',text:'',length:0,time:'',sentAt:null});
+      return {
+        studentId:student.id,studentName:student.name||'',waqfId:student.waqfId||'',
+        incomingCount:incoming.length,longestIncomingMessage:longest
+      };
+    });
+  }
   function buildContext(message) {
     const date = todayBD();
     const query = normalizeFind(message);
@@ -123,6 +137,7 @@
       unreadMessageBodiesIncluded:includeUnread,
       unreadMessageCount:unreadMessages.length,
       unreadMessages,
+      messageAnalytics:buildMessageAnalytics(allStudents),
       students,
       fullDatabaseIncluded:true,
       database:buildFullDatabaseSnapshot(allStudents)

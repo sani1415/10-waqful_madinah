@@ -92,6 +92,35 @@ function unreadMessagesReply(context) {
   return `মোট ${messages.length}টি অপঠিত বার্তা রয়েছে:\n\n${lines.join('\n\n')}`;
 }
 
+function normalizeFind(value) {
+  return String(value || '').toLocaleLowerCase('bn-BD').normalize('NFC').replace(/[^\p{L}\p{M}\p{N}]+/gu, ' ').trim();
+}
+
+function longestStudentMessageReply(message, context) {
+  const query = normalizeFind(message);
+  const asksLongest = /(সবচেয়ে বড়|সবচেয়ে বড়|দীর্ঘতম|সবচেয়ে দীর্ঘ|সবচেয়ে দীর্ঘ|লম্বা|longest|largest)/.test(query);
+  const mentionsMessage = /(মেসেজ|বার্তা|রিসালা|message)/.test(query);
+  if (!asksLongest || !mentionsMessage || !Array.isArray(context?.messageAnalytics)) return null;
+
+  const candidates = context.messageAnalytics.map((item) => {
+    const name = normalizeFind(item?.studentName);
+    const waqfId = normalizeFind(item?.waqfId);
+    const tokens = name.split(/\s+/).filter((token) => token.length >= 2);
+    const exactName = name && query.includes(name);
+    const exactId = waqfId && query.includes(waqfId);
+    const score = (exactName ? 100 : 0) + (exactId ? 100 : 0) + tokens.filter((token) => query.includes(token)).length;
+    return { item, score };
+  }).filter((entry) => entry.score > 0).sort((a, b) => b.score - a.score);
+
+  if (!candidates.length || (candidates[1] && candidates[0].score === candidates[1].score)) return null;
+  const student = candidates[0].item;
+  const longest = student?.longestIncomingMessage;
+  const name = cleanText(student?.studentName, 160) || 'এই ছাত্র';
+  if (!longest?.text) return `${name}-এর পাঠানো কোনো লিখিত বার্তা পাওয়া যায়নি।`;
+  const time = cleanText(longest.time, 60);
+  return `${name}-এর পাঠানো সবচেয়ে বড় বার্তাটি (${Number(longest.length) || String(longest.text).length} অক্ষর${time ? `, ${time}` : ''}):\n\n${cleanText(longest.text, 5000)}`;
+}
+
 function extractText(data) {
   const parts = data?.candidates?.[0]?.content?.parts;
   if (!Array.isArray(parts)) return '';
@@ -148,6 +177,10 @@ module.exports = async function handler(req, res) {
   if (exactUnreadReply) {
     return json(res, 200, { ok: true, reply: exactUnreadReply, action: null, model: 'deterministic-unread-messages' });
   }
+  const exactLongestReply = longestStudentMessageReply(message, context);
+  if (exactLongestReply) {
+    return json(res, 200, { ok: true, reply: exactLongestReply, action: null, model: 'deterministic-message-analytics' });
+  }
   if (requestsBackupDownload(message)) {
     return json(res, 200, {
       ok: true,
@@ -160,6 +193,7 @@ module.exports = async function handler(req, res) {
   const system = `আপনি ওয়াকফুল মাদীনার শিক্ষক/অ্যাডমিনের বিশ্বস্ত বাংলা AI সহকারী।
 APP_DATA.fullDatabaseIncluded true হলে APP_DATA.database হলো সম্পূর্ণ readable application database snapshot। যেকোনো ad-hoc প্রশ্নে database-এর relevant collection নিজে filter, count, compare, rank ও summarize করে উত্তর দিন। prebuilt summary না থাকলেও raw records থেকে হিসাব করুন।
 database.db.chats এবং database.chats-এ student-id অনুযায়ী message thread থাকে: role "in" মানে ছাত্র থেকে শিক্ষক, role "out" মানে শিক্ষক থেকে ছাত্র। duplicate chat copy একবারই গণনা করুন এবং _bc broadcast thread বাদ দিন। "কে সবচেয়ে বেশি message পাঠিয়েছে" প্রশ্নে role "in" message গুনুন।
+APP_DATA.messageAnalytics হলো student-id ধরে canonical message হিসাব। message count/ranking এবং কোনো ছাত্রের longest message-এর প্রশ্নে raw database chat-এর বদলে সর্বদা এই collection ব্যবহার করুন। longestIncomingMessage কেবল সেই student-এর role "in" বার্তা।
 database.completions হলো daily Amal completion; database.scheduleCompletions আলাদা schedule completion। database.studentNotes, tnotes, academic, goals, exams, docs, dailySchedules, groups ও diary-ও প্রয়োজনে ব্যবহার করুন।
 আপনাকে দেওয়া APP_DATA-ই একমাত্র সত্য; তথ্য অনুমান করবেন না। উত্তর সংক্ষিপ্ত, স্পষ্ট ও সম্মানজনক বাংলায় দিন।
 ছাত্রের নাম আংশিক বা উচ্চারণভেদে মিলিয়ে দেখুন। একাধিক সম্ভাব্য মিল থাকলে action দেবেন না; স্পষ্টীকরণ চাইবেন।

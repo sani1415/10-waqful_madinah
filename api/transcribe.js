@@ -6,7 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const MODEL = 'gemini-3.1-flash-lite';
+const MODEL = process.env.GEMINI_TRANSCRIBE_MODEL || process.env.GEMINI_AI_MODEL || 'gemini-3.1-flash-lite';
 const MAX_BYTES = 8 * 1024 * 1024;
 
 /** Local preview: vercel dev sometimes misses .env.local until restart — load if needed. */
