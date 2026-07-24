@@ -51,6 +51,41 @@
     const mentionsUnread=/(অপঠিত|আনরিড|unread|পড়িনি|পড়িনি|পড়া হয়নি|পড়া হয়নি|না পড়া|না পড়া|দেখিনি|খুলিনি|নতুন মেসেজ|পাঠিয়েছে|পাঠিয়েছে)/.test(value);
     return mentionsMessages&&mentionsUnread;
   }
+  function sanitizeDatabaseValue(value, key, depth) {
+    if (depth > 18) return '[nested data omitted]';
+    const field=String(key||'').toLocaleLowerCase('en-US');
+    if (/(^|_)(pin|password|secret|token|apikey|api_key)$/.test(field)) return undefined;
+    if (/(dataurl|data_url|fileurl|file_url|storagepath|storage_path|audiourl|audio_url)/.test(field)) return undefined;
+    if (value==null||typeof value==='string'||typeof value==='number'||typeof value==='boolean') return value;
+    if (Array.isArray(value)) return value.map((item)=>sanitizeDatabaseValue(item,'',depth+1)).filter((item)=>item!==undefined);
+    if (typeof value==='object') {
+      const out={};
+      Object.keys(value).forEach((name)=>{ const next=sanitizeDatabaseValue(value[name],name,depth+1); if(next!==undefined) out[name]=next; });
+      return out;
+    }
+    return undefined;
+  }
+  function buildFullDatabaseSnapshot(allStudents) {
+    let backup={};
+    try{ backup=JSON.parse(w.API.DB.exportJSON()); }catch(error){ console.error('AI database snapshot failed',error); }
+    const studentNotes={};
+    const dailySchedules={};
+    allStudents.forEach((student)=>{
+      studentNotes[student.id]=w.API.StudentNotes?.getAll?.(student.id)||[];
+      dailySchedules[student.id]=w.API.DailySchedule?.getForStudent?.(student.id)||{rows:[],pending:null};
+    });
+    return sanitizeDatabaseValue({
+      ...backup,
+      studentNotes,
+      noteCategories:w.API.StudentNotes?.getCategories?.()||[],
+      dailySchedules,
+      scheduleCompletions:w.RemoteSync?.mem?.scheduleCompletions||[],
+      groups:w.API.Groups?.getAll?.()||[],
+      diary:w.API.Diary?.getAll?.()||[],
+      progressSettings:w.API.ProgressSettings?.get?.()||{},
+      snapshotAt:new Date().toISOString()
+    },'database',0);
+  }
   function buildContext(message) {
     const date = todayBD();
     const query = normalizeFind(message);
@@ -88,7 +123,9 @@
       unreadMessageBodiesIncluded:includeUnread,
       unreadMessageCount:unreadMessages.length,
       unreadMessages,
-      students
+      students,
+      fullDatabaseIncluded:true,
+      database:buildFullDatabaseSnapshot(allStudents)
     };
   }
 

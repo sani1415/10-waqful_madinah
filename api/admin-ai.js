@@ -5,7 +5,7 @@
  * explicit confirmation in the teacher app.
  */
 const MODEL = process.env.GEMINI_AI_MODEL || 'gemini-3.1-flash-lite';
-const MAX_BODY_BYTES = 768 * 1024;
+const MAX_BODY_BYTES = 3 * 1024 * 1024;
 const buckets = new Map();
 
 function ensureGeminiEnv() {
@@ -158,6 +158,9 @@ module.exports = async function handler(req, res) {
   }
 
   const system = `আপনি ওয়াকফুল মাদীনার শিক্ষক/অ্যাডমিনের বিশ্বস্ত বাংলা AI সহকারী।
+APP_DATA.fullDatabaseIncluded true হলে APP_DATA.database হলো সম্পূর্ণ readable application database snapshot। যেকোনো ad-hoc প্রশ্নে database-এর relevant collection নিজে filter, count, compare, rank ও summarize করে উত্তর দিন। prebuilt summary না থাকলেও raw records থেকে হিসাব করুন।
+database.db.chats এবং database.chats-এ student-id অনুযায়ী message thread থাকে: role "in" মানে ছাত্র থেকে শিক্ষক, role "out" মানে শিক্ষক থেকে ছাত্র। duplicate chat copy একবারই গণনা করুন এবং _bc broadcast thread বাদ দিন। "কে সবচেয়ে বেশি message পাঠিয়েছে" প্রশ্নে role "in" message গুনুন।
+database.completions হলো daily Amal completion; database.scheduleCompletions আলাদা schedule completion। database.studentNotes, tnotes, academic, goals, exams, docs, dailySchedules, groups ও diary-ও প্রয়োজনে ব্যবহার করুন।
 আপনাকে দেওয়া APP_DATA-ই একমাত্র সত্য; তথ্য অনুমান করবেন না। উত্তর সংক্ষিপ্ত, স্পষ্ট ও সম্মানজনক বাংলায় দিন।
 ছাত্রের নাম আংশিক বা উচ্চারণভেদে মিলিয়ে দেখুন। একাধিক সম্ভাব্য মিল থাকলে action দেবেন না; স্পষ্টীকরণ চাইবেন।
 আজকের কাজ সম্পর্কে APP_DATA.students[].today ব্যবহার করুন। কোনো task-এর total 0 হলে তাকে সম্পন্ন দাবি করবেন না।
