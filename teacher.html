@@ -1453,9 +1453,12 @@ async function enableTeacherNotif(){
   const btn=document.getElementById('teaNotifBtn');
   if(btn){ btn.innerHTML=teaNotifBtnSvgSpinner(); btn.disabled=true; btn.setAttribute('aria-label','নোটিফিকেশন চালু করা হচ্ছে'); }
   try{
-    await API.Pwa.enableNotificationsAfterAuth('teacher');
+    const repaired=Notification.permission==='granted'
+      ? await API.Pwa.repairPushSubscription('teacher')
+      : await API.Pwa.enableNotificationsAfterAuth('teacher');
     updateTeacherNotifBtn();
-    if(Notification.permission==='granted') showToast('নোটিফিকেশন চালু হয়েছে।');
+    if(repaired) showToast('নোটিফিকেশন নতুন করে সংযুক্ত হয়েছে।');
+    else if(Notification.permission==='granted') showToast('নোটিফিকেশন সংযুক্ত হয়নি—ইন্টারনেট দেখে আবার চেষ্টা করুন।');
     else showToast('নোটিফিকেশন অনুমতি দেওয়া হয়নি।');
   }catch(e){ console.error('teacher notif error',e); updateTeacherNotifBtn(); }
   finally{ if(btn) btn.disabled=false; }

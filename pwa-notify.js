@@ -184,6 +184,32 @@
   var SLOT_TEACHER = 'madrasa_push_slot_teacher';
   var SLOT_STUDENT = 'madrasa_push_slot_student';
   var LAST_STUDENT_WAQF = 'madrasa_last_student_waqf';
+  var AUTO_RENEW_VERSION = '2026-07-teacher-push-v1';
+  var AUTO_RENEW_MAX_AGE = 14 * 24 * 60 * 60 * 1000;
+
+  function autoRenewKey(role, opts) {
+    var targets = getDevicePushTargets(role, opts || {});
+    var id = targets.length ? targets[0].id : role;
+    return 'madrasa_push_renewed_' + AUTO_RENEW_VERSION + '_' + String(id || role);
+  }
+
+  function shouldAutoRenew(role, opts) {
+    try {
+      var saved = Number(localStorage.getItem(autoRenewKey(role, opts)) || 0);
+      return !saved || Date.now() - saved >= AUTO_RENEW_MAX_AGE;
+    } catch (e) { return true; }
+  }
+
+  function markAutoRenewed(role, opts) {
+    try { localStorage.setItem(autoRenewKey(role, opts), String(Date.now())); } catch (e) {}
+  }
+
+  function canAutoRenew(role, opts) {
+    var targets = getDevicePushTargets(role, opts || {});
+    return targets.length > 0 && targets.every(function (target) {
+      return /^shared_device_/.test(target.id) || !!authPinForSlot(target.role, target.id);
+    });
+  }
 
   function markPushSlot(role) {
     try {
@@ -234,12 +260,16 @@
     return false;
   }
 
-  async function getOrCreatePushSubscription(reg) {
+  async function getOrCreatePushSubscription(reg, forceRenew) {
     var vapid = w.__PWA_VAPID_PUBLIC_KEY__;
     if (!vapid || typeof vapid !== 'string' || !vapid.trim()) return null;
     var key = urlB64ToUint8Array(vapid.trim());
     var subOpts = { userVisibleOnly: true, applicationServerKey: key };
     var existing = await reg.pushManager.getSubscription();
+    if (existing && forceRenew) {
+      await existing.unsubscribe();
+      existing = null;
+    }
     if (existing) {
       var existingKey = existing.options && existing.options.applicationServerKey;
       if (!existingKey || equalBytes(new Uint8Array(existingKey), key)) return existing;
@@ -268,7 +298,7 @@
     }
   }
 
-  async function subscribeAndSave(role, opts, requestPermission) {
+  async function subscribeAndSave(role, opts, requestPermission, forceRenew) {
     opts = opts || {};
     if (!('Notification' in w)) return false;
     markPushSlot(role);
@@ -281,7 +311,7 @@
     if (!w.__PWA_VAPID_PUBLIC_KEY__ || typeof w.__PWA_VAPID_PUBLIC_KEY__ !== 'string' || !w.__PWA_VAPID_PUBLIC_KEY__.trim()) return false;
 
     try {
-      var sub = await getOrCreatePushSubscription(reg);
+      var sub = await getOrCreatePushSubscription(reg, !!forceRenew);
       if (!sub) return false;
       var subJson = sub.toJSON();
       if (role === 'student' && opts.waqfId) {
@@ -294,12 +324,31 @@
     }
   }
 
+  async function maintainPushSubscription(role, opts, requestPermission) {
+    opts = opts || {};
+    // Never discard a still-usable local endpoint before the authenticated RPC
+    // credentials needed to save its replacement are available.
+    var forceRenew = canAutoRenew(role, opts) && shouldAutoRenew(role, opts);
+    var saved = await subscribeAndSave(role, opts, requestPermission, forceRenew);
+    if (saved && forceRenew) markAutoRenewed(role, opts);
+    return saved;
+  }
+
   async function enableAfterAuth(role, opts) {
-    return subscribeAndSave(role, opts, true);
+    return maintainPushSubscription(role, opts, true);
   }
 
   async function refreshPushSubscription(role, opts) {
-    return subscribeAndSave(role, opts, false);
+    return maintainPushSubscription(role, opts, false);
+  }
+
+  // Explicit recovery path for a browser endpoint that still exists locally
+  // but is no longer accepted by the push service or sender VAPID key pair.
+  async function repairPushSubscription(role, opts) {
+    if (!canAutoRenew(role, opts || {})) return false;
+    var saved = await subscribeAndSave(role, opts, true, true);
+    if (saved) markAutoRenewed(role, opts || {});
+    return saved;
   }
 
   // Each physical device gets a unique stable ID stored in localStorage
@@ -331,11 +380,30 @@
   // Expose device ID so Edge Function lookup works
   function getSharedDeviceId() { return getOrCreateSharedDeviceId(); }
 
+  function refreshCurrentPushSlot() {
+    var role = currentRole();
+    if (!role || typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+    var opts = {};
+    if (role === 'student') {
+      try { opts.waqfId = localStorage.getItem(LAST_STUDENT_WAQF) || ''; } catch (e) {}
+      if (!opts.waqfId) return;
+    }
+    refreshPushSubscription(role, opts).catch(function () {});
+  }
+
+  w.addEventListener('online', refreshCurrentPushSlot);
+  if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
+    navigator.serviceWorker.addEventListener('message', function (e) {
+      if (e.data && e.data.type === 'PUSH_SUBSCRIPTION_CHANGED') refreshCurrentPushSlot();
+    });
+  }
+
   w.MadrasaPwa = {
     register: register,
     markPushSlot: markPushSlot,
     enableAfterAuth: enableAfterAuth,
     refreshPushSubscription: refreshPushSubscription,
+    repairPushSubscription: repairPushSubscription,
     enableSharedStudentDevice: enableSharedStudentDevice,
     getSharedDeviceId: getSharedDeviceId,
   };

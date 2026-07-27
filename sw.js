@@ -1,5 +1,5 @@
 /* Waqful Madinah — full-app shell cache + Web Push display */
-var CACHE = 'waqful-full-v201';
+var CACHE = 'waqful-full-v202';
 
 var CDN_ASSETS = [
   'https://unpkg.com/@supabase/supabase-js@2.49.8/dist/umd/supabase.js',
@@ -298,6 +298,19 @@ self.addEventListener('push', function (e) {
     var clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     clients.forEach(function (c) { c.postMessage({ type: 'REFRESH_DATA' }); });
   })());
+});
+
+// Some browsers rotate or invalidate Web Push endpoints independently of a
+// service-worker update. An open app can immediately rebind the new endpoint;
+// otherwise the normal authenticated startup refresh repairs it next time.
+self.addEventListener('pushsubscriptionchange', function (e) {
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clients) {
+      clients.forEach(function (client) {
+        client.postMessage({ type: 'PUSH_SUBSCRIPTION_CHANGED' });
+      });
+    })
+  );
 });
 
 // ── Notification click ────────────────────────────────────────────────────────
