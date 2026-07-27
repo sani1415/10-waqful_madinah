@@ -324,11 +324,44 @@
     }
   }
 
+  // Feedback loop: the Edge Function records every failed push per slot in
+  // waqf_push_failures. A flagged slot means the stored endpoint is bad even if
+  // the browser thinks the local subscription is fine — renew without waiting
+  // for the 14-day timer. Saving the fresh subscription clears the flag.
+  var _lastFailCheckAt = 0;
+  var FAIL_CHECK_MIN_INTERVAL = 5 * 60 * 1000;
+
+  async function hasServerPushFailure(role, opts) {
+    var now = Date.now();
+    if (now - _lastFailCheckAt < FAIL_CHECK_MIN_INTERVAL) return false;
+    var sb = getSupabaseClient();
+    if (!sb) return false;
+    _lastFailCheckAt = now;
+    var targets = getDevicePushTargets(role, opts || {});
+    for (var i = 0; i < targets.length; i++) {
+      var t = targets[i];
+      try {
+        var res = await sb.rpc('madrasa_rel_check_push_failure', {
+          p_id: t.id,
+          p_role: t.role,
+          p_pin: authPinForSlot(t.role, t.id),
+        });
+        if (!res.error && res.data && res.data.flagged) {
+          console.warn('MadrasaPwa: server recorded failed push for', t.id, '— renewing subscription');
+          return true;
+        }
+      } catch (e) {}
+    }
+    return false;
+  }
+
   async function maintainPushSubscription(role, opts, requestPermission) {
     opts = opts || {};
     // Never discard a still-usable local endpoint before the authenticated RPC
     // credentials needed to save its replacement are available.
-    var forceRenew = canAutoRenew(role, opts) && shouldAutoRenew(role, opts);
+    var canRenew = canAutoRenew(role, opts);
+    var forceRenew = canRenew && shouldAutoRenew(role, opts);
+    if (!forceRenew && canRenew) forceRenew = await hasServerPushFailure(role, opts);
     var saved = await subscribeAndSave(role, opts, requestPermission, forceRenew);
     if (saved && forceRenew) markAutoRenewed(role, opts);
     return saved;

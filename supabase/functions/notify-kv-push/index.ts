@@ -12,6 +12,9 @@ function jsonResponse(obj: unknown, status = 200) {
 }
 
 type SubJson = { endpoint?: string; keys?: { p256dh?: string; auth?: string } };
+// slot = which waqf_pwa_subscriptions row this sub came from, so failures can be
+// recorded per slot in waqf_push_failures (null for legacy KV subs → not recorded)
+type SubTarget = { sub: SubJson; slot: { id: string; role: string } | null };
 
 function pickSubscription(v: unknown): SubJson | null {
   if (!v || typeof v !== "object") return null;
@@ -76,45 +79,56 @@ async function countStudentUnread(
 }
 
 // ── Subscription lookup from waqf_pwa_subscriptions + waqf_app_kv fallback ──
-async function getTeacherSubs(sb: ReturnType<typeof createClient>): Promise<SubJson[]> {
-  const subs: SubJson[] = [];
+async function getTeacherSubs(sb: ReturnType<typeof createClient>): Promise<SubTarget[]> {
+  const targets: SubTarget[] = [];
   const endpoints = new Set<string>();
   const { data: rows } = await sb
-    .from("waqf_pwa_subscriptions").select("subscription").eq("role", "teacher");
-  for (const row of rows || []) {
+    .from("waqf_pwa_subscriptions").select("id, subscription").eq("role", "teacher");
+  const deviceRows = (rows || []).filter((row) =>
+    String(row.id || "").startsWith("teacher_device_")
+  );
+  // A scoped teacher worker creates a new endpoint on the same physical device.
+  // Once any per-device row exists, the old singleton would deliver every push twice.
+  const activeRows = deviceRows.length ? deviceRows : (rows || []);
+  for (const row of activeRows) {
     const sub = pickSubscription({ subscription: row.subscription });
     if (!sub?.endpoint || endpoints.has(sub.endpoint)) continue;
-    subs.push(sub);
+    targets.push({ sub, slot: { id: String(row.id), role: "teacher" } });
     endpoints.add(sub.endpoint);
   }
 
-  // Keep the legacy KV endpoint during the migration to per-device rows.
-  const { data: kv } = await sb
-    .from("waqf_app_kv").select("value").eq("key", "pwa_push_teacher").maybeSingle();
-  const legacy = kv?.value ? pickSubscription(kv.value) : null;
-  if (legacy?.endpoint && !endpoints.has(legacy.endpoint)) subs.push(legacy);
-  return subs;
+  // Use the legacy KV endpoint only until the first per-device subscription exists.
+  if (!deviceRows.length) {
+    const { data: kv } = await sb
+      .from("waqf_app_kv").select("value").eq("key", "pwa_push_teacher").maybeSingle();
+    const legacy = kv?.value ? pickSubscription(kv.value) : null;
+    if (legacy?.endpoint && !endpoints.has(legacy.endpoint)) targets.push({ sub: legacy, slot: null });
+  }
+  return targets;
 }
 
-async function getAllStudentSubs(sb: ReturnType<typeof createClient>): Promise<SubJson[]> {
-  const subs: SubJson[] = [];
+async function getAllStudentSubs(sb: ReturnType<typeof createClient>): Promise<SubTarget[]> {
+  const targets: SubTarget[] = [];
   // New table
   const { data: relRows } = await sb
     .from("waqf_pwa_subscriptions").select("id, subscription").eq("role", "student");
   for (const row of relRows || []) {
     if (String(row.id || "").startsWith("shared_device_")) continue;
     const s = pickSubscription({ subscription: row.subscription });
-    if (s) subs.push(s);
+    if (s) targets.push({ sub: s, slot: { id: String(row.id), role: "student" } });
   }
   // waqf_app_kv fallback (deduplicate by endpoint)
-  const endpoints = new Set(subs.map((s) => s.endpoint));
+  const endpoints = new Set(targets.map((t) => t.sub.endpoint));
   const { data: kvRows } = await sb
     .from("waqf_app_kv").select("value").like("key", "pwa_push_student_%");
   for (const row of kvRows || []) {
     const s = pickSubscription(row.value);
-    if (s && s.endpoint && !endpoints.has(s.endpoint)) { subs.push(s); endpoints.add(s.endpoint); }
+    if (s && s.endpoint && !endpoints.has(s.endpoint)) {
+      targets.push({ sub: s, slot: null });
+      endpoints.add(s.endpoint);
+    }
   }
-  return subs;
+  return targets;
 }
 
 async function getStudentSubByWaqf(sb: ReturnType<typeof createClient>, waqfId: string): Promise<SubJson | null> {
@@ -171,15 +185,42 @@ Deno.serve(async (req: Request) => {
   let sent = 0, failed = 0;
   const staleEndpoints: string[] = [];
 
-  async function trySend(sub: SubJson, payload: string) {
+  // Feedback loop: a failed send is recorded per slot in waqf_push_failures so the
+  // owning client force-renews its subscription on next open; a successful send
+  // (or a saved fresh subscription) clears the flag.
+  async function recordPushFailure(slot: { id: string; role: string }, sub: SubJson, status?: number) {
+    try {
+      await sb.from("waqf_push_failures").upsert({
+        slot_id: slot.id,
+        role: slot.role,
+        status_code: typeof status === "number" ? status : null,
+        endpoint: sub.endpoint || null,
+        failed_at: new Date().toISOString(),
+      });
+    } catch (e) {
+      console.error("record push failure:", String(e));
+    }
+  }
+
+  async function clearPushFailure(slot: { id: string; role: string }) {
+    try {
+      await sb.from("waqf_push_failures").delete().eq("slot_id", slot.id);
+    } catch (e) {
+      console.error("clear push failure:", String(e));
+    }
+  }
+
+  async function trySend(sub: SubJson, payload: string, slot?: { id: string; role: string } | null) {
     try {
       await sendPush(sub, payload, vapidPublic, vapidPrivate);
       sent++;
       console.log("push ok", sub.endpoint?.slice(-30));
+      if (slot) await clearPushFailure(slot);
     } catch (e: unknown) {
       const status = (e as { statusCode?: number })?.statusCode;
       console.error("push failed", status, sub.endpoint?.slice(-30), String(e));
       failed++;
+      if (slot) await recordPushFailure(slot, sub, status);
       // 410 Gone or 404 = subscription expired/invalid — mark for removal
       if (status === 410 || status === 404) {
         if (sub.endpoint) staleEndpoints.push(sub.endpoint);
@@ -209,17 +250,18 @@ Deno.serve(async (req: Request) => {
       const { data: stuInfo } = await sb
         .from("waqf_students").select("name").eq("id", threadId).maybeSingle();
       const studentName = stuInfo?.name ? String(stuInfo.name) : "ছাত্র";
-      const teacherSubs = await getTeacherSubs(sb);
+      const teacherTargets = await getTeacherSubs(sb);
       const teacherUnread = await countTeacherUnread(sb);
-      for (const teacherSub of teacherSubs) {
+      for (const target of teacherTargets) {
         await trySend(
-          teacherSub,
+          target.sub,
           makePayload(
             `${studentName}: নতুন বার্তা পাঠিয়েছে।`,
             "teacher",
             `msg-in-${threadId}`,
             teacherUnread,
           ),
+          target.slot,
         );
       }
     } else if (msgRole === "out") {
@@ -240,6 +282,7 @@ Deno.serve(async (req: Request) => {
           await trySend(
             sub,
             makePayload("জিম্মাদারের নতুন বার্তা এসেছে।", "student", "msg-out-bc", unread),
+            { id: sid, role: "student" },
           );
           bcSentEndpoints.add(sub.endpoint);
         }
@@ -263,6 +306,7 @@ Deno.serve(async (req: Request) => {
             await trySend(
               personalSub,
               makePayload(msgBody, "student", `msg-out-${waqfId}`, studentUnread),
+              { id: waqfId, role: "student" },
             );
           }
         }
@@ -292,29 +336,31 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ ok: true, skipped: "no_notify_event" });
   }
 
-  const teacherSubs = await getTeacherSubs(sb);
-  const allStudentSubs = await getAllStudentSubs(sb);
-  const teacherEndpoints = new Set(teacherSubs.map((sub) => sub.endpoint).filter(Boolean));
-  const dedupedStudentSubs = allStudentSubs.filter(
-    (s) => !s.endpoint || !teacherEndpoints.has(s.endpoint)
+  const teacherTargets = await getTeacherSubs(sb);
+  const allStudentTargets = await getAllStudentSubs(sb);
+  const teacherEndpoints = new Set(teacherTargets.map((t) => t.sub.endpoint).filter(Boolean));
+  const dedupedStudentTargets = allStudentTargets.filter(
+    (t) => !t.sub.endpoint || !teacherEndpoints.has(t.sub.endpoint)
   );
 
   const teacherUnreadKv = await countTeacherUnread(sb);
-  for (const sub of dedupedStudentSubs) {
+  for (const target of dedupedStudentTargets) {
     await trySend(
-      sub,
+      target.sub,
       makePayload("জিম্মাদারের নতুন আপডেট এসেছে। অ্যাপ খুলুন।", "student", `kv-student-${key}`, 1),
+      target.slot,
     );
   }
-  for (const teacherSub of teacherSubs) {
+  for (const target of teacherTargets) {
     await trySend(
-      teacherSub,
+      target.sub,
       makePayload("ছাত্রের নতুন আপডেট এসেছে।", "teacher", `kv-teacher-${key}`, teacherUnreadKv),
+      target.slot,
     );
   }
 
   await removeStaleSubscriptions();
   return jsonResponse({ ok: true, table: "waqf_app_kv", sent, failed,
-    teacher_targets: teacherSubs.length,
-    student_targets: dedupedStudentSubs.length });
+    teacher_targets: teacherTargets.length,
+    student_targets: dedupedStudentTargets.length });
 });
