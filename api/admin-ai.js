@@ -4,54 +4,12 @@
  * PIN-free snapshot; side effects are only proposed here and executed after
  * explicit confirmation in the teacher app.
  */
+const { ensureEnv, json, readBody } = require('./_env');
+const { verifyCaller } = require('./_auth');
+
 const MODEL = process.env.GEMINI_AI_MODEL || 'gemini-3.1-flash-lite';
 const MAX_BODY_BYTES = 3 * 1024 * 1024;
 const buckets = new Map();
-
-function ensureGeminiEnv() {
-  if (process.env.GEMINI_API_KEY) return;
-  const fs = require('fs');
-  const path = require('path');
-  for (const name of ['.env.local', '.env']) {
-    try {
-      const envPath = path.join(process.cwd(), name);
-      if (!fs.existsSync(envPath)) continue;
-      for (const line of fs.readFileSync(envPath, 'utf8').split(/\r?\n/)) {
-        const match = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/.exec(line);
-        if (!match || match[1] !== 'GEMINI_API_KEY') continue;
-        let value = match[2];
-        if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) value = value.slice(1, -1);
-        if (value) process.env.GEMINI_API_KEY = value;
-        return;
-      }
-    } catch (_) {}
-  }
-}
-
-function json(res, status, body) {
-  res.statusCode = status;
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  res.setHeader('Cache-Control', 'no-store');
-  res.end(JSON.stringify(body));
-}
-
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let size = 0;
-    const chunks = [];
-    req.on('data', (chunk) => {
-      size += chunk.length;
-      if (size > MAX_BODY_BYTES) {
-        reject(new Error('payload_too_large'));
-        req.destroy();
-        return;
-      }
-      chunks.push(chunk);
-    });
-    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
-    req.on('error', reject);
-  });
-}
 
 function rateLimited(req) {
   const raw = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown');
@@ -147,22 +105,26 @@ function parseModelJson(text) {
 module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-waqf-device');
     return json(res, 204, {});
   }
   if (req.method !== 'POST') return json(res, 405, { ok: false, error: 'শুধু POST অনুমোদিত।' });
   if (rateLimited(req)) return json(res, 429, { ok: false, error: 'একটু পরে আবার চেষ্টা করুন।' });
 
-  ensureGeminiEnv();
+  ensureEnv();
   const apiKey = process.env.GEMINI_API_KEY || '';
   if (!apiKey) return json(res, 500, { ok: false, error: 'AI সেবা কনফিগার করা নেই।' });
 
   let body;
   try {
-    body = typeof req.body === 'object' && req.body ? req.body : JSON.parse(await readBody(req));
+    body = typeof req.body === 'object' && req.body ? req.body : JSON.parse(await readBody(req, MAX_BODY_BYTES));
   } catch (error) {
     return json(res, error?.message === 'payload_too_large' ? 413 : 400, { ok: false, error: 'অনুরোধটি গ্রহণ করা যায়নি।' });
   }
+
+  // Only the logged-in teacher may use the admin assistant (it costs Gemini quota).
+  const caller = await verifyCaller(req, body.auth, { allow: ['teacher'] });
+  if (!caller.ok) return json(res, caller.status, { ok: false, error: caller.error });
 
   const message = cleanText(body.message, 2000);
   const context = body.context && typeof body.context === 'object' ? body.context : null;

@@ -1,0 +1,316 @@
+/* Waqful Madinah — css/student.css: page styles (moved from student.html) */
+/* ── Student theme — হালকা সবুজ (জিম্মাদারের #075E54 গাঢ় টিল-সবুজের চেয়ে নরম) ── */
+:root{
+  --stu-main:#4CAF50;
+  --stu-dark:#43A047;
+  --stu-deeper:#388E3C;
+  --stu-light:#66BB6A;
+  --stu-pale:#E8F5E9;
+  --stu-main-rgb:76,175,80;
+  --stu-dark-rgb:67,160,71;
+}
+/* লগইন: সফট লাইট — শিক্ষার্থী: নরম সেজ/মিন্ট */
+#lockScreen.lock-screen-soft{background:linear-gradient(180deg,#e8f8ef 0%,#f7fef9 48%,#d8f3e0 100%)}
+.lock-screen-soft .lock-sticky-header{
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.92);color:#0f172a;
+  border-bottom:1px solid #c8e6c9;
+  box-shadow:0 1px 3px rgba(67,160,71,.06);
+  padding:12px 16px max(10px,env(safe-area-inset-top));
+}
+.lock-soft-head-cluster{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  max-width:100%;
+}
+.lock-soft-app-name{
+  font-family:'Noto Naskh Arabic',serif;font-weight:600;font-size:17px;line-height:1.3;
+  color:#14532d;
+}
+.lock-soft-app-name.lock-soft-app-name--err{
+  font-family:var(--font);font-size:13px;font-weight:600;color:#b91c1c;
+}
+.lock-soft-notif-btn{
+  flex-shrink:0;width:42px;height:42px;padding:0;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:none;border:none;cursor:pointer;border-radius:12px;
+  color:#4CAF50;
+}
+.lock-soft-notif-btn:active{background:#E8F5E9}
+.lock-soft-notif-btn.is-muted{opacity:.48}
+.lock-soft-notif-btn.is-blocked{color:#64748b}
+.lock-soft-notif-svg{display:block;width:22px;height:22px;flex-shrink:0}
+@keyframes lock-soft-notif-spin{to{transform:rotate(360deg)}}
+.lock-soft-notif-svg.lock-soft-notif-spin{animation:lock-soft-notif-spin .65s linear infinite;transform-origin:center}
+.lock-screen-soft .lock-top{background:transparent}
+.lock-screen-soft .lock-bottom{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  background:rgba(255,255,255,.94);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  border-top:1px solid #b2dfbc;
+  border-radius:28px 28px 0 0;
+  box-shadow:0 -16px 48px rgba(67,160,71,.1);
+  padding:18px 16px max(20px,env(safe-area-inset-bottom));
+}
+.lock-screen-soft .pending-sec-label{color:#64748b}
+.lock-screen-soft .pending-item{
+  background:#fff;border:1px solid #e2e8f0;
+  color:#0f172a;
+}
+.lock-screen-soft .pending-item:active{background:#f8fafc}
+.lock-screen-soft .pending-name{color:#0f172a}
+.lock-screen-soft .pending-waqf{color:#64748b!important}
+.lock-screen-soft .login-lbl-c{color:#64748b}
+.lock-screen-soft .login-lbl-name{color:#0f172a}
+.lock-screen-soft .stu-pin-dots .pin-dot{border-color:#cbd5e1;background:transparent}
+.lock-screen-soft .stu-pin-dots .pin-dot.filled{background:#4CAF50;border-color:#4CAF50}
+.lock-screen-soft #lockScreen .pin-key,.lock-screen-soft .pin-key{
+  background:#fff;color:#0f172a;border:1px solid #e2e8f0;
+  box-shadow:0 1px 2px rgba(15,23,42,.04);
+}
+.lock-screen-soft .pin-key:active{background:#f1f5f9}
+.lock-screen-soft .pin-key .sub{color:#64748b;opacity:.9}
+.lock-screen-soft .login-btn{background:#4CAF50;color:#fff;box-shadow:0 4px 14px rgba(76,175,80,.25)}
+.lock-screen-soft .login-btn-ghost{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0}
+.lock-screen-soft .login-err{color:#b91c1c}
+.header{background:#4CAF50}
+#stuMainShell .header.stu-h-wrap{background:linear-gradient(180deg,#43A047 0%,#4CAF50 100%);box-shadow:0 2px 8px rgba(76,175,80,.25)}
+/* ফ্লোটিং নিচের ট্যাব — উপরের ট্যাব বার সরানো */
+.stu-main-shell{flex:1;display:flex;flex-direction:column;min-height:0;padding-bottom:var(--shell-pb,calc(12px + 68px + env(safe-area-inset-bottom)))}#stuBottomNav.stu-float-nav-wrap{display:none;position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:100;width:100%;max-width:430px;box-sizing:border-box;padding:0 12px calc(10px + env(safe-area-inset-bottom));pointer-events:none}
+.stu-float-nav-inner{pointer-events:auto;display:flex;justify-content:space-between;align-items:center;background:#fff;border-radius:18px;padding:6px 4px;border:1px solid #f1f5f9;box-shadow:0 -4px 24px rgba(0,0,0,.06),0 8px 32px rgba(15,118,110,.08)}
+.stu-float-nav-inner .tab-btn{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 1px;font-family:var(--font);font-size:9px;font-weight:700;color:#64748b;background:none;border:none;border-radius:12px;cursor:pointer;transition:color .2s,background .2s;position:relative;line-height:1.15}
+.stu-float-nav-inner .tab-btn.active{color:#4CAF50;background:rgba(76,175,80,.1)}
+.stu-float-nav-inner .tab-ic{line-height:0;display:flex;align-items:center;justify-content:center}
+.stu-float-nav-inner .tab-ic svg{width:22px;height:22px;display:block;stroke:currentColor;fill:none;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round;opacity:.88}
+.stu-float-nav-inner .tab-btn.active .tab-ic svg{stroke-width:2;opacity:1}
+.stu-float-nav-inner .tab-lbl{display:block;text-align:center}
+.stu-float-nav-inner .tab-badge{top:2px;right:4px}
+.tab-badge{background:#66BB6A;color:#43A047}
+.filter-chip.active{background:#4CAF50}.progress-fill{background:#66BB6A}
+#screen-goals .goal-chip-ilm{background:#E3F2FD;border-color:#BBDEFB;color:#1565C0}
+#screen-goals .goal-chip-amal{background:#E8F5E9;border-color:#C8E6C9;color:#2E7D32}
+#screen-goals .goal-chip-akhlaq{background:#FCE4EC;border-color:#F8BBD0;color:#C2185B}
+#screen-goals .goal-chip-afkar{background:#FFF8E1;border-color:#FFE082;color:#F57F17}
+#screen-goals .goal-chip-ilm.active{background:#1565C0;border-color:#1565C0;color:#fff}
+#screen-goals .goal-chip-amal.active{background:#2E7D32;border-color:#2E7D32;color:#fff}
+#screen-goals .goal-chip-akhlaq.active{background:#C2185B;border-color:#C2185B;color:#fff}
+#screen-goals .goal-chip-afkar.active{background:#F9A825;border-color:#F9A825;color:#fff}
+#dailyNoteModal .modal-title{margin-bottom:10px;font-size:16px;flex-shrink:0}
+.attach-btn{width:38px;height:38px;background:#eef2f6;color:#64748b;margin-bottom:4px}
+.attach-btn svg,.chat-mic-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.attach-btn:active{background:#dbe3ec}
+.chat-mic-btn{flex-shrink:0;width:34px;height:34px;margin:0;border:none;border-radius:50%;background:transparent;color:#94a3b8;opacity:.4;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:opacity .15s,color .15s,background .15s}
+.chat-mic-btn:hover{opacity:.72;color:#64748b}
+.chat-mic-btn.recording{opacity:1;color:#fff;background:#EF5350}
+.chat-mic-btn.busy{opacity:.9;color:#1565C0;background:#E3F2FD;cursor:wait}
+.chat-mic-btn:disabled{cursor:wait}
+.send-btn{background:#4CAF50}.goal-add-btn{background:#4CAF50}.goal-check{border-color:#4CAF50}
+.goal-check.done{background:#4CAF50;border-color:#4CAF50}.btn-primary{background:#4CAF50}
+.form-input:focus{border-color:#4CAF50}.sec-link{color:#4CAF50}
+.goal-progress-wrap{background:#E8F5E9}.goal-progress-label{color:#4CAF50}.goal-progress-fill{background:#4CAF50}
+.at-done-btn{background:#4CAF50}.at-done-btn.done{background:#66BB6A}.at-done-btn.late{background:#F44336}
+.msg-bubble.out{background:#C8E6C9;border-bottom-right-radius:4px}.msg-tick{color:#4CAF50}.msg-sender{color:#4CAF50}
+/* Chat doc attachment bubble */
+.msg-doc-bubble{background:#fff;border:1px solid var(--gray-200);border-radius:12px;padding:0;display:flex;flex-direction:column;min-width:176px;max-width:260px;overflow:hidden;box-shadow:var(--shadow-sm)}
+.msg-wrap.out .msg-doc-bubble{background:#E8F5E9;border-color:#C8E6C9}
+.msg-doc-card{display:flex;align-items:center;gap:10px;padding:10px 12px}
+.msg-doc-tile{width:40px;height:40px;border-radius:10px;background:#E8F5E9;color:#2E7D32;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.msg-wrap.out .msg-doc-tile{background:rgba(76,175,80,.18)}
+.msg-doc-tile .ic-svg svg,.msg-doc-tile svg{width:20px;height:20px;display:block;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.msg-doc-info{flex:1;min-width:0}
+.msg-doc-name{font-size:13px;font-weight:700;color:var(--gray-700);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.25}
+.msg-doc-size{font-size:11px;color:var(--gray-500);margin-top:2px;font-weight:500}
+.chat-doc-view-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin:0;border:none;border-top:1px solid var(--gray-100);background:transparent;padding:8px 10px;font-size:12px;font-weight:700;color:#2E7D32;cursor:pointer;font-family:var(--font)}
+.msg-wrap.out .chat-doc-view-btn{border-top-color:rgba(76,175,80,.2)}.chat-doc-view-btn:active{background:rgba(76,175,80,.08)}
+.chat-doc-view-btn .ic-svg svg{width:15px;height:15px;display:block;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.task-bubble-hd{background:#43A047}
+.reply-preview-bar{background:#F1F8F1;border-top-color:#66BB6A}
+.reply-preview-content{border-left-color:#4CAF50}.reply-preview-sender{color:#4CAF50}
+.chat-file-title-in:focus{border-color:#4CAF50}
+.welcome-card{background:linear-gradient(135deg,#4CAF50,#26A69A)}
+.chat-messages{background-color:#EDF4ED;background-image:url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%234CAF50' fill-opacity='0.04'%3E%3Cpath d='M20 20.5V18H0v5h5v5H0v5h20v-5h15v-5H20v-.5z'/%3E%3C/g%3E%3C/svg%3E")}
+
+/* ── ছাত্র হেডার: দুই-লেয়ার (কমপ্যাক্ট) ── */
+#stuMainShell .header.stu-h-wrap{flex-direction:column;align-items:stretch;gap:0;padding:0;min-height:auto}
+.stu-h-top{display:flex;align-items:center;justify-content:center;padding:4px 12px 3px;color:#fff}
+.stu-h-card{display:flex;align-items:center;gap:8px;padding:7px 12px;background:#fff;margin:0;border-radius:12px 12px 0 0;box-shadow:none;border-bottom:1px solid #e8ecef}
+.stu-h-card .header-info{flex:1;min-width:0}
+.stu-h-card .header-title{color:#0f172a;font-size:15px;font-weight:700;line-height:1.15}
+.stu-h-card .header-sub{color:#64748b;opacity:1;margin-top:1px;font-size:11px}
+.stu-h-card .header-btn{color:#64748b;width:32px;height:32px;font-size:18px}
+.stu-h-card .header-btn svg{width:18px;height:18px}
+.stu-h-card .header-btn:active{background:#f1f5f9}
+.stu-h-actions{display:flex;align-items:center;gap:2px;flex-shrink:0;margin-left:auto}
+.stu-h-avatar{position:relative;width:40px;height:40px;flex-shrink:0;cursor:pointer;border:none;background:none;padding:0;border-radius:50%;font:inherit;color:inherit}
+.stu-h-avatar:active{opacity:.9}
+.stu-h-ring{position:absolute;inset:0;width:40px;height:40px;display:block}
+.stu-h-pct{position:absolute;inset:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#2E7D32;letter-spacing:-.02em;pointer-events:none;background:#E8F5E9;border-radius:50%}
+.stu-h-days-row{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;line-height:1}
+.stu-h-days-lbl,.stu-h-days-unit{font-size:11px;font-weight:700;opacity:.92;letter-spacing:.02em}
+.stu-h-days-num{display:inline-flex;align-items:center;justify-content:center;min-width:24px;padding:1px 5px;border:1.5px solid #fff;border-radius:4px;background:rgba(255,255,255,.95);color:#C62828;font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.2;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+
+/* ── Task type badge ── */
+.type-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;margin-left:6px}
+.type-badge.daily{background:#E8F5E9;color:#4CAF50}.type-badge.onetime{background:#FFF3E0;color:#E65100}
+.daily-reset-notice{font-size:12px;color:#4CAF50;background:#E8F5E9;border-radius:8px;padding:6px 10px;margin:8px 12px;display:flex;align-items:center;gap:6px}
+/* আমল ট্যাব — prototype-aligned accents */
+#screen-tasks{background:#f3f4f6}
+.stu-filter-pill.active{background:#4CAF50!important;color:#fff!important;border-color:#4CAF50!important;box-shadow:0 8px 20px rgba(76,175,80,.2)}
+#stuMainShell #screen-tasks .amal-panel>.list-scroll{padding-bottom:16px}
+#screen-tasks .stu-sched-card{margin:0 6px 14px}
+
+/* ── দৈনিক সময়সূচি (আমল ট্যাব) ── */
+.stu-sched-card{background:#fff;margin:0 12px 14px;border-radius:14px;border:1px solid var(--gray-200);box-shadow:var(--shadow-sm);overflow:hidden}
+.stu-sched-card-hd{padding:10px 14px;background:var(--gray-50);font-size:13px;font-weight:700;color:var(--gray-700);border-bottom:1px solid var(--gray-200);text-align:center}
+.stu-sched-banner{font-size:12px;padding:8px 14px;line-height:1.45}
+.stu-sched-banner.pending{background:#FFF8E1;color:#E65100;border-bottom:1px solid #FFE082}
+.stu-sched-banner.rejected{background:#FFEBEE;color:#B71C1C;border-bottom:1px solid #FFCDD2}
+.stu-sched-table{width:100%;border-collapse:collapse;font-size:13px}
+.stu-sched-table th{text-align:left;background:#4CAF50;color:#fff;padding:8px 10px;font-weight:600}
+.stu-sched-table th:first-child{width:38%}
+.stu-sched-table td{padding:8px 10px;border-bottom:1px solid var(--gray-100);vertical-align:top}
+.stu-sched-table tr:nth-child(even) td{background:var(--gray-50)}
+.stu-sched-foot{padding:10px 12px;display:flex;gap:8px;flex-wrap:wrap}
+.stu-sched-btn{flex:1;min-width:120px;background:#4CAF50;color:#fff;border:none;border-radius:10px;padding:9px 12px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer}
+.stu-sched-btn.secondary{background:var(--gray-200);color:var(--gray-700)}
+.schedule-edit-row{display:flex;align-items:center;gap:4px;margin-bottom:8px;min-width:0}
+.sched-in-clock{width:48px;flex:0 0 48px;text-align:center;font-variant-numeric:tabular-nums;font-family:var(--font);font-size:13px;font-weight:700;padding:8px 2px;border:1.5px solid var(--gray-300);border-radius:8px;background:#fff;outline:none}
+.sched-in-clock:focus{border-color:#4CAF50}
+.sched-ampm-wrap{position:relative;flex-shrink:0}
+.sched-ampm-btn{border:1.5px solid var(--gray-300);background:#fff;color:#334155;border-radius:8px;padding:7px 5px;font-family:var(--font);font-size:11px;font-weight:800;cursor:pointer;min-width:34px;line-height:1.1}
+.sched-ampm-btn.open{border-color:#4CAF50;background:#E8F5E9;color:#2E7D32}
+.sched-ampm-menu{display:none;position:absolute;left:50%;transform:translateX(-50%);top:calc(100% + 4px);z-index:5;background:#fff;border:1px solid #E2E8F0;border-radius:10px;box-shadow:0 8px 20px rgba(15,23,42,.12);overflow:hidden;min-width:52px}
+.sched-ampm-menu.open{display:block}
+.sched-ampm-opt{display:block;width:100%;border:none;background:#fff;padding:8px 10px;font-family:var(--font);font-size:12px;font-weight:800;color:#334155;cursor:pointer;text-align:center}
+.sched-ampm-opt:hover,.sched-ampm-opt.active{background:#E8F5E9;color:#2E7D32}
+.sched-time-dash{color:#94a3b8;font-weight:700;flex-shrink:0;padding:0 1px;font-size:13px}
+.sched-in-task{flex:1;font-family:var(--font);font-size:13px;padding:8px 8px;border:1.5px solid var(--gray-300);border-radius:8px;min-width:0;background:#fff;outline:none}
+.sched-in-task:focus{border-color:#4CAF50}
+.schedule-edit-del{background:#FFEBEE;border:none;color:#C62828;width:32px;height:32px;border-radius:9px;cursor:pointer;padding:0;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;line-height:0}
+.schedule-edit-del svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.stu-sched-table th:first-child{width:38%}
+.stu-sched-table td:first-child{font-weight:600;color:#43A047;white-space:pre-wrap;word-break:break-word}
+.stu-sched-row-del{width:32px;text-align:center!important}
+.stu-sched-row-del-btn{background:none;border:none;color:var(--gray-400);font-size:14px;cursor:pointer;padding:4px;line-height:1}
+.stu-sched-row-del-btn:active{color:#C62828}
+/* সময়সূচি সম্পাদনা — শিরোনাম */
+#scheduleEditModal .modal-title{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px}
+#scheduleEditModal .modal-title-ic{display:inline-flex;line-height:0;color:#4CAF50}
+#scheduleEditModal .modal-title-ic svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.stu-sched-hint{font-size:12px;color:#64748b;margin:0 0 12px;line-height:1.45;text-align:center}
+.stu-sched-add{width:100%;margin-bottom:12px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.stu-sched-add svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.stu-sched-actions{display:flex;gap:8px;margin-top:4px}
+.stu-sched-actions .btn-primary,.stu-sched-actions .btn-secondary{flex:1;margin:0;width:auto;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 8px;font-size:13px}
+.stu-sched-actions svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+
+/* ── Exams ── */
+.exam-card{background:#fff;margin:10px 12px;border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden}
+.exam-card-hd{padding:12px 14px;display:flex;gap:12px;align-items:flex-start}
+.exam-card-icon{width:44px;height:44px;border-radius:12px;background:#E8F5E9;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.exam-card-info{flex:1;min-width:0}
+.exam-card-title{font-size:15px;font-weight:700;color:var(--gray-700)}
+.exam-card-meta{font-size:12px;color:var(--gray-400);margin-top:3px}
+.exam-card-ft{padding:8px 14px;background:var(--gray-50);border-top:1px solid var(--gray-100);display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.exam-start-btn{background:#4CAF50;color:#fff;border:none;border-radius:20px;padding:7px 20px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer}
+.exam-done-chip{background:#E8F5E9;color:#4CAF50;padding:5px 12px;border-radius:12px;font-size:12px;font-weight:600}
+.exam-fail-chip{background:#FFEBEE;color:#C62828;padding:5px 12px;border-radius:12px;font-size:12px;font-weight:600}
+
+/* ── Quiz taking view (full-screen slide, diary-style) ── */
+.quiz-view{position:fixed;inset:0;z-index:108;display:flex;flex-direction:column;overflow:hidden;background:#fff;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);pointer-events:none;visibility:hidden}
+.quiz-view.open{transform:translateX(0);pointer-events:auto;visibility:visible}
+.quiz-header{background:#4CAF50;color:#fff;padding:12px 16px;display:flex;align-items:center;gap:10px}
+.quiz-timer{background:rgba(255,255,255,.2);border-radius:12px;padding:4px 12px;font-size:13px;font-weight:700;margin-left:auto}
+.quiz-timer.warning{background:#F44336;animation:pulse .8s infinite alternate}
+@keyframes pulse{from{opacity:1}to{opacity:.6}}
+.quiz-body{flex:1;overflow-y:auto;padding:12px}
+.quiz-question-card{background:#fff;border-radius:var(--radius);padding:14px;margin-bottom:12px;box-shadow:var(--shadow-sm)}
+.quiz-q-num{font-size:11px;font-weight:700;color:var(--gray-400);margin-bottom:6px}
+.quiz-q-text{font-size:15px;font-weight:600;color:var(--gray-700);margin-bottom:12px;line-height:1.5}
+.quiz-option{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid var(--gray-200);border-radius:10px;margin-bottom:8px;cursor:pointer;transition:all .2s}
+.quiz-option:active{background:var(--gray-100)}
+.quiz-option.selected{border-color:#4CAF50;background:#E8F5E9}
+.quiz-option input[type=radio]{accent-color:#4CAF50}
+.quiz-answer-input{width:100%;border:1.5px solid var(--gray-300);border-radius:var(--radius);padding:10px 12px;font-family:var(--font);font-size:14px;outline:none}
+.quiz-answer-input:focus{border-color:#4CAF50}
+.quiz-audio-box{border:1.5px solid var(--gray-200);border-radius:10px;padding:10px;background:#fafafa;display:flex;flex-direction:column;gap:8px}
+.quiz-audio-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.quiz-audio-btn{width:auto;border:none;border-radius:8px;background:#075E54;color:#fff;padding:8px 12px;font-family:var(--font);font-weight:700;font-size:13px}
+.quiz-audio-btn.recording{background:#D32F2F}
+.quiz-audio-status{font-size:12px;color:var(--gray-500);font-weight:600}
+.quiz-audio-player{width:100%;height:34px}
+.quiz-footer{padding:12px 16px;border-top:1px solid var(--gray-200);background:#fff}
+
+/* ── Documents (ছাত্র — কমপ্যাক্ট) ── */
+#screen-docs{background:#f3f4f6}
+#screen-docs .doc-tabs{display:flex;background:#fff;border-bottom:1px solid #e2e8f0;flex-shrink:0}
+#screen-docs .doc-tab-btn{flex:1;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:5px;background:none;border:none;padding:7px 10px 6px;font-family:var(--font);font-size:12px;font-weight:600;color:#64748b;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px}
+#screen-docs .doc-tab-btn span:last-child{line-height:1.15;white-space:nowrap}
+#screen-docs .doc-tab-btn.active{color:#4CAF50;border-bottom-color:#4CAF50}
+#screen-docs .doc-tab-ic{line-height:0;display:flex}
+#screen-docs .doc-tab-ic svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round;opacity:.88}
+#screen-docs .doc-tab-btn.active .doc-tab-ic svg{stroke-width:2;opacity:1}
+.stu-doc-scroll{padding:12px 16px 24px;background:#f3f4f6}
+.stu-doc-upload{display:flex;align-items:center;gap:12px;width:100%;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:12px 14px;cursor:pointer;font-family:var(--font);text-align:left;box-shadow:0 1px 2px rgba(0,0,0,.04);margin-bottom:12px;transition:border-color .15s,background .15s}
+.stu-doc-upload:active{background:#f8fafc;border-color:#c8e6c9}
+.stu-doc-upload-ic{width:36px;height:36px;border-radius:10px;background:#E8F5E9;color:#43A047;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.stu-doc-upload-ic svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.stu-doc-upload-txt{flex:1;min-width:0}
+.stu-doc-upload-lbl{font-size:14px;font-weight:700;color:#1e293b;line-height:1.2}
+.stu-doc-upload-hint{font-size:11px;font-weight:500;color:#94a3b8;margin-top:2px;line-height:1.3}
+.stu-doc-upload-arrow{color:#94a3b8;flex-shrink:0;line-height:0}
+.stu-doc-upload-arrow svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.stu-doc-preview{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:12px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.stu-doc-review-note{margin-top:6px;padding:7px 9px;border-radius:9px;background:#ecfdf5;color:#166534;font-size:11px;font-weight:650;line-height:1.45;white-space:pre-wrap}
+.stu-doc-sec{font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:.04em;margin:4px 2px 8px}
+.stu-doc-list{display:flex;flex-direction:column;gap:6px}
+.stu-doc-row{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #f1f5f9;border-radius:12px;padding:10px 12px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.stu-doc-row-ic{width:34px;height:34px;border-radius:9px;background:#f1f5f9;color:#64748b;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.stu-doc-row-ic svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
+.stu-doc-row-ic.pdf{background:#FFEBEE;color:#C62828}
+.stu-doc-row-ic.img{background:#E3F2FD;color:#1565C0}
+.stu-doc-row-mid{flex:1;min-width:0}
+.stu-doc-row-name{font-size:13px;font-weight:600;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.25}
+.stu-doc-row-meta{font-size:11px;color:#94a3b8;margin-top:2px;display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+.stu-doc-pill{font-size:9px;font-weight:700;padding:2px 6px;border-radius:6px;background:#f1f5f9;color:#64748b}
+.stu-doc-st{font-size:10px;font-weight:700}
+.stu-doc-st.ok{color:#43A047}.stu-doc-st.wait{color:#E65100}
+.stu-doc-view{width:32px;height:32px;border:none;border-radius:9px;background:#E8F5E9;color:#43A047;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;padding:0}
+.stu-doc-view svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.stu-doc-empty{padding:28px 12px;text-align:center;font-size:13px;color:#94a3b8;line-height:1.45}
+.upload-progress{height:4px;background:var(--gray-200);border-radius:2px;margin:4px 0;overflow:hidden}
+.upload-progress-fill{height:100%;background:#4CAF50;border-radius:2px;transition:width .3s}
+.upload-progress-fill.indeterminate{width:40%!important;animation:uploadSweep 1.1s ease-in-out infinite}
+@keyframes uploadSweep{0%{margin-left:-40%}100%{margin-left:100%}}
+
+/* ── Sticky lock screen header (ডিফল্ট — লক স্ক্রিনে .lock-screen-soft ওভাররাইড করে) ── */
+.lock-sticky-header{flex-shrink:0;width:100%;text-align:center;color:#fff;font-size:15px;font-weight:700;padding:10px 16px 8px;background:rgba(0,0,0,.2);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-bottom:1px solid rgba(255,255,255,.1)}
+/* ── Pending notifications (lock screen) ── */
+.pending-sec-label{color:rgba(255,255,255,.6);font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px;text-align:center}
+.pending-item{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:6px 10px;cursor:pointer;width:100%;text-align:left;margin-bottom:5px;transition:background .2s;font-family:var(--font)}
+.pending-item:active{background:rgba(255,255,255,.25)}
+.pending-name{flex:1;font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pending-waqf{display:inline;font-size:11px;font-weight:400;color:rgba(255,255,255,.65);margin-left:5px}
+.pending-badge{font-size:13px;font-weight:700;padding:0;background:none;border-radius:0;flex-shrink:0}
+.pending-badge.msg{color:#C62828}
+.pending-badge.task{color:#E65100}
+
+/* ── Lock screen layout ── */
+#lockScreen{flex-direction:column;justify-content:flex-start!important;padding:0}
+.lock-top{flex:1;overflow-y:auto;display:flex;flex-direction:column;align-items:center;padding:10px 16px 8px;gap:4px;min-height:0;width:100%}
+.lock-bottom{flex-shrink:0;width:100%;background:rgba(0,0,0,.25);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid rgba(255,255,255,.15);padding:14px 16px 20px;display:flex;flex-direction:column;align-items:center}
+/* login box — both steps same width as pin-pad (234px + 2×gap) */
+.login-box{width:254px}
+.login-steps{width:100%}
+#loginStepId,#loginStepPin{width:100%;display:flex;flex-direction:column;align-items:center}
+/* pin / waqf dots — same width, centered */
+.stu-pin-dots{display:flex;gap:14px;justify-content:center;margin-bottom:10px;height:62px;align-items:center}
+.login-lbl-c{font-size:11px;font-weight:700;color:rgba(255,255,255,.7);letter-spacing:.6px;text-transform:uppercase;text-align:center;margin-bottom:4px}
+.login-lbl-name{font-size:13px;font-weight:600;color:rgba(255,255,255,.9);text-align:center;min-height:18px;margin-bottom:6px}
+/* action button — same width as pin-pad */
+.login-btn{width:234px;background:#fff;color:#4CAF50;border:none;border-radius:14px;padding:0;height:50px;font-family:var(--font);font-size:15px;font-weight:700;cursor:pointer;transition:opacity .2s;margin-top:10px;display:flex;align-items:center;justify-content:center}
+.login-btn:active{opacity:.85}
+.login-btn-ghost{background:rgba(255,255,255,.15);color:rgba(255,255,255,.85)}
+.login-err{color:#FF8A80;font-size:13px;min-height:18px;margin-top:6px;text-align:center;width:234px}

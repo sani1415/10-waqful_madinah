@@ -137,13 +137,9 @@
     emit(s, 'busy');
     try {
       const audioBase64 = await blobToBase64(blob);
-      const res = await fetch('/api/transcribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          audioBase64: audioBase64,
-          mimeType: blob.type || s.mime || 'audio/webm',
-        }),
+      const res = await w.API.postJson('/api/transcribe', {
+        audioBase64: audioBase64,
+        mimeType: blob.type || s.mime || 'audio/webm',
       });
       const data = await res.json().catch(function () {
         return {};

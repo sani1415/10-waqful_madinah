@@ -3,58 +3,11 @@
  * Body JSON: { audioBase64: string, mimeType?: string }
  * Model: gemini-3.1-flash-lite — key from GEMINI_API_KEY (never sent to browser).
  */
-const fs = require('fs');
-const path = require('path');
+const { ensureEnv, json, readBody } = require('./_env');
+const { verifyCaller } = require('./_auth');
 
 const MODEL = process.env.GEMINI_TRANSCRIBE_MODEL || process.env.GEMINI_AI_MODEL || 'gemini-3.1-flash-lite';
 const MAX_BYTES = 8 * 1024 * 1024;
-
-/** Local preview: vercel dev sometimes misses .env.local until restart — load if needed. */
-function ensureGeminiEnv() {
-  if (process.env.GEMINI_API_KEY) return;
-  try {
-    const envPath = path.join(process.cwd(), '.env.local');
-    if (!fs.existsSync(envPath)) return;
-    for (const line of fs.readFileSync(envPath, 'utf8').split(/\r?\n/)) {
-      const t = line.trim();
-      if (!t || t.startsWith('#') || !t.includes('=')) continue;
-      const i = t.indexOf('=');
-      const key = t.slice(0, i).trim();
-      let val = t.slice(i + 1).trim();
-      if (
-        (val.startsWith('"') && val.endsWith('"')) ||
-        (val.startsWith("'") && val.endsWith("'"))
-      ) {
-        val = val.slice(1, -1);
-      }
-      if (process.env[key] === undefined) process.env[key] = val;
-    }
-  } catch (_) {}
-}
-
-function json(res, status, body) {
-  res.statusCode = status;
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  res.end(JSON.stringify(body));
-}
-
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-    let size = 0;
-    req.on('data', (c) => {
-      size += c.length;
-      if (size > 12 * 1024 * 1024) {
-        reject(new Error('payload_too_large'));
-        req.destroy();
-        return;
-      }
-      chunks.push(c);
-    });
-    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
-    req.on('error', reject);
-  });
-}
 
 function normalizeMime(mime) {
   const m = String(mime || 'audio/webm').trim().toLowerCase();
@@ -82,14 +35,14 @@ function extractText(data) {
 module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-waqf-device');
     return json(res, 204, {});
   }
   if (req.method !== 'POST') {
     return json(res, 405, { ok: false, error: 'শুধু POST অনুমোদিত।' });
   }
 
-  ensureGeminiEnv();
+  ensureEnv();
   const apiKey = process.env.GEMINI_API_KEY || '';
   if (!apiKey) {
     return json(res, 500, { ok: false, error: 'GEMINI_API_KEY সেট করা নেই।' });
@@ -97,13 +50,17 @@ module.exports = async function handler(req, res) {
 
   let body;
   try {
-    body = typeof req.body === 'object' && req.body ? req.body : JSON.parse(await readBody(req));
+    body = typeof req.body === 'object' && req.body ? req.body : JSON.parse(await readBody(req, 12 * 1024 * 1024));
   } catch (e) {
     if (e && e.message === 'payload_too_large') {
       return json(res, 413, { ok: false, error: 'অডিও খুব বড়।' });
     }
     return json(res, 400, { ok: false, error: 'অবৈধ JSON।' });
   }
+
+  // Logged-in teacher or student only (voice typing costs Gemini quota).
+  const caller = await verifyCaller(req, body.auth, { allow: ['teacher', 'student'] });
+  if (!caller.ok) return json(res, caller.status, { ok: false, error: caller.error });
 
   const b64 = typeof body.audioBase64 === 'string' ? body.audioBase64.replace(/\s/g, '') : '';
   if (!b64) return json(res, 400, { ok: false, error: 'অডিও পাওয়া যায়নি।' });
