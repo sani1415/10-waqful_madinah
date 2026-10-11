@@ -27,17 +27,13 @@ function openSettingsPane(tab){
   openModal('settingsSheet');
 }
 
+// ডায়েরি ও AI এখন টপ বারে — «আরও»-তে শুধু সেটিংস
 function renderMore(){
   const el=document.getElementById('morePane'); if(!el) return;
   const pendingDocs=API.Docs.getAll().filter(d=>d.sentBy!=='teacher'&&d.reviewStatus==='pending').length;
   const t=API.DB.getTeacher();
   el.innerHTML=`
-  <div class="rd-top"><div class="rd-date">${esc(t.name||'উস্তাদ')}</div><h1 class="rd-title">আরও</h1></div>
-  <div class="rd-card rd-menu">
-    ${_moreRow('diary','tone-butter','ডায়েরি','শুধু আপনার, ছাত্র দেখবে না',"goTab('diary')")}
-    ${_moreRow('ai','tone-sage','AI সহকারী','প্রশ্ন করুন, রিসালার খসড়া করান',"if(window.AdminAi)AdminAi.open()")}
-  </div>
-  <div class="rd-sec-h"><h4>সেটিংস</h4></div>
+  <div class="rd-top"><div class="rd-date">${esc(t.name||'উস্তাদ')}</div><h1 class="rd-title">সেটিংস</h1></div>
   <div class="rd-card rd-menu">
     ${_moreRow('user','tone-sky','প্রোফাইল ও পিন','নাম, মাদরাসার নাম, জিম্মাদারের পিন',"openSettingsPane('profile')")}
     ${_moreRow('report','tone-sage','বিবরণ ও অগ্রগতি','হিসাবের সময়সীমা, ক্যাটাগরি, পাক্ষিক লক',"openSettingsPane('biboron')")}

@@ -550,3 +550,7 @@ button.chat-sub-done{cursor:pointer}
 /* ছাত্রের টপ বার: দিনের সংখ্যা হলুদে */
 #stuMainShell .stu-h-days-num{color:var(--rd-butter)!important}
 #stuMainShell .stu-h-avatar{cursor:default}
+/* আজ: ফিল্টার সারি সরু, আর স্ক্রলে ওপরে আটকে থাকে */
+#todayList{padding-top:0}
+#todayList .rd-hfilters{position:sticky;top:0;z-index:5;margin:0 -8px 8px;padding:0 8px;background:var(--rd-bg)}
+#todayList .rd-hfilter{padding:7px 12px 6px}
