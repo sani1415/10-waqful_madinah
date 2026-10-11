@@ -436,3 +436,10 @@ button.rd-mini{cursor:pointer}
 .rd-tn-compose-ft .rd-btn{flex:none;width:auto;padding-inline:22px}
 #app.in-chat #hInfo{min-width:0;flex:1}
 #app.in-chat #hTitle,#app.in-chat #hSub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* লেখার ঘর শুধু রিসালা ট্যাবে */
+#chatView[data-tab]:not([data-tab="msg"]) :is(.chat-input-bar,.reply-preview-bar,.chat-file-preview){display:none!important}
+/* ফোনে ডানে-বামে সরে না: পর্দার বাইরে লুকানো প্যানেলগুলো (গ্রুপ, প্রোফাইল…) পাতা চওড়া করে দিত */
+html,body{overflow-x:hidden;max-width:100%}
+@supports (overflow:clip){html,body,#app{overflow-x:clip}}
+/* নিচের মেনুর পেছনে আলাদা রঙের পট্টি নয় — পুরো পাতা এক রঙ */
+html,body{background:var(--rd-bg)!important}

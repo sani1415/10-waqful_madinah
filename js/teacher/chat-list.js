@@ -206,15 +206,12 @@ function openChat(id, initialTab){
   if(!isBC){
     tabs.style.display='flex';
     attachBtn.style.display='flex';
-    let tab=['info','msg','prog','task','exam','doc','note'].includes(initialTab)?initialTab:'';
-    if(!tab){
-      const c=chatTabCounts(id,_chatUnreadAtOpen);
-      tab=c.msg?'msg':c.note?'note':c.prog?'prog':'msg';
-    }
+    const tab=['info','msg','prog','task','exam','doc','note'].includes(initialTab)?initialTab:'msg';
     switchChatTab(tab, document.getElementById('cst-'+tab));
   } else {
     tabs.style.display='none';
     attachBtn.style.display='none';
+    document.getElementById('chatView').dataset.tab='msg';
   }
   document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
   document.getElementById('chatView').classList.add('open');

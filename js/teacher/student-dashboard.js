@@ -6,6 +6,7 @@ function switchChatTab(tab,btn){
   const section=PROG_SECTIONS.includes(tab)?tab:null;
   if(section){ tab='prog'; btn=document.getElementById('cst-prog'); }
   curChatTab=tab;
+  document.getElementById('chatView').dataset.tab=tab;
   document.querySelectorAll('.cs-tab').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
   const panels=['info','prog','goal','note'];
