@@ -297,3 +297,21 @@ button.rd-mini{cursor:pointer}
 #app .doc-preview-sheet .doc-review-input{min-height:64px;max-height:120px}
 .rd-still .rd-card,.rd-still .rd-arch,.rd-still.rd-card,.rd-still.rd-arch{animation:none!important}
 .rd-today-chips{margin-top:18px}
+/* Word (.docx) প্রিভিউ */
+.docx-preview-host{overflow:auto;background:#EDEBE4;border-radius:12px;text-align:start}
+.docx-preview-host .docx-wrapper{background:transparent!important;padding:10px 0!important}
+.docx-preview-host .docx-wrapper>section.docx{box-shadow:0 2px 10px rgb(31 36 32 / .15)!important;margin-bottom:12px!important}
+.docx-preview-msg{display:flex;gap:10px;align-items:center;justify-content:center;padding:28px 18px;color:var(--rd-ink-2);font-size:14.5px;line-height:1.6;text-align:start}
+/* পুরো পর্দায় দেখা */
+.modal-overlay.sheet-full{padding:0!important}
+#app .modal-overlay.sheet-full .modal-sheet{max-width:100%!important;width:100%;height:100dvh;max-height:100dvh!important;border-radius:0}
+#app .modal-overlay.sheet-full #docPreviewContent,#app .modal-overlay.sheet-full #chatDocPreviewBody{max-height:none!important;flex:1 1 auto}
+#app .modal-overlay.sheet-full #chatDocPreviewBody{height:calc(100dvh - 210px);overflow:auto}
+#app .modal-overlay.sheet-full .modal-sheet img{max-height:none!important}
+[data-full-btn][aria-pressed="true"]{background:var(--rd-tint)!important;color:var(--rd-accent)!important}
+#app .docx-preview-host{text-align:start!important}
+.docx-preview-host.reflow{background:#fff}
+.docx-preview-host.reflow .docx-wrapper{padding:0!important;display:block!important}
+.docx-preview-host.reflow .docx-wrapper>section.docx{width:auto!important;min-height:0!important;padding:16px 14px!important;margin:0!important;box-shadow:none!important}
+.docx-preview-host.reflow table{max-width:100%;display:block;overflow-x:auto}
+.docx-preview-host.reflow img{max-width:100%;height:auto}

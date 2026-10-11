@@ -9,7 +9,7 @@ js/api/   data layer → window.API: core.js (helpers, storage, Auth, DB) + one 
           amal (ApiAmal) · daily-schedule (API.DailySchedule) · student-notes (API.StudentNotes)
 js/sync/  Supabase layer → window.RemoteSync: remote-sync.js (state, client, bootstrap, realtime)
           + assemble.js (rows → blobs) + ops.js (madrasa_rel_* calls) + remote-sync-write.js
-js/shared/ ui.js (esc, showToast, modals…) · chat-voice · pdf-merge · pdf-preview · pwa-notify · pwa-install-banner
+js/shared/ ui.js (esc, showToast, modals, setSheetFull…) · chat-voice · pdf-merge · pdf-preview · docx-preview · pwa-notify · pwa-install-banner
 js/teacher/, js/student/   page UI, one file per feature (chat, tasks, exams, documents, …); boot.js last
 api/      Vercel functions; `_`-prefixed files (_env.js, _auth.js) are shared helpers, not routes
 ```
@@ -21,6 +21,7 @@ api/      Vercel functions; `_`-prefixed files (_env.js, _auth.js) are shared he
 - **Look:** `css/redesign.css` remaps the legacy color tokens to the sage palette and styles the new `rd-*` components (Noto Serif Bengali for headings and body — the user's pick from `prototypes/fonts/`). New UI goes there; keep using its tokens (`--rd-*`), not new hex codes.
 - **Teacher nav:** আজ (`screen-today`, `js/teacher/today.js` — every pending decision: schedule proposals, pending বিবরণ, pending files, quizzes to grade; plus unread + today's আমল) · ছাত্র (`screen-chats`, roster only) · center ＋ (`fabMenu` create sheet) · পরিকল্পনা (`tasks` / `exams` / `groups` screens behind one segmented control; `goTab('plan')` reopens the last one) · আরও (`screen-more`: ফাইল `docs`, ডায়েরি, AI, settings panes). `NAV_OF` in `js/teacher/nav.js` maps each screen to its tab. AI opens from the header (`#aiHeaderBtn`); the old floating buttons are hidden.
 - **One student page:** chat view tabs রিসালা · অগ্রগতি (`csp-prog` wraps `csp-task`/`csp-exam`/`csp-doc`) · বিবরণ · তথ্য. `switchChatTab('task'|'exam'|'doc')` still works and scrolls to that section.
+- **File preview:** images, PDF (`PdfPreview`, pdf.js) and Word `.docx` (`DocxPreview`, docx-preview + JSZip from jsDelivr, lazy) open inside the app; phones get a reflowed reading mode, wide screens get page layout. Old `.doc` shows a «download» notice. «বড় করে দেখুন» → `toggleSheetFull(modalId)`.
 - **Student nav:** আজ (`screen-tasks` + `#todayDue` cards from `js/student/today.js`) · রিসালা · খাতা (`screen-goals`: `goKhataTab('notes'|'goals')`; the বিবরণ panel lives here) · আমি (`screen-me`: পরীক্ষা, ফাইল, প্রোফাইল, লগআউট). `goAmalTab('biboron')` redirects to খাতা.
 
 ## Architecture Rules
@@ -39,7 +40,7 @@ api/      Vercel functions; `_`-prefixed files (_env.js, _auth.js) are shared he
 
 ## Service Worker Cache Rule
 - **`sw.js` এর `CACHE` version (`waqful-full-vN`) প্রতিবার যেকোনো file edit করলে N বাড়াতে হবে।**
-- Current version: **v210** (last bumped: v3 redesign — new nav, আজ screens, redesign.css)
+- Current version: **v211** (last bumped: v3 redesign — new nav, আজ screens, redesign.css)
 - যেকোনো `.html`, `.css`, `.js` file বদলালে → `sw.js` খুলে `waqful-full-vN` → `vN+1` করো।
 - নতুন file তৈরি হলে `LOCAL_SHELL` array-তেও যোগ করো।
 

@@ -56,12 +56,20 @@ async function openDocPreview(docId, markAsRead){
   const _ft=meta.fileType||'';
   const _isImg=_ft==='image'||_ft.startsWith('image/');
   const _isPdf=window.PdfPreview?PdfPreview.isPdfMeta(meta):(_ft==='pdf'||_ft==='application/pdf');
+  const _isDocx=!!(window.DocxPreview&&DocxPreview.isDocxMeta(meta));
+  const _isOldDoc=!!(window.DocxPreview&&DocxPreview.isLegacyDocMeta(meta));
+  setSheetFull('docPreviewModal',false);
+  if(window.DocxPreview) DocxPreview.cancel();
   if(_isImg && data){
     content.innerHTML=`<img src=${JSON.stringify(data)} style="max-width:100%;max-height:65vh;border-radius:8px;object-fit:contain;display:block;margin:0 auto" alt="">`;
   } else if(_isPdf && data && window.PdfPreview){
     content.innerHTML='';
   } else if(_isPdf && data){
     content.innerHTML=`<iframe src=${JSON.stringify(data)} style="width:100%;height:65vh;border:none;border-radius:8px;background:var(--gray-100)" title="${esc(meta.fileName)}"></iframe>`;
+  } else if(_isDocx && data){
+    content.innerHTML='';
+  } else if(_isOldDoc){
+    DocxPreview.legacyNotice(content);
   } else {
     const icon=fileIcon(meta.fileType);
     content.innerHTML=`<div style="padding:24px 16px;background:var(--gray-100);border-radius:8px;display:flex;flex-direction:column;align-items:center;gap:8px"><span class="msg-doc-tile" style="width:56px;height:56px">${icon}</span><span style="font-size:14px;font-weight:600;color:var(--gray-700);word-break:break-all">${esc(meta.fileName)}</span><span style="font-size:12px;color:var(--gray-500)">${formatBytes(meta.fileSize)}</span><span style="font-size:12px;color:var(--gray-400)">পূর্বরূপ সম্ভব নয় — ডাউনলোড করুন</span></div>`;
@@ -72,6 +80,8 @@ async function openDocPreview(docId, markAsRead){
   if(markAsRead){ API.Docs.markRead(docId); updateDocBadge(); }
   openModal('docPreviewModal');
   if(_isPdf && data && window.PdfPreview) PdfPreview.render(content, data, { maxHeight:'65vh', fileName:meta.fileName });
+  if(_isDocx && data) DocxPreview.render(content, data, { fileName:meta.fileName });
+  const fullBtn=document.getElementById('docFullBtn'); if(fullBtn) fullBtn.style.display=(data&&(_isImg||_isPdf||_isDocx))?'':'none';
 }
 function teacherPreviewChatDoc(docId, markRead){
   if(!docId) return;

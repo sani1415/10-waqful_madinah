@@ -21,7 +21,25 @@ function closeModal(id){
   const sh=el.querySelector('.modal-sheet');
   if(sh) sh.style.transform='';
   el.classList.remove('open','modal-closing');
-  if((id==='docPreviewModal'||id==='chatDocPreviewModal')&&typeof window!=='undefined'&&window.PdfPreview) window.PdfPreview.cancel();
+  if(id==='docPreviewModal'||id==='chatDocPreviewModal'){
+    if(window.PdfPreview) window.PdfPreview.cancel();
+    if(window.DocxPreview) window.DocxPreview.cancel();
+    el.classList.remove('sheet-full');
+  }
 }
 function formatBytes(b){ if(!b) return ''; if(b<1024) return b+' B'; if(b<1048576) return (b/1024).toFixed(1)+' KB'; return (b/1048576).toFixed(1)+' MB'; }
 function formatDate(iso){ if(!iso) return ''; return new Date(iso).toLocaleDateString('bn-BD',{year:'numeric',month:'short',day:'numeric',timeZone:'Asia/Dhaka'}); }
+
+/** ফাইল প্রিভিউ শিট পুরো পর্দায় / আগের মাপে (PDF, ছবি, Word) */
+function setSheetFull(modalId, on){
+  const ov=document.getElementById(modalId); if(!ov) return;
+  ov.classList.toggle('sheet-full', !!on);
+  const b=ov.querySelector('[data-full-btn]');
+  if(b) b.setAttribute('aria-pressed', on?'true':'false');
+  // পাতার মাপ বদলালে Word/PDF পুনরায় মানিয়ে নেয়
+  window.dispatchEvent(new Event('resize'));
+}
+function toggleSheetFull(modalId){
+  const ov=document.getElementById(modalId);
+  setSheetFull(modalId, !(ov&&ov.classList.contains('sheet-full')));
+}
