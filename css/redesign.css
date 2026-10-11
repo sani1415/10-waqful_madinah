@@ -443,3 +443,15 @@ html,body{overflow-x:hidden;max-width:100%}
 @supports (overflow:clip){html,body,#app{overflow-x:clip}}
 /* নিচের মেনুর পেছনে আলাদা রঙের পট্টি নয় — পুরো পাতা এক রঙ */
 html,body{background:var(--rd-bg)!important}
+/* আজ: লম্বা শেষ-বার্তা বা বড় ফন্টে সারি যেন পর্দা ছাড়িয়ে না যায় (grid-এর সারি নিজে থেকে চওড়া হতো) */
+.rd-hlist{grid-template-columns:minmax(0,1fr)}
+.rd-hrow,.rd-hrow-tap,.rd-hrow-t,.rd-hrow-top{min-width:0;max-width:100%}
+.rd-hrow-tap{overflow:hidden}
+.rd-hrow-nm{overflow:hidden}
+.rd-hrow-nm b{flex:0 1 auto;min-width:0}
+.rd-hrow-meta{flex:0 1000 auto}
+#todayList{overflow-x:hidden}
+.rd-hrow-nm b{max-width:none;flex-shrink:1}
+.rd-hrow-meta{min-width:0}
+#app:not(.in-chat) #hTitle{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:400px){#app:not(.in-chat) #hTitle{font-size:15.5px}#teaMainShell .header-btn{width:34px;height:34px}#teaMainShell .header-actions{gap:5px}#app .header{padding-inline:12px}}
