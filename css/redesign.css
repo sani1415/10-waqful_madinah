@@ -280,3 +280,12 @@ button.rd-mini{cursor:pointer}
 .rd-chips--center{justify-content:safe center;margin-top:0;margin-bottom:12px}
 #stuMainShell .stu-h-card .header-title{font-size:15.5px}
 #stuMainShell .stu-h-card .header-info{max-width:calc(50% - 66px)}
+#app .rd-stu-filters{margin:8px 0 6px;padding:0 16px}
+/* «আজ» কার্ড — জায়গাতেই খোলে, সেখান থেকেই উত্তর */
+.rd-expand .rd-when-open,.rd-expand.open .rd-when-closed{display:none}
+.rd-expand.open .rd-when-open{display:inline}
+.rd-expand.open .rd-card-body{display:block;-webkit-line-clamp:unset;overflow:visible}
+.rd-reply{display:none;margin-top:12px;padding-top:12px;border-top:1px dashed var(--rd-line)}
+.rd-expand.open .rd-reply{display:block;animation:rdRise .3s var(--rd-ease) both}
+.rd-reply textarea{width:100%;min-height:76px;resize:vertical;border:1px solid var(--rd-line);border-radius:12px;background:var(--rd-surface-2);padding:10px 12px;font:inherit;font-size:15px;color:var(--rd-ink);outline:none;margin-bottom:8px}
+.rd-reply textarea:focus{border-color:var(--rd-accent-2);background:#fff}

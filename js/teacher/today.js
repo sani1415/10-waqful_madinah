@@ -2,6 +2,9 @@
    Reads only existing data (schedule proposals, pending বিবরণ, pending files, quizzes to grade,
    unread messages, today's আমল) and reuses the existing actions. */
 let _todayFilter='all';
+// খোলা কার্ড ও না-পাঠানো খসড়া — রি-রেন্ডারেও (লাইভ সিঙ্ক) হারায় না
+const _todayOpen=new Set();
+const _todayDrafts={};
 
 const _RD_IC={
   clock:'<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
@@ -12,6 +15,7 @@ const _RD_IC={
   undo:'<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
   eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
   chevR:'<path d="m9 18 6-6-6-6"/>',
+  send:'<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
 };
 function rdIcon(k){ return `<svg class="rd-i" viewBox="0 0 24 24" aria-hidden="true">${_RD_IC[k]||''}</svg>`; }
 function rdBn(n){ return String(n).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]); }
@@ -83,16 +87,24 @@ function _rdCard(it){
       <div class="rd-acts"><button type="button" class="rd-btn ghost" onclick="teacherRejectSchedulePrompt('${sid}')">${rdIcon('undo')}ফেরত দিন</button><button type="button" class="rd-btn pri" onclick="teacherApproveSchedule('${sid}')">${rdIcon('check')}অনুমোদন</button></div></div>`;
   }
   if(it.kind==='note'){
-    const n=it.note, nid=rdJs(n.id);
-    return `<div class="rd-card">${who}<span class="rd-kind k-note">${rdIcon('book')}বিবরণ</span></div>
+    const n=it.note, nid=rdJs(n.id), key=_todayKey('n',n.id), open=_todayOpen.has(key);
+    return `<div class="rd-card rd-expand${open?' open':''}" data-key="${key}">${who}<span class="rd-kind k-note">${rdIcon('book')}বিবরণ</span></div>
       ${n.title?`<div class="rd-card-title">${esc(n.title)}</div>`:''}<div class="rd-card-body">${esc(n.text||'')}</div>
-      <div class="rd-acts"><button type="button" class="rd-btn ghost" onclick="openChat('${sid}','note')">পুরোটা পড়ুন</button><button type="button" class="rd-btn soft" onclick="todayMarkNoteReviewed('${sid}','${nid}')">${rdIcon('check')}পর্যালোচিত</button></div></div>`;
+      <div class="rd-acts"><button type="button" class="rd-btn ghost" onclick="toggleTodayCard('${key}')"><span class="rd-when-closed">পুরোটা পড়ুন ও উত্তর দিন</span><span class="rd-when-open">ছোট করুন</span></button><button type="button" class="rd-btn soft" onclick="todayMarkNoteReviewed('${sid}','${nid}')">${rdIcon('check')}পর্যালোচিত</button></div>
+      <div class="rd-reply">
+        <textarea id="tr-${key}" rows="3" placeholder="${esc((s.name||'').split(' ')[0])}-কে উত্তর লিখুন…" oninput="_todayDrafts['${key}']=this.value">${rdText(_todayDrafts[key])}</textarea>
+        <div class="rd-acts"><button type="button" class="rd-btn ghost" onclick="todayReplyNote('${sid}','${nid}','${key}',false)">${rdIcon('send')}উত্তর পাঠান</button><button type="button" class="rd-btn pri" onclick="todayReplyNote('${sid}','${nid}','${key}',true)">${rdIcon('check')}পাঠান ও পর্যালোচিত</button></div>
+      </div></div>`;
   }
   if(it.kind==='doc'){
-    const d=it.doc;
-    return `<div class="rd-card">${who}<span class="rd-kind k-doc">${rdIcon('file')}ফাইল</span></div>
+    const d=it.doc, key=_todayKey('d',d.id), open=_todayOpen.has(key);
+    return `<div class="rd-card rd-expand${open?' open':''}" data-key="${key}">${who}<span class="rd-kind k-doc">${rdIcon('file')}ফাইল</span></div>
       <div class="rd-card-title">${esc(d.fileName||'ফাইল')}</div>${d.note?`<div class="rd-card-body">${esc(d.note)}</div>`:''}
-      <div class="rd-acts"><button type="button" class="rd-btn ghost" onclick="openChat('${sid}','doc')">ছাত্রের সব ফাইল</button><button type="button" class="rd-btn soft" onclick="openDocPreview('${rdJs(d.id)}',true)">${rdIcon('eye')}খুলে দেখুন</button></div></div>`;
+      <div class="rd-acts"><button type="button" class="rd-btn ghost" onclick="toggleTodayCard('${key}')"><span class="rd-when-closed">মন্তব্য লিখুন</span><span class="rd-when-open">ছোট করুন</span></button><button type="button" class="rd-btn soft" onclick="openDocPreview('${rdJs(d.id)}',true)">${rdIcon('eye')}খুলে দেখুন</button></div>
+      <div class="rd-reply">
+        <textarea id="tr-${key}" rows="3" placeholder="মন্তব্য লিখুন — ছাত্র রিসালায় পাবে" oninput="_todayDrafts['${key}']=this.value">${rdText(_todayDrafts[key])}</textarea>
+        <div class="rd-acts"><button type="button" class="rd-btn pri" onclick="todayReviewDoc('${rdJs(d.id)}','${key}')">${rdIcon('check')}মন্তব্যসহ পর্যালোচিত</button></div>
+      </div></div>`;
   }
   const q=it.quiz, sub=it.sub;
   return `<div class="rd-card">${who}<span class="rd-kind k-exam">${rdIcon('pen')}নম্বর</span></div>
@@ -100,6 +112,37 @@ function _rdCard(it){
     <div class="rd-acts"><button type="button" class="rd-btn soft" onclick="openChat('${sid}','exam')">${rdIcon('pen')}নম্বর দিন</button></div></div>`;
 }
 
+/** Plain-text escape for textarea content (esc() turns newlines into <br>). */
+function rdText(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function _todayKey(prefix,id){ return prefix+'_'+String(id).replace(/[^\w-]/g,'_'); }
+function toggleTodayCard(key){
+  const card=document.querySelector(`#todayList .rd-card[data-key="${key}"]`); if(!card) return;
+  const open=!card.classList.contains('open');
+  card.classList.toggle('open',open);
+  if(open){ _todayOpen.add(key); setTimeout(()=>document.getElementById('tr-'+key)?.focus({preventScroll:true}),50); }
+  else _todayOpen.delete(key);
+}
+async function todayReplyNote(sid,noteId,key,alsoReview){
+  const ta=document.getElementById('tr-'+key); const text=(ta&&ta.value||'').trim();
+  if(!text&&!alsoReview){ showToast('উত্তর লিখুন'); return; }
+  const n=API.StudentNotes.getAll(sid).find(x=>x.id===noteId);
+  try{
+    if(text) await API.Messages.send(sid,(n&&n.title?`«${n.title}» প্রসঙ্গে:\n`:'')+text,'text');
+    if(alsoReview) await API.StudentNotes.markReviewed(sid,noteId);
+    delete _todayDrafts[key]; _todayOpen.delete(key);
+    showToast(alsoReview?(text?'✅ উত্তর পাঠানো ও পর্যালোচিত':'✅ পর্যালোচিত'):'✅ উত্তর পাঠানো হয়েছে');
+    renderAll();
+  }catch(e){ console.error(e); showToast('❌ পাঠানো যায়নি'); }
+}
+async function todayReviewDoc(docId,key){
+  const ta=document.getElementById('tr-'+key);
+  try{
+    await API.Docs.markReviewed(docId,(ta&&ta.value||'').trim());
+    delete _todayDrafts[key]; _todayOpen.delete(key);
+    showToast('✅ পর্যালোচিত — ছাত্রকে জানানো হয়েছে');
+    renderAll();
+  }catch(e){ console.error(e); showToast('❌ আপডেট হয়নি'); }
+}
 async function todayMarkNoteReviewed(sid,noteId){
   try{ await API.StudentNotes.markReviewed(sid,noteId); showToast('✅ পর্যালোচিত হিসেবে চিহ্নিত'); renderAll(); }
   catch(e){ console.error(e); showToast('❌ আপডেট হয়নি'); }

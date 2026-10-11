@@ -53,7 +53,7 @@ function closeBiboronMenu(){
 }
 function showBiboronDetail(mode){
   biboronDetailMode=['amal','msg','quiz','behind','doc','studentNote','teacherNote'].includes(mode)?mode:'';
-  renderBiboronDetailPanel();
+  renderBiboronSummary();
   stuRowMenuId=null;
 }
 function biboronTargetTab(mode,sid){
@@ -87,19 +87,20 @@ function renderBiboronSummary(){
   const el=document.getElementById('biboronSummary'); if(!el||!API.Biboron) return;
   const s=API.Biboron.getSummary();
   const msgNeed=(s.unreadMessages||0)+(s.pendingSched||0);
-  el.innerHTML=`<div class="biboron-meta">গতকাল · ${esc(s.dateLabel)} · ${esc(s.progressLabel)}</div>
-  <div class="summary-cards">
-    ${biboronSummaryCard('orange',API.Students.getAll().length,'সকল ছাত্র','')}
-    ${biboronSummaryCard('blue',`${s.dayPct!=null?s.dayPct:s.todayPct}%`,'আমল','amal')}
-    ${biboronSummaryCard('green',msgNeed,'রিসালা','msg')}
-    ${biboronSummaryCard('red',(s.pendingQuiz||0)+(s.manualQuiz||0),'পরীক্ষা','quiz')}
-  </div>
-  <div class="biboron-action-board">
-    ${biboronActionCard('blue',s.behindDay!=null?s.behindDay:s.behindToday,'গতকাল বাকি','behind')}
-    ${biboronActionCard('green',s.pendingDocs||0,'ডক','doc')}
-    ${biboronActionCard('orange',s.studentNoteCount||0,'বিবরণ','studentNote')}
-    ${biboronActionCard('red',s.teacherNoteCount||0,'নোট','teacherNote')}
-  </div>`;
+  // আটটি ফিল্টার একই রকম চিপে, এক সারিতে (আগে দুই সারিতে দুই রকম কার্ড ছিল)
+  const n=v=>typeof rdBn==='function'?rdBn(v):String(v);
+  const filters=[
+    ['',API.Students.getAll().length,'সব ছাত্র'],
+    ['amal',`${n(s.dayPct!=null?s.dayPct:s.todayPct)}%`,'আমল'],
+    ['behind',s.behindDay!=null?s.behindDay:s.behindToday,'গতকাল বাকি'],
+    ['msg',msgNeed,'রিসালা'],
+    ['doc',s.pendingDocs||0,'ডক'],
+    ['quiz',(s.pendingQuiz||0)+(s.manualQuiz||0),'পরীক্ষা'],
+    ['studentNote',s.studentNoteCount||0,'বিবরণ'],
+    ['teacherNote',s.teacherNoteCount||0,'নোট'],
+  ];
+  el.innerHTML=`<div class="biboron-meta">গতকালের হিসাব · ${esc(s.dateLabel)}</div>
+  <div class="rd-chips rd-stu-filters">${filters.map(([mode,val,label])=>`<button type="button" class="rd-chip${biboronDetailMode===mode?' on':''}" onclick="showBiboronDetail('${mode}')">${label}<b>${typeof val==='number'?n(val):val}</b></button>`).join('')}</div>`;
   renderBiboronDetailPanel();
 }
 function biboronSummaryCard(color,val,label,mode){
