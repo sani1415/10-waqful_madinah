@@ -148,8 +148,17 @@
       return m;
     },
     markRead(threadId,role='in') {
-      const db=DB.get(); (db.chats[threadId]||[]).forEach(m=>{ if(m.role===role) m.read=true; }); DB.save(db);
-      if (_useRemote && RS.markMessagesReadRemote) RS.markMessagesReadRemote(threadId, role === 'in' ? 'teacher' : 'student');
+      const db=DB.get();
+      let changed=false;
+      (db.chats[threadId]||[]).forEach(m=>{
+        if(m.role===role && !m.read){ m.read=true; changed=true; }
+      });
+      if (changed) {
+        // RemoteSync.mem.core is the same object; the read RPC persists this
+        // change without re-saving every student, task, and chat message.
+        if (!_useRemote) DB.save(db);
+        if (_useRemote && RS.markMessagesReadRemote) void RS.markMessagesReadRemote(threadId, role === 'in' ? 'teacher' : 'student');
+      }
       // Dismiss matching OS push notification
       if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
         const tag = role === 'in'
@@ -244,7 +253,7 @@
       const m = arr && arr.find((x) => x.id === msgId);
       if (!m) return { ok: false, err: 'nf' };
       if (!this.canModifyOwnMessage(m, !!asTeacher)) return { ok: false, err: 'forbidden' };
-      if (_useRemote && RS.updateMessageTextRemote) await RS.updateMessageTextRemote(msgId, t);
+      if (_useRemote && RS.updateMessageTextRemote) await RS.updateMessageTextRemote(msgId, t, threadId);
       m.text = t;
       m.editedAt = new Date().toISOString();
       stampNotify(db);
@@ -259,7 +268,7 @@
       if (!this.canModifyOwnMessage(m, !!asTeacher)) return { ok: false, err: 'forbidden' };
       const ix = arr.findIndex((x) => x.id === msgId);
       if (ix < 0) return { ok: false };
-      if (_useRemote && RS.deleteOwnMessageRemote) await RS.deleteOwnMessageRemote(msgId);
+      if (_useRemote && RS.deleteOwnMessageRemote) await RS.deleteOwnMessageRemote(msgId, threadId);
       arr.splice(ix, 1);
       stampNotify(db);
       DB.save(db);

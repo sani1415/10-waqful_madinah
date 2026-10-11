@@ -29,6 +29,7 @@ tmp-*.txt
 # ── AI session / editor internals ────────────────────────────
 .claude/
 .playwright-cli/
+.playwright-mcp/
 output/
 
 # ── OS / editor noise ────────────────────────────────────────

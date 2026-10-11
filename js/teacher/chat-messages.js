@@ -168,7 +168,7 @@ function deleteBCMessage(mid){
     if(tid!=='_bc') db.chats[tid]=db.chats[tid].filter(m=>m.id!==mid);
   });
   API.DB.save(db);
-  if(typeof RemoteSync!=='undefined'&&RemoteSync.deleteMessageRemote) RemoteSync.deleteMessageRemote(mid);
+  if(typeof RemoteSync!=='undefined'&&RemoteSync.deleteMessageRemote) RemoteSync.deleteMessageRemote(mid,curChat);
   if(typeof RemoteSync!=='undefined'&&RemoteSync.mem?.core?.chats){
     const c=RemoteSync.mem.core.chats;
     if(c['_bc']) c['_bc']=c['_bc'].filter(m=>m.id!==mid);

@@ -1,5 +1,9 @@
 /* Waqful Madinah — js/student/boot.js: viewport fix, init(), live-sync listeners */
-window.addEventListener('madrasa-remote-sync',()=>{ try{ const u=document.getElementById('lockScreen').style.display==='none'; if(u&&me) renderAll(); else renderPendingSection(); }catch(e){ console.error(e); } });
+window.addEventListener('madrasa-remote-sync',()=>{ try{ const u=document.getElementById('lockScreen').style.display==='none'; if(u&&me){
+  if(document.getElementById('tab-chat')?.classList.contains('active') && API.Messages.unreadCount(me.id,'out')>0)
+    API.Messages.markRead(me.id,'out');
+  renderAll();
+} else renderPendingSection(); }catch(e){ console.error(e); } });
 document.addEventListener('click',function(e){
   if(!e.target.closest('.sched-ampm-wrap')) schedCloseAllAmpmMenus();
   if(!e.target.closest('.daily-note-filter-wrap')) closeDailyNoteFilterMenu();

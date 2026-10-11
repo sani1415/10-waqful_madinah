@@ -133,15 +133,16 @@
       } catch { return []; }
     }
 
-    async function deleteMessageRemote(mid) {
+    async function deleteMessageRemote(mid, threadId) {
       if (!ctx.usesSecureKv() || ctx.role() !== 'teacher' || !ctx._teacherPin) return;
       const sb = ctx.getClient(); if (!sb || !mid) return;
       try {
         await ctx.rpcOrThrow(sb, 'madrasa_rel_delete_message', { p_teacher_pin: ctx._teacherPin, p_message_id: mid });
+        if (threadId) ctx.sendDataChangedBroadcast(threadId === '_broadcast' ? '_bc' : threadId);
       } catch (e) { console.warn('deleteMessageRemote:', e); }
     }
 
-    async function updateMessageTextRemote(mid, text) {
+    async function updateMessageTextRemote(mid, text, threadId) {
       if (!ctx.usesSecureKv() || !mid) return;
       const sb = ctx.getClient(); if (!sb) throw new Error('remote_unavailable');
       const r = ctx.role();
@@ -153,6 +154,7 @@
         p_message_id: mid,
         p_new_text: String(text || ''),
       });
+      if (threadId) ctx.sendDataChangedBroadcast(threadId === '_broadcast' ? '_bc' : threadId);
     }
 
     async function sendMessageRemote(threadId, msg) {
@@ -172,9 +174,10 @@
       };
       await ctx.rpcOrThrow(sb, 'madrasa_rel_insert_message', { p_pin: pin, p_role: r, p_message });
       ctx._savedMsgIds.add(id);
+      ctx.sendDataChangedBroadcast(threadId);
     }
 
-    async function deleteOwnMessageRemote(mid) {
+    async function deleteOwnMessageRemote(mid, threadId) {
       if (!ctx.usesSecureKv() || !mid) return;
       const sb = ctx.getClient(); if (!sb) throw new Error('remote_unavailable');
       const r = ctx.role();
@@ -185,6 +188,7 @@
         p_role: r === 'teacher' ? 'teacher' : 'student',
         p_message_id: mid,
       });
+      if (threadId) ctx.sendDataChangedBroadcast(threadId === '_broadcast' ? '_bc' : threadId);
     }
 
     async function saveTaskRemote(task) {

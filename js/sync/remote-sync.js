@@ -11,6 +11,7 @@
   let _studentPin = '';
   let _studentId = '';
   let realtimeChannel = null;
+  let pullTimer = null;
   const _savedMsgIds = new Set();
 
   const mem = {
@@ -319,10 +320,53 @@
     } catch (e) { console.warn('sendReadReceiptBroadcast:', e); }
   }
 
+  // Broadcasts are wake-up hints only. The receiving device reads the
+  // authoritative state through its PIN-gated bootstrap RPC.
+  function sendDataChangedBroadcast(threadId) {
+    if (!realtimeChannel || !threadId) return;
+    try {
+      const sent = realtimeChannel.send({
+        type: 'broadcast', event: 'message_changed',
+        payload: { threadId, senderRole: role() },
+      });
+      if (sent && typeof sent.catch === 'function') sent.catch(e => console.warn('sendDataChangedBroadcast:', e));
+    } catch (e) { console.warn('sendDataChangedBroadcast:', e); }
+  }
+
+  // Coalesce hints: one pull at a time, at most one every PULL_MIN_GAP_MS.
+  // The broadcast channel is public, so a flood of fake hints must not turn
+  // into a flood of full bootstrap downloads.
+  const PULL_MIN_GAP_MS = 800;
+  let pullInFlight = false;
+  let pullAgain = false;
+  let lastPullAt = 0;
+  function queueRemotePull(delay = 80) {
+    if (!mem.loaded) return;
+    if (pullInFlight) { pullAgain = true; return; }
+    if (pullTimer) return;
+    const wait = Math.max(delay, PULL_MIN_GAP_MS - (Date.now() - lastPullAt));
+    pullTimer = setTimeout(async () => {
+      pullTimer = null;
+      pullInFlight = true;
+      lastPullAt = Date.now();
+      try { await pullRemoteSnapshot(); }
+      finally {
+        pullInFlight = false;
+        if (pullAgain) { pullAgain = false; queueRemotePull(); }
+      }
+    }, wait);
+  }
+
+  function shouldPullThread(threadId, senderRole) {
+    if (role() === 'teacher') return senderRole === 'student';
+    return role() === 'student' && senderRole === 'teacher'
+      && (threadId === '_bc' || threadId === _studentId);
+  }
+
   function startRealtimeSync() {
     if (!isRemote()) return;
     const sb = getClient(); if (!sb || realtimeChannel) return;
-    const pull = () => setTimeout(() => void pullRemoteSnapshot(), 200);
+    const pull = () => queueRemotePull();
     const onMessageChange = (payload) => {
       if (applyRealtimeMessagePatch(payload)) {
         setTimeout(() => void pullRemoteSnapshot(), 1200);
@@ -333,17 +377,23 @@
     realtimeChannel = sb.channel('madrasa_rel_changes')
       .on('broadcast', { event: 'read_receipt' }, payload => {
         const p = payload && payload.payload;
-        if (p) applyReadReceiptPatch(p.threadId, p.readerRole);
+        if (p && shouldPullThread(p.threadId, p.readerRole)) pull();
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, onMessageChange)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, pull)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, pull)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_assignments' }, pull)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_completions' }, pull)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'quizzes' }, pull)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_schedule_rows' }, pull)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_schedule_proposals' }, pull)
-      .subscribe();
+      .on('broadcast', { event: 'message_changed' }, payload => {
+        const p = payload && payload.payload;
+        if (p && shouldPullThread(p.threadId, p.senderRole)) pull();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'waqf_messages' }, onMessageChange)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'waqf_students' }, pull)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'waqf_tasks' }, pull)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'waqf_task_assignments' }, pull)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'waqf_task_completions' }, pull)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'waqf_quizzes' }, pull)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'waqf_daily_schedule_rows' }, pull)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'waqf_daily_schedule_proposals' }, pull)
+      .subscribe(status => {
+        if (status === 'SUBSCRIBED') queueRemotePull(0);
+      });
   }
 
   async function updateStudentPinRemote(newPin) {
@@ -403,6 +453,7 @@
     get applyRealtimeMessagePatch() { return applyRealtimeMessagePatch; },
     get applyReadReceiptPatch() { return applyReadReceiptPatch; },
     get sendReadReceiptBroadcast() { return sendReadReceiptBroadcast; },
+    get sendDataChangedBroadcast() { return sendDataChangedBroadcast; },
     get startRealtimeSync() { return startRealtimeSync; },
     get updateStudentPinRemote() { return updateStudentPinRemote; },
     get _assemble() { return _assemble; },
