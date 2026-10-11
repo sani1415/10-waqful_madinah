@@ -455,3 +455,4 @@ html,body{background:var(--rd-bg)!important}
 .rd-hrow-meta{min-width:0}
 #app:not(.in-chat) #hTitle{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:400px){#app:not(.in-chat) #hTitle{font-size:15.5px}#teaMainShell .header-btn{width:34px;height:34px}#teaMainShell .header-actions{gap:5px}#app .header{padding-inline:12px}}
+#todayList{padding-left:8px;padding-right:8px}
