@@ -228,6 +228,6 @@
     finally { setBusy(false); input.focus(); }
   }
 
-  w.AdminAi={mount,showAfterAuth,hideOnLock,open};
+  w.AdminAi={mount,showAfterAuth,hideOnLock,open,close};
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',mount); else mount();
 })(window);

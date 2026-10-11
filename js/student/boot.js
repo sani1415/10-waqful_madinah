@@ -42,3 +42,12 @@ if(navigator.serviceWorker) navigator.serviceWorker.addEventListener('message', 
     RemoteSync.pullRemoteSnapshot().finally(()=>syncAppBadge());
   else if(e.data && e.data.type==='REFRESH_DATA') syncAppBadge();
 });
+
+// অ্যান্ড্রয়েডের ব্যাক: খোলা অংশ বন্ধ → «আজ» → বন্ধের আগে জিজ্ঞাসা
+BackNav.init({back(){
+  if(!me||document.getElementById('lockScreen')?.style.display!=='none') return false;
+  if(document.getElementById('quizView')?.classList.contains('open')){ exitQuiz(); return true; }
+  const cur=document.querySelector('#stuMainShell .screen.active, .screen.active');
+  if(cur&&cur.id!=='screen-tasks'){ goTab('tasks'); return true; }
+  return false;
+}});

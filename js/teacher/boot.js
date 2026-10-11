@@ -32,3 +32,15 @@ if(navigator.serviceWorker) navigator.serviceWorker.addEventListener('message', 
 });
 
 init();
+
+// অ্যান্ড্রয়েডের ব্যাক: খোলা অংশ বন্ধ → ছাত্রের পাতা থেকে বের → «আজ» → বন্ধের আগে জিজ্ঞাসা
+BackNav.init({back(){
+  if(document.getElementById('lockScreen')?.style.display!=='none') return false;
+  const ai=document.getElementById('adminAiShell'); if(ai&&ai.classList.contains('open')){ AdminAi.close(); return true; }
+  if(document.getElementById('grpPanel')?.classList.contains('open')){ closeGrpPanel(); return true; }
+  if(document.getElementById('profileView')?.classList.contains('open')){ closeStudentProfile(); return true; }
+  if(document.getElementById('searchBar')?.style.display!=='none'){ closeSearchBar(); return true; }
+  if(curChat){ closeChat(); return true; }
+  if(curTab!=='today'){ goTab('today'); return true; }
+  return false;
+}});
