@@ -1,8 +1,10 @@
 /* Waqful Madinah — js/teacher/student-dashboard.js: in-chat student tabs (info, amal, docs, exams, goals, notes, schedule strip) */
 // ══ IN-CHAT STUDENT TABS ═══════════════════════════════
 // আমল / পরীক্ষা / ডক এখন একটি «অগ্রগতি» ট্যাবে (#csp-prog-এর ভেতরে তিনটি অংশ)।
-const PROG_SECTIONS=['task','exam','doc'];
+const PROG_SECTIONS=['task','exam'];
 function switchChatTab(tab,btn){
+  // ফাইল এখন «জমা» ট্যাবে (ভেতরের নাম 'note')
+  if(tab==='doc'){ _jomaFilter='doc'; tab='note'; btn=document.getElementById('cst-note'); }
   const section=PROG_SECTIONS.includes(tab)?tab:null;
   if(section){ tab='prog'; btn=document.getElementById('cst-prog'); }
   curChatTab=tab;
@@ -18,7 +20,7 @@ function switchChatTab(tab,btn){
   if(tab==='msg') setTimeout(()=>document.getElementById('chatMsgs').scrollTop=9e9,30);
   else if(tab==='info') renderChatInfo();
   else if(tab==='prog'){
-    renderChatTasks(); renderChatExams(); renderChatDocs();
+    renderChatTasks(); renderChatExams();
     const wrap=document.getElementById('csp-prog');
     if(section&&section!=='task') requestAnimationFrame(()=>document.getElementById('csp-'+section)?.scrollIntoView({block:'start'}));
     else if(wrap) wrap.scrollTop=0;
@@ -472,18 +474,48 @@ function teacherWeekDateAdd(date,delta){
 function isWeeklyReceiptNote(n){
   return /^সাপ্তাহিক আমল:/.test(String(n.title||'')) || /^সাপ্তাহিক আমল জমা/.test(String(n.text||''));
 }
+// ══ «জমা» — ছাত্র যা জমা দেয় ও আপনার জবাবের অপেক্ষায়: বিবরণ · ফাইল · নম্বর বাকি পরীক্ষা ══
+let _jomaFilter='all';
+const JOMA_FILTERS=[['all','সব'],['note','বিবরণ'],['doc','ফাইল'],['grade','পরীক্ষা']];
+function setJomaFilter(f){ _jomaFilter=f; renderChatNotes(); }
+function _jomaGradeCard(it){
+  const q=it.quiz, sub=it.sub;
+  return `<div class="rd-card"><div class="rd-who rd-who--mini"><span class="rd-time">${esc(_rdAgo(it.ts))}</span><span class="rd-kind k-exam">${rdIcon('pen')}পরীক্ষা</span></div>
+    <div class="rd-card-title">${esc(q.title||'পরীক্ষা')}</div><div class="rd-card-body">উত্তর জমা হয়েছে — নম্বর দিন</div>
+    ${renderOralAnswerButtons(q,sub)}
+    <div class="rd-acts rd-joma-grade"><input class="marks-input" type="number" inputmode="numeric" placeholder="নম্বর" min="0" max="${sub.total}" aria-label="নম্বর"><span>/ ${rdBn(sub.total||0)}</span><button type="button" class="rd-btn pri" onclick="jomaSaveGrade('${rdJs(sub.id)}',this)">${rdIcon('check')}নম্বর দিন</button></div></div>`;
+}
+async function jomaSaveGrade(subId,btn){
+  const v=btn&&btn.parentElement.querySelector('input').value;
+  if(v===''||v==null){ showToast('নম্বর লিখুন'); return; }
+  try{ await API.Exams.updateScore(subId,parseInt(v)||0); showToast('✅ নম্বর দেওয়া হয়েছে'); renderAll(); }
+  catch(e){ console.error(e); showToast('❌ নম্বর সেভ হয়নি'); }
+}
 function renderChatNotes(){
   const el=document.getElementById('csp-note'); if(!el||!curChat) return;
-  const notes=(API.StudentNotes?API.StudentNotes.getAll(curChat):[]).filter(n=>!isWeeklyReceiptNote(n)).slice().sort((a,b)=>String((b.date||'')+(b.time||'')).localeCompare(String((a.date||'')+(a.time||''))));
-  el.innerHTML=notes.length?notes.map(n=>{
-    const cat=API.StudentNotes&&API.StudentNotes.catLabel?API.StudentNotes.catLabel(n.categoryId):'বিবরণ';
-    const pending=n.reviewStatus!=='done';
-    return `<div class="csp-note-item">
-      ${n.title?`<div class="csp-note-title">${esc(n.title)}</div>`:''}
-      <div class="csp-note-body">${esc(n.text)}</div>
-      <div class="csp-note-time">${pending?'<span class="doc-pending-badge">পর্যালোচনাধীন</span>':''}<span class="csp-note-cat">${esc(cat)}</span> ${n.date||''} ${n.time||''}${pending?`<button type="button" class="doc-btn done" style="width:22px;height:22px;display:inline-flex;vertical-align:middle;margin-left:6px" onclick="markNoteReviewed('${esc(n.id)}')" title="পর্যালোচনা সম্পন্ন" aria-label="পর্যালোচনা সম্পন্ন">✓</button>`:''}</div>
-    </div>`;
-  }).join(''):'<div class="csp-empty" style="padding:16px 0">ছাত্রের কোনো বিবরণ নেই।</div>';
+  const f=_jomaFilter;
+  const pending=getTodayItems().filter(it=>it.sid===curChat&&it.kind!=='sched'&&(f==='all'||it.kind===f));
+  // আগের (পর্যালোচিত) — বিবরণ ও ফাইল, নতুনটা ওপরে
+  const past=[];
+  if(f==='all'||f==='note') (API.StudentNotes?API.StudentNotes.getAll(curChat):[]).filter(n=>!isWeeklyReceiptNote(n)&&n.reviewStatus==='done')
+    .forEach(n=>past.push({kind:'note',n,key:String((n.date||'')+'T'+(n.time||''))}));
+  if(f==='all'||f==='doc') API.Docs.getForStudent(curChat).filter(d=>d.sentBy!=='teacher'&&d.reviewStatus!=='pending')
+    .forEach(d=>past.push({kind:'doc',d,key:String(d.uploadedAt||'')}));
+  past.sort((a,b)=>b.key.localeCompare(a.key));
+  const cnt=k=>getTodayItems().filter(it=>it.sid===curChat&&it.kind!=='sched'&&(k==='all'||it.kind===k)).length;
+  const chips=`<div class="rd-joma-chips" role="tablist">${JOMA_FILTERS.map(([k,l])=>{ const c=cnt(k); return `<button type="button" role="tab" aria-selected="${f===k}" class="rd-joma-chip${f===k?' on':''}" onclick="setJomaFilter('${k}')">${l}${c?` <b>${rdBn(c)}</b>`:''}</button>`; }).join('')}</div>`;
+  const pendHtml=pending.length
+    ?`<div class="rd-joma-h">অপেক্ষমান · ${rdBn(pending.length)}</div><div class="rd-joma-list">${pending.map(it=>it.kind==='grade'?_jomaGradeCard(it):_rdCard(it,{compact:true})).join('')}</div>`
+    :`<div class="rd-joma-done">${rdIcon('check')}কিছু বাকি নেই</div>`;
+  const pastHtml=past.length?`<div class="rd-joma-h">আগের · পর্যালোচিত</div><div class="rd-joma-list">${past.map(x=>{
+    if(x.kind==='note'){
+      const n=x.n, cat=API.StudentNotes&&API.StudentNotes.catLabel?API.StudentNotes.catLabel(n.categoryId):'বিবরণ';
+      return `<div class="rd-joma-past"><span class="rd-kind k-note">${rdIcon('book')}${esc(cat)}</span>${n.title?`<b>${esc(n.title)}</b>`:''}<p>${esc(n.text)}</p><span class="rd-time">${esc([n.date,n.time].filter(Boolean).join(' · '))}</span></div>`;
+    }
+    const d=x.d;
+    return `<button type="button" class="rd-joma-past rd-joma-file" onclick="teacherPreviewChatDoc('${rdJs(d.id)}',true)"><span class="rd-kind k-doc">${rdIcon('file')}ফাইল</span><b>${esc(d.fileName||'ফাইল')}</b>${d.reviewComment?`<p>মন্তব্য: ${esc(d.reviewComment)}</p>`:''}<span class="rd-time">${esc(d.uploadedAt?API.bdDateStr(d.uploadedAt):'')}</span></button>`;
+  }).join('')}</div>`:'';
+  el.innerHTML=chips+pendHtml+pastHtml+(!pending.length&&!past.length?'<div class="csp-empty" style="padding:8px 0">এখনো কিছু জমা হয়নি।</div>':'');
 }
 /** জিম্মাদারের নিজের নোট — নামের পাশের আইকন থেকে, নিচের ড্রয়ারে (ছাত্র দেখে না) */
 function openTeacherNotes(){

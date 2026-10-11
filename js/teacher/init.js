@@ -182,9 +182,9 @@ function renderAll(){
   refreshBCReadCounts();
   if(curChat){
     if(curChatTab==='msg') renderMsgs(curChat);
-    else if(curChatTab==='prog'){ renderChatTasks(); renderChatExams(); renderChatDocs(); }
+    else if(curChatTab==='prog'){ renderChatTasks(); renderChatExams(); }
     else if(curChatTab==='goal') renderChatGoals();
-    else if(curChatTab==='doc') renderChatDocs();
     else if(curChatTab==='note') renderChatNotes();
+    if(curChat!=='_broadcast') renderChatTabBadges();
   }
 }

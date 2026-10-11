@@ -67,14 +67,13 @@ function getTodayItems(){
   return items.sort((a,b)=>b.ts-a.ts);
 }
 
-/** ছাত্রের পাতার ট্যাবে কয়টা বাকি: রিসালা (অপঠিত + সময়সূচি), অগ্রগতি (ফাইল + নম্বর), বিবরণ */
+/** ছাত্রের পাতার ট্যাবে কয়টা বাকি: রিসালা (অপঠিত + সময়সূচি), জমা (বিবরণ + ফাইল + নম্বর) */
 function chatTabCounts(sid,unreadMsgs){
   const c={msg:unreadMsgs||0,prog:0,note:0};
   getTodayItems().forEach(it=>{
     if(it.sid!==sid) return;
-    if(it.kind==='note') c.note++;
-    else if(it.kind==='sched') c.msg++;
-    else c.prog++;
+    if(it.kind==='sched') c.msg++;
+    else c.note++; // বিবরণ, ফাইল, নম্বর — সব «জমা»-য়
   });
   return c;
 }
@@ -132,7 +131,7 @@ function _rdCard(it,opts){
 function rdText(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function _todayKey(prefix,id){ return prefix+'_'+String(id).replace(/[^\w-]/g,'_'); }
 function toggleTodayCard(key){
-  const card=document.querySelector(`#todayList .rd-card[data-key="${key}"]`); if(!card) return;
+  const card=document.querySelector(`.rd-card[data-key="${key}"]`); if(!card) return;
   const open=!card.classList.contains('open');
   card.classList.toggle('open',open);
   if(open){ _todayOpen.add(key); setTimeout(()=>document.getElementById('tr-'+key)?.focus({preventScroll:true}),50); }

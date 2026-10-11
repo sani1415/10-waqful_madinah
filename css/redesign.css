@@ -464,3 +464,24 @@ html,body{background:var(--rd-bg)!important}
 .back-exit-ask b{font-size:16px;font-weight:600}
 .back-exit-ask span{font-size:13px;opacity:.75}
 .back-exit-ask button{margin-top:8px;border:0;border-radius:99px;background:rgb(255 255 255 / .14);color:#fff;font:inherit;font-size:14px;font-weight:600;padding:8px 18px;cursor:pointer}
+/* ── ছাত্রের পাতা › «জমা»: বিবরণ · ফাইল · পরীক্ষা এক জায়গায় ── */
+#csp-note{gap:10px}
+.rd-joma-chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;padding:4px 0 2px}
+.rd-joma-chip{border:1px solid var(--rd-line);background:var(--rd-surface);color:var(--rd-ink-2);font:inherit;font-size:13.5px;font-weight:500;padding:6px 14px;border-radius:99px;cursor:pointer}
+.rd-joma-chip b{font-weight:700;color:var(--rd-accent)}
+.rd-joma-chip.on{background:var(--rd-accent);border-color:var(--rd-accent);color:#fff}
+.rd-joma-chip.on b{color:#fff}
+.rd-joma-h{font-size:13px;font-weight:600;color:var(--rd-ink-3);margin:8px 2px 0}
+.rd-joma-list{display:grid;gap:8px;grid-template-columns:minmax(0,1fr)}
+.rd-joma-list .rd-card{margin:0;box-shadow:var(--rd-sh)}
+.rd-joma-done{display:flex;align-items:center;justify-content:center;gap:6px;color:var(--rd-accent);font-size:14px;font-weight:600;padding:10px 0}
+.rd-joma-done .rd-i{width:16px;height:16px}
+.rd-joma-past{display:grid;gap:4px;justify-items:start;text-align:start;width:100%;box-sizing:border-box;background:var(--rd-surface);border:1px solid var(--rd-line);border-radius:16px;padding:12px 14px;font:inherit;color:inherit}
+.rd-joma-past b{font-weight:600;font-size:15px;color:var(--rd-ink)}
+.rd-joma-past p{margin:0;font-size:14.5px;line-height:1.7;color:var(--rd-ink-2);white-space:pre-wrap;overflow-wrap:anywhere}
+.rd-joma-file{cursor:pointer}
+.rd-joma-file:active{background:var(--rd-surface-2)}
+.rd-joma-grade{align-items:center}
+.rd-joma-grade input{width:84px;padding:8px 10px;border:1px solid var(--rd-line);border-radius:12px;font:inherit;font-size:16px}
+.rd-joma-grade span{color:var(--rd-ink-3);font-size:14px}
+.rd-joma-grade .rd-btn{margin-inline-start:auto}
