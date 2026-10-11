@@ -33,6 +33,12 @@ function setAppHeaderTitle(name){
   }
   const sub=document.getElementById('hSub');
   if(sub){ sub.textContent=''; sub.style.display='none'; }
+  // হেডারের বাঁ কোণে সালাম ও তারিখ (চ্যাটের বাইরে)
+  const g=document.getElementById('hGreet');
+  if(g){
+    const d=new Date().toLocaleDateString('bn-BD',{weekday:'long',day:'numeric',month:'long',timeZone:'Asia/Dhaka'});
+    g.innerHTML=`<b>আসসালামু আলাইকুম</b><span>${esc(d)}</span>`;
+  }
 }
 function setChatHeaderTitle(name){
   const el=document.getElementById('hTitle');

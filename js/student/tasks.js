@@ -76,6 +76,10 @@ function renderWeeklyAmalEntry(){
   let done=0,total=d.tasks.length*d.dates.length;
   d.tasks.forEach(t=>d.dates.forEach(date=>{ if(d.cells[`${t.id}|${date}`]) done++; }));
   const pct=total?Math.round(done/total*100):0;
+  const today=API.today();
+  // টিক দেওয়ার পর গ্রিড যেন বাঁয়ে লাফ না দেয়: আগের স্ক্রল রাখি; প্রথমবার আজকের দিকে (ডান প্রান্তে)
+  const oldWrap=el.querySelector('.weekly-amal-grid-wrap');
+  const prevScroll=oldWrap?oldWrap.scrollLeft:null;
   el.innerHTML=`<div class="weekly-amal-card">
     <div class="weekly-amal-head">
       <div><div class="weekly-amal-title">৭ দিনের আমল</div><div class="weekly-amal-sub">${esc(d.dates[0])} – ${esc(d.dates[6])} · ${done}/${total} · ${pct}%</div></div>
@@ -87,11 +91,15 @@ function renderWeeklyAmalEntry(){
         ${d.tasks.map(t=>`<div class="weekly-amal-task">${esc(t.title)}</div>${d.dates.map(date=>{
           const key=`${t.id}|${date}`;
           const on=!!d.cells[key];
-          return `<button type="button" class="weekly-amal-cell ${on?'on':'off'}" onclick="toggleWeeklyAmalCell('${esc(t.id)}','${esc(date)}',this)" aria-label="${esc(t.title)} ${esc(date)} ${on?'সম্পন্ন':'অসম্পন্ন'}">${on?'✓':'✕'}</button>`;
+          // আজ এখনো শেষ হয়নি — না করা থাকলে ✕ নয়, খালি ঘর
+          const state=on?'on':(date>=today?'open':'off');
+          return `<button type="button" class="weekly-amal-cell ${state}" onclick="toggleWeeklyAmalCell('${esc(t.id)}','${esc(date)}',this)" aria-label="${esc(t.title)} ${esc(date)} ${on?'সম্পন্ন':state==='open'?'এখনো বাকি':'অসম্পন্ন'}">${on?'✓':state==='open'?'':'✕'}</button>`;
         }).join('')}`).join('')}
       </div>
     </div>
   </div>`;
+  const wrap=el.querySelector('.weekly-amal-grid-wrap');
+  if(wrap) wrap.scrollLeft=prevScroll!=null?prevScroll:wrap.scrollWidth;
 }
 async function toggleWeeklyAmalCell(tid,date,btn){
   if(!me||!canEditWeeklyDate(date)) return;

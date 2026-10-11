@@ -229,8 +229,12 @@ button.rd-mini{cursor:pointer}
 }
 
 /* ── Student app ────────────────────────────────────────── */
-#stuMainShell .header.stu-h-wrap{background:var(--rd-bg)!important;box-shadow:none;border-bottom:1px solid var(--rd-line);flex-direction:row-reverse;align-items:center;padding:8px 14px;gap:8px}
-#stuMainShell .stu-h-top{padding:0;color:var(--rd-accent)}
+#stuMainShell .header.stu-h-wrap{background:var(--rd-bg)!important;box-shadow:none;border-bottom:1px solid var(--rd-line);flex-direction:row;align-items:center;padding:8px 14px;gap:8px;position:relative}
+/* দিন-সংখ্যা মাঝখানে, লগআউট ডান প্রান্তে */
+#stuMainShell .stu-h-top{padding:0;color:var(--rd-accent);position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1;pointer-events:none}
+#stuMainShell .stu-h-card .header-info{max-width:calc(50% - 74px)}
+#stuMainShell .stu-h-card .header-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#stuMainShell .stu-h-actions{margin-left:auto}
 #stuMainShell .stu-h-days-row{background:var(--rd-surface);border:1px solid var(--rd-line);border-radius:99px;padding:5px 10px;gap:4px}
 #stuMainShell .stu-h-days-lbl,#stuMainShell .stu-h-days-unit{font-size:12px;font-weight:600;opacity:1;letter-spacing:0}
 #stuMainShell .stu-h-days-num{border:0;background:none;color:var(--rd-accent);font-family:var(--rd-head);font-size:14px;font-weight:700;min-width:0;padding:0}
@@ -255,3 +259,24 @@ button.rd-mini{cursor:pointer}
 #app .amal-sub-tab.active{background:var(--rd-ink);color:#fff;border:0;font-weight:600}
 #app .goal-add-btn,#app .daily-note-add-btn{background:var(--rd-accent);border-radius:14px}
 #app .screen,#app .amal-panel,#app #screen-tasks .list-scroll,#app #screen-exams .list-scroll{background:var(--rd-bg)}
+#app .weekly-amal-cell.open{background:#fff;color:transparent;box-shadow:inset 0 0 0 1.5px var(--rd-accent-soft)}
+/* টিচার হেডার: বাঁয়ে সালাম/তারিখ, মাঝখানে ব্র্যান্ড, ডানে বোতাম (চ্যাটের বাইরে) */
+#teaMainShell .header{position:relative}
+.rd-hdr-greet{display:none;min-width:0;line-height:1.25;z-index:1}
+.rd-hdr-greet b{display:block;font-weight:600;font-size:12.5px;color:var(--rd-ink-2)}
+.rd-hdr-greet span{display:block;font-size:11.5px;color:var(--rd-ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:34vw}
+#app:not(.in-chat) .rd-hdr-greet{display:block;flex:1}
+#app:not(.in-chat) #hInfo{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);flex:none;text-align:center;pointer-events:none}
+#app:not(.in-chat) .header-actions{margin-left:auto}
+/* «আজ» — চার সংখ্যার ছোট খিলান কার্ড */
+.rd-stat4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:16px 10px 10px;border-radius:48px 48px 20px 20px;margin-top:12px}
+.rd-stat4 .rd-mini{padding:8px 6px;text-align:center}
+.rd-stat4 .rd-mini b{font-size:18px}
+.rd-stat4 .rd-mini span{font-size:11.5px}
+.rd-stat4 .rd-mini--main{background:var(--rd-accent);color:#fff}
+.rd-stat4 .rd-mini--main span{color:rgb(255 255 255 / .85)}
+.rd-sec-h--center{justify-content:center;margin-top:20px}
+.rd-sec-h--center h4{font-size:17px}
+.rd-chips--center{justify-content:safe center;margin-top:0;margin-bottom:12px}
+#stuMainShell .stu-h-card .header-title{font-size:15.5px}
+#stuMainShell .stu-h-card .header-info{max-width:calc(50% - 66px)}

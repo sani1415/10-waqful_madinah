@@ -134,22 +134,18 @@ function renderToday(){
     .sort((a,b)=>(b.last&&b.last._ts||0)-(a.last&&a.last._ts||0));
   const unreadTotal=unread.reduce((a,r)=>a+r.n,0);
   const amal=_todayAmal();
-  const dateLbl=new Date().toLocaleDateString('bn-BD',{weekday:'long',day:'numeric',month:'long',timeZone:'Asia/Dhaka'});
   const shown=_todayFilter==='all'?items:items.filter(i=>i.group===_todayFilter);
   const chip=(k,l)=>`<button type="button" class="rd-chip${_todayFilter===k?' on':''}" onclick="setTodayFilter('${k}')">${l}<b>${rdBn(counts[k])}</b></button>`;
 
   el.innerHTML=`
-  <div class="rd-top"><div class="rd-date">আসসালামু আলাইকুম · ${esc(dateLbl)}</div><h1 class="rd-title">আজকের কাজ</h1></div>
-  <div class="rd-arch">
-    <div class="rd-hero-row"><span class="rd-big">${rdBn(items.length)}</span><div><b>${items.length?'সিদ্ধান্ত বাকি':'সব সিদ্ধান্ত হয়ে গেছে'}</b><span>${items.length?'নিচের কার্ড থেকেই শেষ করা যায়':'নতুন কিছু এলে এখানে দেখাবে'}</span></div></div>
-    <div class="rd-mini3">
-      <button type="button" class="rd-mini" onclick="goTab('chats')"><b>${rdBn(unreadTotal)}</b><span>অপঠিত রিসালা</span></button>
-      <div class="rd-mini"><b>${rdBn(amal.pct)}%</b><span>আজকের আমল</span></div>
-      <div class="rd-mini"><b>${rdBn(amal.behind.length)}</b><span>জনের আমল বাকি</span></div>
-    </div>
+  <div class="rd-arch rd-stat4">
+    <div class="rd-mini rd-mini--main"><b>${rdBn(items.length)}</b><span>${items.length?'সিদ্ধান্ত বাকি':'সব সিদ্ধান্ত হয়ে গেছে'}</span></div>
+    <button type="button" class="rd-mini" onclick="goTab('chats')"><b>${rdBn(unreadTotal)}</b><span>অপঠিত রিসালা</span></button>
+    <div class="rd-mini"><b>${rdBn(amal.pct)}%</b><span>আজকের আমল</span></div>
+    <div class="rd-mini"><b>${rdBn(amal.behind.length)}</b><span>জনের আমল বাকি</span></div>
   </div>
-  ${items.length?`<div class="rd-chips">${chip('all','সব')}${chip('approve','অনুমোদন')}${chip('review','পর্যালোচনা')}${chip('grade','নম্বর দিন')}</div>
-  <div class="rd-sec-h"><h4>আপনার সিদ্ধান্ত দরকার</h4></div>
+  ${items.length?`<div class="rd-sec-h rd-sec-h--center"><h4>উত্তরের অপেক্ষায়</h4></div>
+  <div class="rd-chips rd-chips--center">${chip('all','সব')}${chip('approve','অনুমোদন')}${chip('review','পর্যালোচনা')}${chip('grade','নম্বর দিন')}</div>
   <div class="rd-stack">${shown.map(_rdCard).join('')||'<div class="rd-empty">এই ধরনের কিছু বাকি নেই।</div>'}</div>`:''}
   ${unread.length?`<div class="rd-sec-h"><h4>অপঠিত রিসালা</h4><button type="button" onclick="goTab('chats')">সব ছাত্র</button></div>
   <div class="rd-card rd-list">${unread.slice(0,5).map(r=>`<button type="button" class="rd-row" onclick="openChat('${rdJs(r.s.id)}')">${rdAvatar(r.s,'sm')}<div class="rd-who-t"><b>${esc(r.s.name)}</b><span>${esc(r.last&&(r.last.text||r.last.fileName)||'')}</span></div><div class="rd-row-end"><span class="rd-time">${esc(r.last&&r.last.time||'')}</span><span class="rd-cnt">${rdBn(r.n)}</span></div></button>`).join('')}</div>`:''}
