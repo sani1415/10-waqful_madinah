@@ -3,7 +3,7 @@
 ## Code Layout (feature-based)
 ```
 teacher.html / student.html   markup only (+ tiny pre-paint inline script)
-css/      style.css (shared) · tablet-desktop.css · amal.css · admin-ai.css · teacher.css · student.css
+css/      style.css (shared) · tablet-desktop.css · amal.css · admin-ai.css · teacher.css · student.css · redesign.css (v3 look, loaded LAST)
 js/api/   data layer → window.API: core.js (helpers, storage, Auth, DB) + one file per feature:
           students · messages · tasks · goals · exams · docs · groups-diary · biboron ·
           amal (ApiAmal) · daily-schedule (API.DailySchedule) · student-notes (API.StudentNotes)
@@ -16,6 +16,12 @@ api/      Vercel functions; `_`-prefixed files (_env.js, _auth.js) are shared he
 - **Script order matters** (classic scripts, shared globals): sync → api/core → shared/ui → api/* → page files → `boot.js`. Page files only *declare* functions/state; anything that runs at load (listeners, `init()`) goes in `boot.js`, so no file uses a function from a later file while loading.
 - New feature → new file in the matching folder (and a `<script>`/`<link>` tag + `sw.js` `LOCAL_SHELL` entry). Prefer files of a few hundred lines; split by feature when a file stops being about one thing. No hard line limits.
 - `js/api/*` section modules get shared helpers from `API._internal` (core only) and reference each other as `API.X` at call time. `js/sync/assemble.js` / `ops.js` read core state via the `ctx` getters passed by `remote-sync.js` (they must not assign core `let`s — keep such functions in `remote-sync.js`).
+
+## UI structure (v3 redesign — `prototypes/redesign/` has the mockups)
+- **Look:** `css/redesign.css` remaps the legacy color tokens to the sage palette and styles the new `rd-*` components (Anek Bangla headings, Hind Siliguri body). New UI goes there; keep using its tokens (`--rd-*`), not new hex codes.
+- **Teacher nav:** আজ (`screen-today`, `js/teacher/today.js` — every pending decision: schedule proposals, pending বিবরণ, pending files, quizzes to grade; plus unread + today's আমল) · ছাত্র (`screen-chats`, roster only) · center ＋ (`fabMenu` create sheet) · পরিকল্পনা (`tasks` / `exams` / `groups` screens behind one segmented control; `goTab('plan')` reopens the last one) · আরও (`screen-more`: ফাইল `docs`, ডায়েরি, AI, settings panes). `NAV_OF` in `js/teacher/nav.js` maps each screen to its tab. AI opens from the header (`#aiHeaderBtn`); the old floating buttons are hidden.
+- **One student page:** chat view tabs রিসালা · অগ্রগতি (`csp-prog` wraps `csp-task`/`csp-exam`/`csp-doc`) · বিবরণ · তথ্য. `switchChatTab('task'|'exam'|'doc')` still works and scrolls to that section.
+- **Student nav:** আজ (`screen-tasks` + `#todayDue` cards from `js/student/today.js`) · রিসালা · খাতা (`screen-goals`: `goKhataTab('notes'|'goals')`; the বিবরণ panel lives here) · আমি (`screen-me`: পরীক্ষা, ফাইল, প্রোফাইল, লগআউট). `goAmalTab('biboron')` redirects to খাতা.
 
 ## Architecture Rules
 - ALL data logic in `js/api/*` — page files just call `API.*`
@@ -33,7 +39,7 @@ api/      Vercel functions; `_`-prefixed files (_env.js, _auth.js) are shared he
 
 ## Service Worker Cache Rule
 - **`sw.js` এর `CACHE` version (`waqful-full-vN`) প্রতিবার যেকোনো file edit করলে N বাড়াতে হবে।**
-- Current version: **v205** (last bumped: live message and read-receipt sync)
+- Current version: **v206** (last bumped: v3 redesign — new nav, আজ screens, redesign.css)
 - যেকোনো `.html`, `.css`, `.js` file বদলালে → `sw.js` খুলে `waqful-full-vN` → `vN+1` করো।
 - নতুন file তৈরি হলে `LOCAL_SHELL` array-তেও যোগ করো।
 

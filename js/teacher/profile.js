@@ -73,7 +73,7 @@ function renderProfileBody(s){
       <div id="notesList">${renderNotesList(notes)}</div>
       <div class="note-add-row">
         <textarea id="noteInput" placeholder="নতুন নোট লিখুন..." rows="2"></textarea>
-        <button type="button" class="note-submit-btn" onclick="addNote()" style="background:#075E54;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer">📝 যোগ</button>
+        <button type="button" class="note-submit-btn" onclick="addNote()" style="background:#3F6B4A;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer">📝 যোগ</button>
       </div>
     </div>
   </div>
@@ -92,7 +92,7 @@ function renderProfileBody(s){
       <div id="profilePinReset" class="profile-v2-pin-edit" style="display:none">
         <div class="profile-pin-row">
           <input class="form-input" id="profileNewPin" type="number" placeholder="নতুন ৪ সংখ্যার পিন">
-          <button type="button" class="profile-pin-save" onclick="saveProfilePin()" style="background:#075E54;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer">সেভ পিন</button>
+          <button type="button" class="profile-pin-save" onclick="saveProfilePin()" style="background:#3F6B4A;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer">সেভ পিন</button>
         </div>
       </div>
     </div>
@@ -136,7 +136,7 @@ function renderSchedulePane(s){
       <thead><tr><th>সময়</th><th>কাজ</th></tr></thead>
       <tbody>${diffBody}</tbody></table>
       <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-        <button type="button" style="background:#2E7D32;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-family:var(--font);font-weight:600;cursor:pointer" onclick="teacherApproveSchedule('${s.id}')">✅ অনুমোদন</button>
+        <button type="button" style="background:#3F6B4A;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-family:var(--font);font-weight:600;cursor:pointer" onclick="teacherApproveSchedule('${s.id}')">✅ অনুমোদন</button>
         <button type="button" style="background:#fff;color:#E65100;border:1.5px solid #E65100;border-radius:8px;padding:8px 14px;font-family:var(--font);font-weight:600;cursor:pointer" onclick="teacherRejectSchedulePrompt('${s.id}')">✕ প্রত্যাখ্যান</button>
       </div>
     </div>`;
@@ -352,9 +352,9 @@ function editNoteInline(nid){
   if(!curProfileSid) return;
   const el=document.getElementById('notetext_'+nid);
   const cur=el.textContent;
-  el.outerHTML=`<textarea id="noteedit_${nid}" style="width:100%;border:1.5px solid #075E54;border-radius:8px;padding:6px 10px;font-family:var(--font);font-size:14px;outline:none;resize:none;min-height:60px">${esc(cur)}</textarea>
+  el.outerHTML=`<textarea id="noteedit_${nid}" style="width:100%;border:1.5px solid #3F6B4A;border-radius:8px;padding:6px 10px;font-family:var(--font);font-size:14px;outline:none;resize:none;min-height:60px">${esc(cur)}</textarea>
   <div style="display:flex;gap:6px;margin-top:4px">
-    <button onclick="saveNoteEdit('${nid}')" style="background:#075E54;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-family:var(--font);font-size:12px;cursor:pointer">✅ সেভ</button>
+    <button onclick="saveNoteEdit('${nid}')" style="background:#3F6B4A;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-family:var(--font);font-size:12px;cursor:pointer">✅ সেভ</button>
     <button onclick="cancelNoteEdit('${nid}','${esc(cur)}')" style="background:var(--gray-100);border:none;border-radius:6px;padding:4px 12px;font-family:var(--font);font-size:12px;cursor:pointer">বাতিল</button>
   </div>`;
 }

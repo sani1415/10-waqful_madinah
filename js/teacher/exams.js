@@ -30,8 +30,8 @@ function initCreateQuiz(){
   const search=document.getElementById('qStudentSearch'); if(search) search.value='';
   renderQStudentPicker();
   document.getElementById('qStudents').innerHTML=API.Students.getAll().map(s=>`
-    <div class="s-check-item"><input type="checkbox" id="qc_${s.id}" value="${s.id}" style="accent-color:#128C7E">
-    <label for="qc_${s.id}" style="font-size:14px;cursor:pointer"><span style="color:#128C7E;font-weight:600;font-size:12px">${esc(API.Students.displayWaqfId(s.waqfId))}</span> · ${esc(s.name)}${s.responsibility?` <span style="font-size:11px;font-weight:700;color:#E65100;background:#FFF3E0;border-radius:5px;padding:1px 5px">${esc(s.responsibility)}</span>`:''}</label></div>`).join('');
+    <div class="s-check-item"><input type="checkbox" id="qc_${s.id}" value="${s.id}" style="accent-color:#3F6B4A">
+    <label for="qc_${s.id}" style="font-size:14px;cursor:pointer"><span style="color:#3F6B4A;font-weight:600;font-size:12px">${esc(API.Students.displayWaqfId(s.waqfId))}</span> · ${esc(s.name)}${s.responsibility?` <span style="font-size:11px;font-weight:700;color:#E65100;background:#FFF3E0;border-radius:5px;padding:1px 5px">${esc(s.responsibility)}</span>`:''}</label></div>`).join('');
   renderQuestions();
 }
 function studentOptionLabel(s){
@@ -191,7 +191,7 @@ function renderQuizList(){
     const subs=API.Exams.getSubmissionsForQuiz(q.id); const assigned=q.assigneeIds?.length||0;
     return `<div class="quiz-card">
       <div class="quiz-card-hd">
-        <div style="width:44px;height:44px;border-radius:12px;background:#E8F5E9;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">📝</div>
+        <div style="width:44px;height:44px;border-radius:12px;background:#E7EFE5;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">📝</div>
         <div class="quiz-card-info">
           <div class="quiz-card-title">${esc(q.title)}</div>
           <div class="quiz-card-meta">${esc(q.subject||'')} · ${q.questions?.length||0}টি প্রশ্ন · ${q.timeLimit} মিনিট</div>
@@ -250,7 +250,7 @@ function renderResults(){
     const wid=stu?.waqfId?API.Students.displayWaqfId(stu.waqfId):'';
     return `
     <div class="result-item">
-      <div style="flex:1"><div class="result-name">${wid?'<span style="color:#128C7E;font-weight:600;font-size:13px">'+esc(wid)+'</span> · ':''}${esc(s.studentName)}</div>
+      <div style="flex:1"><div class="result-name">${wid?'<span style="color:#3F6B4A;font-weight:600;font-size:13px">'+esc(wid)+'</span> · ':''}${esc(s.studentName)}</div>
       <div class="result-meta">${formatDate(s.submittedAt)} ${s.needsManualGrade?'· ✏️ ম্যানুয়াল গ্রেডিং প্রয়োজন':''}</div>${renderOralAnswerButtons(quiz,s)}</div>
       ${s.needsManualGrade
         ? `<input class="marks-input" type="number" placeholder="নম্বর" value="${s.score||0}" min="0" max="${s.total}" onchange="updateScore('${s.id}',this.value,${s.total},${quiz.passPercent||60})">`

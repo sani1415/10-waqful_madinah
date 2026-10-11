@@ -28,7 +28,7 @@ function renderMsgs(id){
         h+=`<div class="msg-wrap out" data-mid="${m.id}">${swiIcon}<div class="msg-doc-bubble">${card}</div><div style="font-size:11px;color:var(--gray-400);text-align:right;margin-top:2px">${m.time}</div></div>`;
       }
     } else {
-      const tickHtml=m.role==='out'?(m.read?'<span class="msg-tick" style="color:#25D366">✓✓</span>':'<span class="msg-tick" style="color:rgba(0,0,0,.3)">✓</span>'):'';
+      const tickHtml=m.role==='out'?(m.read?'<span class="msg-tick" style="color:#5E8A68">✓✓</span>':'<span class="msg-tick" style="color:rgba(0,0,0,.3)">✓</span>'):'';
       const bodyHtml=typeof _icsHighlight==='function'?_icsHighlight(m.text,_icsQuery):esc(m.text);
       const rcpt=id==='_broadcast'&&m.role==='out'&&_bcReadCounts[m.id]
         ?`<div class="bc-receipt">👁 ${_bcReadCounts[m.id].read_count}/${_bcReadCounts[m.id].total_count} জন দেখেছেন</div>`:'';

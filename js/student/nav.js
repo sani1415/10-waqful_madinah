@@ -34,7 +34,9 @@ function goTab(tab,instant){
   const run=()=>{
   closeAmalCalendar();
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('tab-'+tab).classList.add('active');
+  // ৪টি ট্যাব: পরীক্ষা ও ফাইল «আমি»-র অধীনে
+  const navId={exams:'me',docs:'me'}[tab]||tab;
+  document.getElementById('tab-'+navId)?.classList.add('active');
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+tab).classList.add('active');
   const sb=document.getElementById('stuInChatSearchBtn');
@@ -44,7 +46,9 @@ function goTab(tab,instant){
   if(tab==='exams') renderExamList();
   if(tab==='tasks' && me){ renderAmalDashboard(); renderTaskList(); }
   if(tab==='docs'){ renderSentDocs(); renderReceivedDocs(); }
-  if(tab==='goals') renderGoals();
+  if(tab==='goals') goKhataTab(_khataTab);
+  if(tab==='me') renderMe();
+  if(tab==='tasks'&&me) renderTodayDue();
   };
   if(instant) run(); else uiViewTransition(run);
 }

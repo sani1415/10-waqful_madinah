@@ -47,7 +47,7 @@ function renderDocsGrouped(){
     return `<div class="doc-group">
       <div class="doc-group-hd ${isOpen?'open':''}" onclick="toggleDocGroup('${grpId}','${sid}')">
         ${av}
-        <span class="doc-group-name">${esc(name)}${s?.waqfId?' <span style="color:#128C7E;font-weight:600;font-size:13px">'+esc(API.Students.displayWaqfId(s.waqfId))+'</span>':''}</span>
+        <span class="doc-group-name">${esc(name)}${s?.waqfId?' <span style="color:#3F6B4A;font-weight:600;font-size:13px">'+esc(API.Students.displayWaqfId(s.waqfId))+'</span>':''}</span>
         ${unread?`<span class="unread-dot"></span>`:''}
         <span class="doc-group-count">${docs.length}টি</span>
         <span class="doc-group-chevron ${isOpen?'open':''}" id="chev_${grpId}">${isOpen?'⌄':'›'}</span>
@@ -131,7 +131,7 @@ function renderTeacherSentDocs(){
     return `<div class="doc-group">
       <div class="doc-group-hd" onclick="toggleSentDocGroup('${grpId}')">
         ${av}
-        <span class="doc-group-name">${esc(name)}${s?.waqfId?' <span style="color:#128C7E;font-weight:600;font-size:13px">'+esc(API.Students.displayWaqfId(s.waqfId))+'</span>':''}</span>
+        <span class="doc-group-name">${esc(name)}${s?.waqfId?' <span style="color:#3F6B4A;font-weight:600;font-size:13px">'+esc(API.Students.displayWaqfId(s.waqfId))+'</span>':''}</span>
         <span class="doc-group-count">${docs.length}টি</span>
         <span class="doc-group-chevron" id="chev_${grpId}">›</span>
       </div>
@@ -166,7 +166,7 @@ function renderStorageTree(){
   const pct=Math.min(100,Math.round(usedKB/maxKB*100));
   document.getElementById('storageUsed').textContent=`${usedKB} KB (আনুমানিক) · প্রতি ফাইল সর্বোচ্চ ১০ MB`;
   document.getElementById('storageFill').style.width=pct+'%';
-  document.getElementById('storageFill').style.background=pct>80?'#C62828':pct>50?'#E65100':'#128C7E';
+  document.getElementById('storageFill').style.background=pct>80?'#C62828':pct>50?'#E65100':'#3F6B4A';
 
   if(!docs.length){ document.getElementById('storageFileTree').innerHTML='<p style="text-align:center;padding:20px;color:var(--gray-400);font-size:13px">ফাইল নেই।</p>'; return; }
 
@@ -176,7 +176,7 @@ function renderStorageTree(){
 
   document.getElementById('storageFileTree').innerHTML=Object.entries(groups).map(([name,files])=>`
     <div class="doc-group" style="margin:0 12px 8px">
-      <div class="doc-group-hd" style="cursor:default"><span class="ic-svg" style="color:#075E54">${_svgFolder}</span><span class="doc-group-name">${esc(name)}</span><span class="doc-group-count">${files.length} ফাইল</span></div>
+      <div class="doc-group-hd" style="cursor:default"><span class="ic-svg" style="color:#3F6B4A">${_svgFolder}</span><span class="doc-group-name">${esc(name)}</span><span class="doc-group-count">${files.length} ফাইল</span></div>
       ${files.map(d=>{
         const sizeKB=d.fileSize?Math.round(d.fileSize/1024):0;
         return `<div class="doc-item">

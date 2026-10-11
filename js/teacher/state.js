@@ -1,6 +1,6 @@
 /* Waqful Madinah — js/teacher/state.js: page state, confirm dialog, stroke icons */
 // ══ State ══════════════════════════════════════════════════
-let pin='', curTab='chats', curChat=null, curChatTab='msg', chatReturnTab='chats', chatNoteView='teacher', tFilter='all', docFilter='all', editSid=null, teacherAmalEndDate='';
+let pin='', curTab='today', curChat=null, curChatTab='msg', chatReturnTab='chats', chatNoteView='teacher', tFilter='all', docFilter='all', editSid=null, teacherAmalEndDate='';
 let _bcReadCounts={}; // { [bc_id]: {read_count, total_count} }
 let currentGrpId=null;
 let newTaskType='daily';
@@ -10,7 +10,7 @@ let curPreviewDocId=null;
 let chatTeacherPendingFile=null;
 let curProfileSid=null;
 let replyingTo=null;
-const C=['#128C7E','#1565C0','#6A1B9A','#BF360C','#1B5E20'];
+const C=['#3F6B4A','#1565C0','#6A1B9A','#BF360C','#2F5338'];
 const BRAND_AR='وقف المدينة';
 function brandName(m){
   const s=String(m==null?'':m).trim();
@@ -103,7 +103,7 @@ function setHeaderAvatarHtml(html, bg){
   const el=document.getElementById('hAvatar');
   if(!el) return;
   el.innerHTML=html;
-  el.style.background=bg||'#128C7E';
+  el.style.background=bg||'#3F6B4A';
 }
 function fileIconSvg(type){
   const t=type||'';

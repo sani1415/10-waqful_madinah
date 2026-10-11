@@ -1,9 +1,17 @@
 /* Waqful Madinah — js/teacher/nav.js: tab navigation, header buttons, search bar */
 // ══ NAV ════════════════════════════════════════════════════
-let _tabBeforeHeader='chats';
+let _tabBeforeHeader='today';
 function _headerBackTab(){
   const b=_tabBeforeHeader;
-  return (b&&b!=='settings'&&b!=='diary')?b:'chats';
+  return (b&&b!=='settings'&&b!=='diary')?b:'today';
+}
+// নিচের ৪টি ট্যাব: প্রতিটি স্ক্রিন কোন ট্যাবের অধীনে
+const NAV_OF={today:'today',chats:'chats',tasks:'plan',exams:'plan',groups:'plan',more:'more',docs:'more',settings:'more',diary:'more'};
+let _planTab='tasks';
+function openCreateSheet(){ openModal('fabMenu'); }
+function openCreateExam(){
+  goTab('exams');
+  setTimeout(()=>goExamTab('create', document.querySelectorAll('#screen-exams .exam-tab-btn')[1]),0);
 }
 function isDiaryOpen(){ return curTab==='diary'; }
 function isSearchOpen(){ const b=document.getElementById('searchBar'); return !!(b&&b.style.display!=='none'); }
@@ -46,8 +54,10 @@ function toggleDiary(){
 function goTab(tab, opts){
   uiViewTransition(()=>{
   if(tab==='students') tab='chats';
+  if(tab==='plan') tab=_planTab;
+  if(tab==='tasks'||tab==='exams'||tab==='groups') _planTab=tab;
   if((tab==='settings'||tab==='diary')&&curTab!=='settings'&&curTab!=='diary')
-    _tabBeforeHeader=curTab||'chats';
+    _tabBeforeHeader=curTab||'today';
   curTab=tab;
   // Close profile panel if open
   if(document.getElementById('profileView').classList.contains('open')) closeStudentProfile();
@@ -66,8 +76,9 @@ function goTab(tab, opts){
     }
   }
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  const tabBtn=document.getElementById('tab-'+tab);
+  const tabBtn=document.getElementById('tab-'+(NAV_OF[tab]||tab));
   if(tabBtn) tabBtn.classList.add('active');
+  document.querySelectorAll('.rd-plan-seg-btn').forEach(b=>b.classList.toggle('on', b.dataset.plan===tab));
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const screenEl=document.getElementById('screen-'+tab);
   if(screenEl) screenEl.classList.add('active');
@@ -89,6 +100,9 @@ function goTab(tab, opts){
   if(tab==='settings'){ goSettingsTab(settingsTab||'profile'); }
   if(tab==='diary'){ renderDiaryList(); }
   if(tab==='chats'){ renderBiboronSummary(); renderChatList(''); }
+  if(tab==='today')  { renderToday(); }
+  if(tab==='more')   { renderMore(); }
+  if(tab==='groups') { renderGroupsPane(); }
   if(tab==='exams')  { renderQuizList(); goExamTab('list'); }
   if(tab==='docs')   { renderDocsGrouped(); }
   if(tab==='tasks')  { if(_amalTab==='overview') renderAmalOverview(); else if(_amalTab==='students') renderAmalLeaderboard(); else renderTaskList(); }
@@ -97,6 +111,7 @@ function goTab(tab, opts){
 }
 function fabClick(){
   if(curTab==='tasks') openAddTask();
+  else if(curTab==='today'||curTab==='more') openCreateSheet();
   else if(curTab==='exams') goExamTab('create', document.querySelectorAll('.exam-tab-btn')[1]);
   else openModal('fabMenu');
 }

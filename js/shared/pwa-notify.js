@@ -20,13 +20,13 @@
     bar.id = '_swUpdateBanner';
     bar.style.cssText = [
       'position:fixed', 'bottom:0', 'left:0', 'right:0', 'z-index:99999',
-      'background:#1B5E20', 'color:#fff', 'padding:14px 16px',
+      'background:#2F5338', 'color:#fff', 'padding:14px 16px',
       'display:flex', 'align-items:center', 'justify-content:space-between',
       'gap:12px', 'font-family:inherit', 'font-size:14px',
       'box-shadow:0 -2px 12px rgba(0,0,0,.25)', 'animation:_swSlideUp .3s ease',
     ].join(';');
     bar.innerHTML = '<span>🔄 নতুন আপডেট পাওয়া গেছে</span>'
-      + '<button id="_swReloadBtn" style="background:#fff;color:#1B5E20;border:none;'
+      + '<button id="_swReloadBtn" style="background:#fff;color:#2F5338;border:none;'
       + 'border-radius:20px;padding:7px 18px;font-weight:700;font-size:13px;cursor:pointer;'
       + 'font-family:inherit;flex-shrink:0">আপডেট করুন</button>';
     if (!document.getElementById('_swUpdateAnim')) {

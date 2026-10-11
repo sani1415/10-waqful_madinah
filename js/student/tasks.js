@@ -175,12 +175,12 @@ function amalDashHeaderHtml(){
   </div>`;
 }
 function goAmalTab(tab,btn){
-  if(tab==='history') tab='biboron';
+  if(tab==='history'||tab==='biboron'){ goTab('goals'); goKhataTab('notes'); return; } // বিবরণ এখন «খাতা»-য়
   _amalTab=tab;
   document.querySelectorAll('.amal-sub-tab').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
   else{
-    const map={today:0,biboron:1,schedule:2};
+    const map={today:0,schedule:1};
     const tabs=document.querySelectorAll('#screen-tasks .amal-sub-tab');
     const ix=map[tab]; if(tabs[ix]) tabs[ix].classList.add('active');
   }
@@ -189,7 +189,6 @@ function goAmalTab(tab,btn){
   if(panel) panel.style.display='';
   closeAmalCalendar();
   if(tab==='today'){ renderAmalDashboard(); renderTaskList(); }
-  else if(tab==='biboron') renderDailyNotes();
   else if(tab==='schedule') renderTaskSchedulePanel();
 }
 function renderAmalDashboard(){
@@ -217,7 +216,7 @@ function renderAmalDashboard(){
   el.innerHTML=`<div class="stu-amal-dash-wrap">
     <div class="stu-amal-dash-card">
       ${hd}
-      <div class="stu-amal-rings">${ringCol(dayProg.percent||0,'#4CAF50',dayLbl)}${ringCol(prog.week.percent,'#43A047','সপ্তাহ')}${ringCol(prog.month.percent,'#42A5F5','মাস')}${ringCol(all.percent,'#8D6E63','শুরু থেকে')}</div>
+      <div class="stu-amal-rings">${ringCol(dayProg.percent||0,'#3F6B4A',dayLbl)}${ringCol(prog.week.percent,'#365E40','সপ্তাহ')}${ringCol(prog.month.percent,'#42A5F5','মাস')}${ringCol(all.percent,'#8D6E63','শুরু থেকে')}</div>
     </div>
   </div>`;
   renderWeeklyAmalEntry();

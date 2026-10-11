@@ -57,7 +57,7 @@ async function teacherLogout(){
   } catch(e){ console.warn(e); }
   try{ if(document.getElementById('chatView')?.classList.contains('open')) closeChat(); }catch(e){}
   try{ closeInChatSearch(); }catch(e){}
-  goTab('chats');
+  goTab('today');
   showTeacherLockScreen();
   showToast('লগআউট হয়েছে');
 }
@@ -177,12 +177,12 @@ function refreshBCReadCounts(){
 }
 function renderAll(){
   renderBiboronSummary(); renderChatList(); renderTaskList(); renderQuizList(); renderDocsGrouped(); updateBadge(); updateDocBadge();
+  renderToday(); if(curTab==='more') renderMore(); if(curTab==='groups') renderGroupsPane();
   syncAppBadge();
   refreshBCReadCounts();
   if(curChat){
     if(curChatTab==='msg') renderMsgs(curChat);
-    else if(curChatTab==='task') renderChatTasks();
-    else if(curChatTab==='exam') renderChatExams();
+    else if(curChatTab==='prog'){ renderChatTasks(); renderChatExams(); renderChatDocs(); }
     else if(curChatTab==='goal') renderChatGoals();
     else if(curChatTab==='doc') renderChatDocs();
     else if(curChatTab==='note') renderChatNotes();

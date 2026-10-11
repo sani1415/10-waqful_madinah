@@ -146,14 +146,14 @@ function renderChatList(f=''){
     .filter(s=>API.Students.matchesSearchQuery(s, f))
     .sort((a,b)=>msgTs(b)-msgTs(a));
   let h='';
-  if(!f) h+=renderGrpSection();
+  // গ্রুপ ও «সবাইকে বার্তা» এখন পরিকল্পনা › ঘোষণা ও গ্রুপ-এ (js/teacher/more.js)
   students.forEach(s=>{
     const msgs=API.Messages.getThread(s.id); const last=msgs[msgs.length-1];
     const ur=API.Messages.unreadCount(s.id,'in'); // messages from student (teacher hasn't read)
     // For teacher's outgoing messages: show ✓ if student hasn't seen, ✓✓ if seen
     let tickPrefix='';
     if(last?.role==='out'){
-      tickPrefix=last.read?'<span style="color:#25D366;font-size:13px">✓✓</span> ':'<span style="color:var(--gray-400);font-size:13px">✓</span> ';
+      tickPrefix=last.read?'<span style="color:#5E8A68;font-size:13px">✓✓</span> ':'<span style="color:var(--gray-400);font-size:13px">✓</span> ';
     }
     const previewText=last&&last.type!=='doc'?String(last.text||'').replace(/\s+/g,' ').trim().slice(0,40):'';
     const preview=last?(tickPrefix+(last.type==='doc'?`<span class="ic-svg" style="vertical-align:-2px">${_svgClip}</span> ${esc(String(last.fileName||last.text||'').replace(/\s+/g,' ').trim())}`:esc(previewText))):esc(s.cls||'নতুন');
@@ -164,17 +164,6 @@ function renderChatList(f=''){
       badgeHtml+=`<span class="chat-badge chat-badge--sched" title="সময়সূচি অনুমোদনের অপেক্ষায়"><span class="ic-svg">${_svgCal}</span></span>`;
     h+=`<div class="chat-item" onclick="openChat('${s.id}')">${pctAvatarHtml(s.id,'chat-avatar')}<div class="chat-body"><div class="chat-row1"><span class="chat-name-wrap"><span class="chat-name">${esc(s.name)}</span>${s.waqfId?`<span class="chat-waqf">· ${esc(API.Students.displayWaqfId(s.waqfId))}</span>`:''}${s.responsibility?`<span style="font-size:10px;font-weight:700;color:#E65100;background:#FFF3E0;border-radius:5px;padding:1px 5px;flex-shrink:0">${esc(s.responsibility)}</span>`:''}</span><span class="chat-time">${last?.time||''}</span></div><div class="chat-row2"><span class="chat-preview">${preview}</span>${badgeHtml}</div></div></div>`;
   });
-  // সবাইকে বার্তা — সবসময় তালিকার নিচে
-  if(!f){
-    const bc=API.Messages.getThread('_bc'); const last=bc[bc.length-1];
-    const rcpt=last&&_bcReadCounts[last.id];
-    const rcptHtml=rcpt
-      ? (rcpt.read_count<rcpt.total_count
-          ? `<span style="font-size:11px;font-weight:700;background:#FFF3E0;color:#E65100;border-radius:8px;padding:1px 7px;margin-left:4px">${rcpt.read_count}/${rcpt.total_count} দেখেছেন</span>`
-          : `<span style="font-size:11px;font-weight:700;background:#E8F5E9;color:#2E7D32;border-radius:8px;padding:1px 7px;margin-left:4px">সবাই দেখেছেন</span>`)
-      : '';
-    h+=`<div class="chat-item" onclick="openChat('_broadcast')"><div class="chat-avatar chat-avatar--bc"><span class="ic-svg">${_svgMegaphone}</span></div><div class="chat-body"><div class="chat-row1"><span class="chat-name">সবাইকে বার্তা</span><span class="chat-time">${last?.time||''}</span></div><div class="chat-row2"><span class="chat-preview">${esc(String(last?.text||'গ্রুপ বার্তা').replace(/\s+/g,' ').trim())}</span>${rcptHtml}</div></div></div>`;
-  }
   document.getElementById('chatList').innerHTML=h||`<div class="empty-state"><div class="icon"><span class="ic-svg">${_svgChat}</span></div><p>ছাত্র যোগ করুন।</p></div>`;
 }
 function openChat(id, initialTab){
@@ -216,7 +205,7 @@ function openChat(id, initialTab){
   if(!isBC){
     tabs.style.display='flex';
     attachBtn.style.display='flex';
-    const tab=['info','msg','task','exam','doc','note'].includes(initialTab)?initialTab:'msg';
+    const tab=['info','msg','prog','task','exam','doc','note'].includes(initialTab)?initialTab:'msg';
     switchChatTab(tab, document.getElementById('cst-'+tab));
   } else {
     tabs.style.display='none';

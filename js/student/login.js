@@ -212,4 +212,4 @@ function logout(){
   document.getElementById('lockScreen').style.display='flex';
   Promise.resolve(API.refreshStudentLockHints()).then(()=>renderPendingSection());
 }
-function renderAll(){ updateHeaderStats(); renderTaskSchedulePanel(); renderChat(); renderTaskList(); renderAmalDashboard(); renderExamList(); renderSentDocs(); renderReceivedDocs(); renderGoals(); renderDailyNotes(); updateBadges(); }
+function renderAll(){ renderTodayDue(); if(document.getElementById('screen-me')?.classList.contains('active')) renderMe(); updateHeaderStats(); renderTaskSchedulePanel(); renderChat(); renderTaskList(); renderAmalDashboard(); renderExamList(); renderSentDocs(); renderReceivedDocs(); renderGoals(); renderDailyNotes(); updateBadges(); }

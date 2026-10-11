@@ -3,7 +3,7 @@
 function openStudentSelfProfile(){
   if(!me) return;
   const avatarEl=document.getElementById('spAvatar');
-  avatarEl.style.background=me.color||'#4CAF50';
+  avatarEl.style.background=me.color||'#3F6B4A';
   const letterEl=document.getElementById('spAvatarLetter');
   if(me.photoDataUrl){
     avatarEl.style.backgroundImage=`url(${JSON.stringify(me.photoDataUrl)})`;

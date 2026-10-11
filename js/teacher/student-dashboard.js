@@ -1,10 +1,14 @@
 /* Waqful Madinah — js/teacher/student-dashboard.js: in-chat student tabs (info, amal, docs, exams, goals, notes, schedule strip) */
 // ══ IN-CHAT STUDENT TABS ═══════════════════════════════
+// আমল / পরীক্ষা / ডক এখন একটি «অগ্রগতি» ট্যাবে (#csp-prog-এর ভেতরে তিনটি অংশ)।
+const PROG_SECTIONS=['task','exam','doc'];
 function switchChatTab(tab,btn){
+  const section=PROG_SECTIONS.includes(tab)?tab:null;
+  if(section){ tab='prog'; btn=document.getElementById('cst-prog'); }
   curChatTab=tab;
   document.querySelectorAll('.cs-tab').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
-  const panels=['info','task','doc','exam','goal','note'];
+  const panels=['info','prog','goal','note'];
   document.getElementById('chatMsgs').style.display=tab==='msg'?'flex':'none';
   panels.forEach(p=>{ document.getElementById('csp-'+p).style.display=p===tab?'flex':'none'; });
   document.getElementById('chatAttachBtn').style.display=tab==='msg'?'flex':'none';
@@ -12,9 +16,12 @@ function switchChatTab(tab,btn){
   if(!curChat) return;
   if(tab==='msg') setTimeout(()=>document.getElementById('chatMsgs').scrollTop=9e9,30);
   else if(tab==='info') renderChatInfo();
-  else if(tab==='task') renderChatTasks();
-  else if(tab==='doc')  renderChatDocs();
-  else if(tab==='exam') renderChatExams();
+  else if(tab==='prog'){
+    renderChatTasks(); renderChatExams(); renderChatDocs();
+    const wrap=document.getElementById('csp-prog');
+    if(section&&section!=='task') requestAnimationFrame(()=>document.getElementById('csp-'+section)?.scrollIntoView({block:'start'}));
+    else if(wrap) wrap.scrollTop=0;
+  }
   else if(tab==='goal') renderChatGoals();
   else if(tab==='note') renderChatNotes();
   if(typeof renderChatScheduleStrip==='function') renderChatScheduleStrip();
@@ -141,7 +148,7 @@ function renderChatInfo(){
           <div id="profilePinReset" class="profile-v2-pin-edit" style="display:none">
             <div class="profile-pin-row">
               <input class="form-input" id="profileNewPin" type="number" placeholder="নতুন ৪ সংখ্যার পিন">
-              <button type="button" class="profile-pin-save" onclick="saveProfilePin()" style="background:#075E54;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer">সেভ পিন</button>
+              <button type="button" class="profile-pin-save" onclick="saveProfilePin()" style="background:#3F6B4A;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer">সেভ পিন</button>
             </div>
           </div>
           <button type="button" class="btn-primary" style="margin:10px 0 0" onclick="saveProfileEdits()">সেভ</button>
@@ -224,7 +231,7 @@ function openProfileEditModal(tab='basic'){
         <div id="profilePinReset" class="profile-v2-pin-edit" style="display:block">
           <div class="profile-pin-row">
             <input class="form-input" id="profileNewPin" type="number" placeholder="নতুন ৪ সংখ্যার পিন">
-            <button type="button" class="profile-pin-save" onclick="saveProfilePin()" style="background:#075E54;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer">সেভ পিন</button>
+            <button type="button" class="profile-pin-save" onclick="saveProfilePin()" style="background:#3F6B4A;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer">সেভ পিন</button>
           </div>
         </div>
       </div>
@@ -263,7 +270,7 @@ function renderTeacherAmalSummary(sid){
   const calIcon='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>';
   return `<div class="csp-amal-ring-wrap"><div class="stu-amal-dash-card csp-amal-ring-card">
     <div class="stu-amal-dash-hd"><button type="button" class="stu-amal-yday-btn" onclick="shiftTeacherAmalDate(-1)" title="আগের দিন" aria-label="আগের দিন">${backIcon}</button><div class="stu-amal-dash-title-wrap"><div class="stu-amal-dash-title">মুহাসাবা</div><div class="stu-amal-dash-date">${esc(date)}</div></div><button type="button" class="stu-amal-cal-btn" onclick="openTeacherAmalCalendar()" title="আমল ইতিহাস" aria-label="আমল ইতিহাস ক্যালেন্ডার">${calIcon}</button></div>
-    <div class="stu-amal-rings">${chatAmalRing(selectedDay?.percent,'#4CAF50',selected===API.today()?'আজ':'নির্বাচিত')}${chatAmalRing(prog.week?.percent,'#43A047','সপ্তাহ')}${chatAmalRing(prog.month?.percent,'#42A5F5','মাস')}${chatAmalRing(prog.all?.percent,'#8D6E63','শুরু থেকে')}</div>
+    <div class="stu-amal-rings">${chatAmalRing(selectedDay?.percent,'#3F6B4A',selected===API.today()?'আজ':'নির্বাচিত')}${chatAmalRing(prog.week?.percent,'#365E40','সপ্তাহ')}${chatAmalRing(prog.month?.percent,'#42A5F5','মাস')}${chatAmalRing(prog.all?.percent,'#8D6E63','শুরু থেকে')}</div>
   </div></div>`;
 }
 function shiftTeacherAmalDate(delta){

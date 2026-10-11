@@ -137,7 +137,7 @@ function renderAmalOverview(dateStr){
     const assignees=Object.keys(task.assignees||{});
     const avatars=assignees.map(sid=>{
       const s=stuMap[sid]; if(!s) return '';
-      return `<span class="amal-avatar ${completed.includes(sid)?'done':'pending'}" style="background:${s.color||'#128C7E'}" title="${esc(s.name)}">${(s.name||'?').slice(0,2)}</span>`;
+      return `<span class="amal-avatar ${completed.includes(sid)?'done':'pending'}" style="background:${s.color||'#3F6B4A'}" title="${esc(s.name)}">${(s.name||'?').slice(0,2)}</span>`;
     }).join('');
     h+=`<div class="amal-card">
       <div class="amal-card-hd"><span class="amal-card-title">${esc(task.title)}</span>
@@ -212,8 +212,8 @@ function setTaskType(type){
 }
 function openAddTask(preselectId=null){
   document.getElementById('taskStudents').innerHTML=API.Students.getAll().map(s=>`
-    <div class="s-check-item"><input type="checkbox" id="tc_${s.id}" value="${s.id}" ${preselectId===s.id?'checked':''} style="accent-color:#128C7E">
-    <label for="tc_${s.id}" style="font-size:14px;cursor:pointer"><span style="color:#128C7E;font-weight:600;font-size:12px">${esc(API.Students.displayWaqfId(s.waqfId))}</span> · ${esc(s.name)}${s.responsibility?` <span style="font-size:11px;font-weight:700;color:#E65100;background:#FFF3E0;border-radius:5px;padding:1px 5px">${esc(s.responsibility)}</span>`:''} <span style="color:var(--gray-400);font-size:12px">${s.cls||''}</span></label></div>`).join('');
+    <div class="s-check-item"><input type="checkbox" id="tc_${s.id}" value="${s.id}" ${preselectId===s.id?'checked':''} style="accent-color:#3F6B4A">
+    <label for="tc_${s.id}" style="font-size:14px;cursor:pointer"><span style="color:#3F6B4A;font-weight:600;font-size:12px">${esc(API.Students.displayWaqfId(s.waqfId))}</span> · ${esc(s.name)}${s.responsibility?` <span style="font-size:11px;font-weight:700;color:#E65100;background:#FFF3E0;border-radius:5px;padding:1px 5px">${esc(s.responsibility)}</span>`:''} <span style="color:var(--gray-400);font-size:12px">${s.cls||''}</span></label></div>`).join('');
   document.getElementById('selAll').checked=false;
   setTaskType('daily');
   openModal('addTaskModal');

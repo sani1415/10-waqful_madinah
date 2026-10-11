@@ -44,7 +44,7 @@ function openGrpModal(gid){
   const stus=API.Students.getAll();
   document.getElementById('grpStuList').innerHTML=stus.length
     ? stus.map(s=>`<label style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f3f4f6;cursor:pointer">
-        <input type="checkbox" value="${s.id}" ${g&&g.studentIds.includes(s.id)?'checked':''} style="accent-color:#128C7E;width:16px;height:16px;flex-shrink:0">
+        <input type="checkbox" value="${s.id}" ${g&&g.studentIds.includes(s.id)?'checked':''} style="accent-color:#3F6B4A;width:16px;height:16px;flex-shrink:0">
         <span style="font-size:14px;font-weight:600;color:#1e293b;flex:1">${esc(s.name)}</span>
         <span style="font-size:12px;color:#64748b">${s.waqfId?API.Students.displayWaqfId(s.waqfId):''}</span>
       </label>`).join('')

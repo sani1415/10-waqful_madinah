@@ -1,5 +1,5 @@
 /* Waqful Madinah — full-app shell cache + Web Push display */
-var CACHE = 'waqful-full-v205';
+var CACHE = 'waqful-full-v206';
 
 var CDN_ASSETS = [
   'https://unpkg.com/@supabase/supabase-js@2.49.8/dist/umd/supabase.js',
@@ -26,6 +26,7 @@ var LOCAL_SHELL = [
   'student/',
   'css/admin-ai.css',
   'css/amal.css',
+  'css/redesign.css',
   'css/student.css',
   'css/style.css',
   'css/tablet-desktop.css',
@@ -59,6 +60,7 @@ var LOCAL_SHELL = [
   'js/student/schedule.js',
   'js/student/state.js',
   'js/student/tasks.js',
+  'js/student/today.js',
   'js/sync/assemble.js',
   'js/sync/ops.js',
   'js/sync/remote-sync-write.js',
@@ -72,6 +74,7 @@ var LOCAL_SHELL = [
   'js/teacher/exams.js',
   'js/teacher/groups.js',
   'js/teacher/init.js',
+  'js/teacher/more.js',
   'js/teacher/nav.js',
   'js/teacher/profile.js',
   'js/teacher/settings.js',
@@ -79,6 +82,7 @@ var LOCAL_SHELL = [
   'js/teacher/student-dashboard.js',
   'js/teacher/students.js',
   'js/teacher/tasks.js',
+  'js/teacher/today.js',
   'manifest-teacher.webmanifest',
   'manifest-student.webmanifest',
   'icons/icon-teacher-192.png',
