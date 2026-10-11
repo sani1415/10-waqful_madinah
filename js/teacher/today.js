@@ -155,7 +155,7 @@ async function todayMarkNoteReviewed(sid,noteId){
 // (সিদ্ধান্তের কার্ড + মেসেজ + উত্তর লেখার ঘর); ডানের তীরে পুরো পাতা।
 const _homeOpen=new Set();
 const _homeDrafts={};
-const HOME_FILTERS=[['pending','বাকি আছে'],['unread','অপঠিত'],['all','সবাই']];
+const HOME_FILTERS=[['pending','বিবরণ'],['unread','বার্তা'],['all','মোট']];
 
 function _msgTs(m){
   if(!m) return 0;
@@ -229,7 +229,8 @@ function _homeRow(r){
   const sid=rdJs(r.s.id), open=_homeOpen.has(r.s.id);
   const sum=_homeSummary(r);
   const prev=r.unread.length?_homePreview(r):(r.pending?'':_homePreview(r));
-  return `<div class="rd-hrow${open?' open':''}${r.pending?' has-pending':''}" data-sid="${esc(r.s.id)}">
+  let h=0; for(const ch of String(r.s.id)) h=(h*31+ch.charCodeAt(0))>>>0;
+  return `<div class="rd-hrow tn-${h%6}${open?' open':''}${r.pending?' has-pending':''}" data-sid="${esc(r.s.id)}">
     <div class="rd-hrow-main">
       <button type="button" class="rd-hrow-tap" onclick="toggleHomeRow('${sid}')" aria-expanded="${open}">
         ${rdAvatar(r.s)}
@@ -251,7 +252,7 @@ function _homeListHtml(data){
     ?`<div class="rd-hempty"><b>সব কাজ শেষ, আলহামদুলিল্লাহ</b><span>নতুন রিসালা বা জমা এলে এখানে দেখাবে।</span><button type="button" class="rd-pill" onclick="setTodayFilter('all')">সবাইকে দেখুন</button></div>`
     :'<div class="rd-hempty"><span>এই তালিকায় এখন কেউ নেই।</span></div>';
   return `<div class="rd-hfilters" role="tablist">${HOME_FILTERS.map(([k,l])=>`<button type="button" role="tab" aria-selected="${_todayFilter===k}" class="rd-hfilter${_todayFilter===k?' on':''}" onclick="setTodayFilter('${k}')">${l} <b>${rdBn(cnt[k])}</b></button>`).join('')}</div>
-  ${rows.length?`<div class="rd-card rd-hlist${rows.some(r=>_homeOpen.has(r.s.id))?' has-open':''}">${rows.map(_homeRow).join('')}</div>`:empty}`;
+  ${rows.length?`<div class="rd-hlist${rows.some(r=>_homeOpen.has(r.s.id))?' has-open':''}">${rows.map(_homeRow).join('')}</div>`:empty}`;
 }
 /** একটাই খোলা থাকে — নতুন জনকে খুললে আগেরজন বন্ধ হয় */
 function toggleHomeRow(sid){

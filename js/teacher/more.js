@@ -17,7 +17,15 @@ function moreIcon(k){ return `<svg class="rd-i" viewBox="0 0 24 24" aria-hidden=
 function _moreRow(icon,tone,title,sub,onclick,count){
   return `<button type="button" class="rd-menu-row" onclick="${onclick}"><span class="rd-menu-ic ${tone}">${moreIcon(icon)}</span><span class="rd-menu-t"><b>${title}</b>${sub?`<span>${sub}</span>`:''}</span>${count?`<span class="rd-cnt">${rdBn(count)}</span>`:''}${moreIcon('chevR')}</button>`;
 }
-function openSettingsPane(tab){ settingsTab=tab; goTab('settings'); }
+const _SETTINGS_TITLES={profile:'প্রোফাইল ও পিন',biboron:'বিবরণ ও অগ্রগতি',backup:'ব্যাকআপ',more:'অন্যান্য'};
+/** «আরও»-র সেটিংস সারি → নিচ থেকে ড্রয়ার (আলাদা ট্যাবওয়ালা স্ক্রিন নয়) */
+function openSettingsPane(tab){
+  const body=document.getElementById('settingsSheetBody'), sc=document.getElementById('settingsScroll');
+  if(body&&sc&&sc.parentElement!==body) body.appendChild(sc);
+  goSettingsTab(tab);
+  const t=document.getElementById('settingsSheetTitle'); if(t) t.textContent=_SETTINGS_TITLES[settingsTab]||'সেটিংস';
+  openModal('settingsSheet');
+}
 
 function renderMore(){
   const el=document.getElementById('morePane'); if(!el) return;

@@ -44,7 +44,7 @@ body{background:#E9E6DD}
 #app .header-avatar.s-avatar-pct{background:var(--rd-tint)!important}
 #app .header-avatar.s-avatar-pct::before{background:var(--rd-accent-soft)}
 #app .header-avatar.s-avatar-pct>span{color:var(--rd-accent);text-shadow:none}
-#diaryToggleBtn,#settingsToggleBtn{display:none!important}
+#settingsToggleBtn{display:none!important}
 #app .fab,.ai-fab,.ai-fab.show{display:none!important}
 
 /* ── Bottom nav (both apps) ─────────────────────────────── */
@@ -396,3 +396,40 @@ button.rd-mini{cursor:pointer}
 .rd-hlist.has-open .rd-hrow:not(.open){opacity:.45;transition:opacity .2s}
 .rd-hlist.has-open .rd-hrow:not(.open):hover{opacity:.8}
 .rd-hrow.open .rd-hrow-main{top:-6px;box-shadow:0 -14px 0 0 var(--rd-bg),0 6px 14px -10px rgb(31 36 32 / .3)}
+
+/* ── টপ বার: আগের মতো রঙিন (গাঢ় সবুজ), সাদা লেখা ── */
+#app .header{background:var(--rd-accent)!important;color:#fff;border-bottom:0}
+#app .header .header-title,#app .header .header-sub,#app .rd-hdr-greet,#app .rd-hdr-greet *{color:#fff!important}
+#app .rd-hdr-greet span,#app .rd-hdr-greet small{opacity:.8}
+#app .header-back,#app .header-btn{color:#fff}
+#app .header-btn,#app .header-btn--ai{background:rgb(255 255 255 / .14);border:1px solid rgb(255 255 255 / .18);color:#fff}
+#app .header-btn:active,#app .header-back:active,#app .header-btn.header-btn--active{background:rgb(255 255 255 / .28);color:#fff}
+
+/* ── সেটিংস ড্রয়ার ── */
+.rd-settings-sheet{max-height:88dvh;overflow:auto}
+.rd-settings-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.rd-settings-hd .modal-title{margin:0}
+#settingsSheetBody #settingsScroll{overflow:visible;height:auto;flex:none;padding:0}
+
+/* ── আজ: প্রতিজন আলাদা রঙের বাক্স (＋ মেনুর রংগুলো) ── */
+.rd-hfilters{justify-content:center}
+.rd-hlist{display:grid;gap:8px;padding:0;background:none}
+.rd-hrow{--tn-bg:var(--rd-tint);--tn-deep:var(--rd-accent);background:var(--tn-bg);border:0!important;border-radius:18px}
+.rd-hrow.tn-1{--tn-bg:var(--rd-rose-tint);--tn-deep:var(--rd-rose-deep)}
+.rd-hrow.tn-2{--tn-bg:var(--rd-sky-tint);--tn-deep:var(--rd-sky-deep)}
+.rd-hrow.tn-3{--tn-bg:var(--rd-butter-tint);--tn-deep:var(--rd-butter-deep)}
+.rd-hrow.tn-4{--tn-bg:var(--rd-plum-tint);--tn-deep:var(--rd-plum-deep)}
+.rd-hrow.tn-5{--tn-bg:#E3F1EF;--tn-deep:#2B6F66}
+#todayList .rd-hrow .rd-av{background:rgb(255 255 255 / .75)!important;color:var(--tn-deep)!important}
+.rd-hrow-top b{color:var(--tn-deep)}
+.rd-hrow-tap:active,.rd-hrow-go:active{background:rgb(255 255 255 / .35)}
+.rd-hrow-go{color:var(--tn-deep);opacity:.7}
+.rd-hrow.open{margin:0;border:1.5px solid var(--tn-deep)!important;background:var(--tn-bg)}
+.rd-hrow.open .rd-hrow-main{background:var(--tn-bg);border-bottom:1px solid rgb(31 36 32 / .08);box-shadow:0 -14px 0 0 var(--rd-bg),0 6px 14px -10px rgb(31 36 32 / .3)}
+.rd-hrow.open .rd-hrow-body .rd-card{background:rgb(255 255 255 / .82)}
+.rd-hrow-end{color:var(--tn-deep)}
+.rd-hrow-end:active{background:rgb(255 255 255 / .5)}
+.rd-hlist.has-open .rd-hrow:not(.open){opacity:.55}
+#teaMainShell .header-actions{gap:6px}
+#teaMainShell .header-btn{width:36px;height:36px}
+#teaMainShell .header-btn svg{width:18px;height:18px}
