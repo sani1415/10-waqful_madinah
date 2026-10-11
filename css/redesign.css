@@ -290,3 +290,10 @@ button.rd-mini{cursor:pointer}
 .rd-expand.open .rd-reply{display:block;animation:rdRise .3s var(--rd-ease) both}
 .rd-reply textarea{width:100%;min-height:76px;resize:vertical;border:1px solid var(--rd-line);border-radius:12px;background:var(--rd-surface-2);padding:10px 12px;font:inherit;font-size:15px;color:var(--rd-ink);outline:none;margin-bottom:8px}
 .rd-reply textarea:focus{border-color:var(--rd-accent-2);background:#fff}
+/* ডক প্রিভিউ: PDF/ছবি অংশ নিজে স্ক্রল করে, মন্তব্যের ঘর ও বোতাম সবসময় দেখা যায় */
+#app .modal-overlay .doc-preview-sheet{display:flex;flex-direction:column;max-height:calc(100dvh - 40px);overflow:hidden}
+#app .doc-preview-sheet>*{flex:none}
+#app .doc-preview-sheet #docPreviewContent{flex:1 1 auto;min-height:140px;overflow:auto;-webkit-overflow-scrolling:touch}
+#app .doc-preview-sheet .doc-review-input{min-height:64px;max-height:120px}
+.rd-still .rd-card,.rd-still .rd-arch,.rd-still.rd-card,.rd-still.rd-arch{animation:none!important}
+.rd-today-chips{margin-top:18px}

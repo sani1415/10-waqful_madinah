@@ -92,8 +92,8 @@ function _rdCard(it){
       ${n.title?`<div class="rd-card-title">${esc(n.title)}</div>`:''}<div class="rd-card-body">${esc(n.text||'')}</div>
       <div class="rd-acts"><button type="button" class="rd-btn ghost" onclick="toggleTodayCard('${key}')"><span class="rd-when-closed">পুরোটা পড়ুন ও উত্তর দিন</span><span class="rd-when-open">ছোট করুন</span></button><button type="button" class="rd-btn soft" onclick="todayMarkNoteReviewed('${sid}','${nid}')">${rdIcon('check')}পর্যালোচিত</button></div>
       <div class="rd-reply">
-        <textarea id="tr-${key}" rows="3" placeholder="${esc((s.name||'').split(' ')[0])}-কে উত্তর লিখুন…" oninput="_todayDrafts['${key}']=this.value">${rdText(_todayDrafts[key])}</textarea>
-        <div class="rd-acts"><button type="button" class="rd-btn ghost" onclick="todayReplyNote('${sid}','${nid}','${key}',false)">${rdIcon('send')}উত্তর পাঠান</button><button type="button" class="rd-btn pri" onclick="todayReplyNote('${sid}','${nid}','${key}',true)">${rdIcon('check')}পাঠান ও পর্যালোচিত</button></div>
+        <textarea id="tr-${key}" rows="3" placeholder="উত্তর লিখুন…" oninput="_todayDrafts['${key}']=this.value">${rdText(_todayDrafts[key])}</textarea>
+        <div class="rd-acts"><button type="button" class="rd-btn pri" onclick="todayReplyNote('${sid}','${nid}','${key}',true)">${rdIcon('send')}উত্তর পাঠান</button></div>
       </div></div>`;
   }
   if(it.kind==='doc'){
@@ -124,13 +124,13 @@ function toggleTodayCard(key){
 }
 async function todayReplyNote(sid,noteId,key,alsoReview){
   const ta=document.getElementById('tr-'+key); const text=(ta&&ta.value||'').trim();
-  if(!text&&!alsoReview){ showToast('উত্তর লিখুন'); return; }
+  if(!text){ showToast('উত্তর লিখুন'); return; } // উত্তর পাঠালে বিবরণটি নিজে থেকেই পর্যালোচিত হয়
   const n=API.StudentNotes.getAll(sid).find(x=>x.id===noteId);
   try{
     if(text) await API.Messages.send(sid,(n&&n.title?`«${n.title}» প্রসঙ্গে:\n`:'')+text,'text');
     if(alsoReview) await API.StudentNotes.markReviewed(sid,noteId);
     delete _todayDrafts[key]; _todayOpen.delete(key);
-    showToast(alsoReview?(text?'✅ উত্তর পাঠানো ও পর্যালোচিত':'✅ পর্যালোচিত'):'✅ উত্তর পাঠানো হয়েছে');
+    showToast('✅ উত্তর পাঠানো হয়েছে');
     renderAll();
   }catch(e){ console.error(e); showToast('❌ পাঠানো যায়নি'); }
 }
@@ -147,7 +147,25 @@ async function todayMarkNoteReviewed(sid,noteId){
   try{ await API.StudentNotes.markReviewed(sid,noteId); showToast('✅ পর্যালোচিত হিসেবে চিহ্নিত'); renderAll(); }
   catch(e){ console.error(e); showToast('❌ আপডেট হয়নি'); }
 }
-function setTodayFilter(f){ _todayFilter=f; renderToday(); }
+function _todayDecisionsHtml(items,counts){
+  if(!items.length) return '';
+  const shown=_todayFilter==='all'?items:items.filter(i=>i.group===_todayFilter);
+  const chip=(k,l)=>`<button type="button" class="rd-chip${_todayFilter===k?' on':''}" onclick="setTodayFilter('${k}')">${l}<b>${rdBn(counts[k])}</b></button>`;
+  return `<div class="rd-chips rd-chips--center rd-today-chips">${chip('all','সব')}${chip('approve','অনুমোদন')}${chip('review','পর্যালোচনা')}${chip('grade','নম্বর দিন')}</div>
+  <div class="rd-stack">${shown.map(_rdCard).join('')||'<div class="rd-empty">এই ধরনের কিছু বাকি নেই।</div>'}</div>`;
+}
+/** ফিল্টার বদলালে শুধু নিচের কার্ডগুলো বদলায় — ওপরের অংশ, স্ক্রল ও অ্যানিমেশন স্থির থাকে */
+function setTodayFilter(f){
+  _todayFilter=f;
+  const box=document.getElementById('todayDecisions'); if(!box){ renderToday(); return; }
+  const items=getTodayItems();
+  const counts={all:items.length,approve:0,review:0,grade:0}; items.forEach(i=>counts[i.group]++);
+  const list=document.getElementById('todayList');
+  const top=list?list.scrollTop:0;
+  box.classList.add('rd-still');
+  box.innerHTML=_todayDecisionsHtml(items,counts);
+  if(list) list.scrollTop=top;
+}
 function todayRemind(sid){
   openChat(sid,'msg');
   const inp=document.getElementById('msgIn');
@@ -171,14 +189,14 @@ function renderToday(){
   const badge=document.getElementById('todayBadge');
   if(badge){ badge.textContent=items.length||''; badge.classList.toggle('show',items.length>0); }
   if(curTab!=='today') return;
+  const firstPaint=!el.dataset.painted; el.dataset.painted='1';
+  const keepTop=el.scrollTop;
 
   const students=API.Students.getAll();
   const unread=students.map(s=>({s,n:API.Messages.unreadCount(s.id,'in')|0,last:(API.Messages.getThread(s.id)||[]).slice(-1)[0]})).filter(r=>r.n>0)
     .sort((a,b)=>(b.last&&b.last._ts||0)-(a.last&&a.last._ts||0));
   const unreadTotal=unread.reduce((a,r)=>a+r.n,0);
   const amal=_todayAmal();
-  const shown=_todayFilter==='all'?items:items.filter(i=>i.group===_todayFilter);
-  const chip=(k,l)=>`<button type="button" class="rd-chip${_todayFilter===k?' on':''}" onclick="setTodayFilter('${k}')">${l}<b>${rdBn(counts[k])}</b></button>`;
 
   el.innerHTML=`
   <div class="rd-arch rd-stat4">
@@ -187,9 +205,7 @@ function renderToday(){
     <div class="rd-mini"><b>${rdBn(amal.pct)}%</b><span>আজকের আমল</span></div>
     <div class="rd-mini"><b>${rdBn(amal.behind.length)}</b><span>জনের আমল বাকি</span></div>
   </div>
-  ${items.length?`<div class="rd-sec-h rd-sec-h--center"><h4>উত্তরের অপেক্ষায়</h4></div>
-  <div class="rd-chips rd-chips--center">${chip('all','সব')}${chip('approve','অনুমোদন')}${chip('review','পর্যালোচনা')}${chip('grade','নম্বর দিন')}</div>
-  <div class="rd-stack">${shown.map(_rdCard).join('')||'<div class="rd-empty">এই ধরনের কিছু বাকি নেই।</div>'}</div>`:''}
+  <div id="todayDecisions">${_todayDecisionsHtml(items,counts)}</div>
   ${unread.length?`<div class="rd-sec-h"><h4>অপঠিত রিসালা</h4><button type="button" onclick="goTab('chats')">সব ছাত্র</button></div>
   <div class="rd-card rd-list">${unread.slice(0,5).map(r=>`<button type="button" class="rd-row" onclick="openChat('${rdJs(r.s.id)}')">${rdAvatar(r.s,'sm')}<div class="rd-who-t"><b>${esc(r.s.name)}</b><span>${esc(r.last&&(r.last.text||r.last.fileName)||'')}</span></div><div class="rd-row-end"><span class="rd-time">${esc(r.last&&r.last.time||'')}</span><span class="rd-cnt">${rdBn(r.n)}</span></div></button>`).join('')}</div>`:''}
   ${amal.withTasks?`<div class="rd-sec-h"><h4>আজকের আমল</h4><button type="button" onclick="goTab('tasks')">বিস্তারিত</button></div>
@@ -198,4 +214,6 @@ function renderToday(){
     ${amal.behind.slice(0,3).map(r=>`<div class="rd-row">${rdAvatar(r.s,'sm')}<div class="rd-who-t"><b>${esc(r.s.name)}</b><span>${rdBn(r.p.total)}টির ${rdBn(r.p.done)}টি</span></div><button type="button" class="rd-pill" onclick="todayRemind('${rdJs(r.s.id)}')">মনে করিয়ে দিন</button></div>`).join('')}
   </div>`:''}
   <div class="rd-bottom-space"></div>`;
+  el.classList.toggle('rd-still',!firstPaint);
+  if(!firstPaint) el.scrollTop=keepTop;
 }
