@@ -1,6 +1,6 @@
 /* Waqful Madinah — css/redesign.css: v3 visual layer, loaded LAST on both pages.
    Direction: warm paper-white, deep sage accent, butter for "needs attention",
-   Anek Bangla headings + Hind Siliguri body, mihrab-arch hero as the signature shape.
+   Noto Serif Bengali (book-like serif) for headings and body, mihrab-arch hero as the signature shape.
    It remaps the legacy tokens (so older rules follow) and styles the new components (rd-*). */
 :root{
   --rd-bg:#F6F4EE; --rd-surface:#FFFFFF; --rd-surface-2:#FBFAF6;
@@ -12,8 +12,9 @@
   --rd-plum-deep:#6A4C93; --rd-plum-tint:#EFE9F6;
   --rd-sh:0 1px 2px rgb(31 36 32 / .05),0 10px 26px -14px rgb(31 36 32 / .22);
   --rd-ease:cubic-bezier(.22,1,.36,1);
-  --rd-head:'Anek Bangla','Hind Siliguri','Noto Sans Bengali',sans-serif;
-  --font:'Hind Siliguri','Noto Sans Bengali',sans-serif;
+  /* বইয়ের মতো সেরিফ — ব্যবহারকারীর বাছাই (prototypes/fonts) */
+  --rd-head:'Noto Serif Bengali','Noto Sans Bengali',serif;
+  --font:'Noto Serif Bengali','Noto Sans Bengali',serif;
   /* legacy tokens → new palette */
   --t-dark:#3F6B4A; --t-main:#3F6B4A; --t-light:#5E8A68; --t-pale:#E7EFE5;
   --stu-main:#3F6B4A; --stu-dark:#365E40; --stu-deeper:#2F5338; --stu-light:#5E8A68; --stu-pale:#E7EFE5;
