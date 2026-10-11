@@ -170,8 +170,8 @@ function openChat(id, initialTab){
   uiViewTransition(()=>{
   document.getElementById('app').classList.add('in-chat');
   chatReturnTab=(curTab&&document.getElementById('screen-'+curTab))?curTab:'chats';
-  if(initialTab!=='note') chatNoteView='teacher';
   curChat=id; teacherAmalEndDate=API.today(); const isBC=id==='_broadcast';
+  _chatUnreadAtOpen=isBC?0:API.Messages.unreadCount(id,'in');
   const s=isBC?null:API.Students.getById(id);
   // Mark student messages as read — this triggers double-tick on student's side
   API.Messages.markRead(id==='_broadcast'?'_bc':id,'in');
@@ -198,6 +198,7 @@ function openChat(id, initialTab){
   document.getElementById('searchToggleBtn').style.display='none';
   const _setBtn=document.getElementById('settingsToggleBtn'); if(_setBtn) _setBtn.style.display='none';
   document.getElementById('inChatSearchBtn').style.display='flex';
+  const _tn=document.getElementById('tNoteBtn'); if(_tn) _tn.style.display=isBC?'none':'';
   document.getElementById('bcNotice').classList.toggle('show',isBC);
   // Student tabs — only for 1:1 chats
   const tabs=document.getElementById('chatStudentTabs');
@@ -205,7 +206,11 @@ function openChat(id, initialTab){
   if(!isBC){
     tabs.style.display='flex';
     attachBtn.style.display='flex';
-    const tab=['info','msg','prog','task','exam','doc','note'].includes(initialTab)?initialTab:'msg';
+    let tab=['info','msg','prog','task','exam','doc','note'].includes(initialTab)?initialTab:'';
+    if(!tab){
+      const c=chatTabCounts(id,_chatUnreadAtOpen);
+      tab=c.msg?'msg':c.note?'note':c.prog?'prog':'msg';
+    }
     switchChatTab(tab, document.getElementById('cst-'+tab));
   } else {
     tabs.style.display='none';

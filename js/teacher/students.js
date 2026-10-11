@@ -65,10 +65,8 @@ function biboronTargetTab(mode,sid){
   return 'info';
 }
 function openBiboronTarget(sid,mode){
-  if(mode==='studentNote') chatNoteView='student';
-  else if(mode==='teacherNote') chatNoteView='teacher';
-  const tab=biboronTargetTab(mode,sid);
-  openChat(sid,tab);
+  if(mode==='teacherNote'){ openChat(sid,'info'); setTimeout(openTeacherNotes,60); return; }
+  openChat(sid,biboronTargetTab(mode,sid));
 }
 function toggleStuRowMenu(sid,ev){
   if(ev) ev.stopPropagation();

@@ -1,6 +1,6 @@
 /* Waqful Madinah — js/teacher/state.js: page state, confirm dialog, stroke icons */
 // ══ State ══════════════════════════════════════════════════
-let pin='', curTab='today', curChat=null, curChatTab='msg', chatReturnTab='chats', chatNoteView='teacher', tFilter='all', docFilter='all', editSid=null, teacherAmalEndDate='';
+let pin='', curTab='today', curChat=null, curChatTab='msg', chatReturnTab='chats', _chatUnreadAtOpen=0, tFilter='all', docFilter='all', editSid=null, teacherAmalEndDate='';
 let _bcReadCounts={}; // { [bc_id]: {read_count, total_count} }
 let currentGrpId=null;
 let newTaskType='daily';

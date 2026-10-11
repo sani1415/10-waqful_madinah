@@ -25,9 +25,22 @@ function switchChatTab(tab,btn){
   else if(tab==='goal') renderChatGoals();
   else if(tab==='note') renderChatNotes();
   if(typeof renderChatScheduleStrip==='function') renderChatScheduleStrip();
+  if(tab!=='msg') _chatUnreadAtOpen=0;
+  renderChatTabBadges();
+}
+/** ট্যাবের পাশে কয়টা বাকি — রিসালা ট্যাব ছাড়লে অপঠিতের গোনা মুছে যায় (খোলার সময়ই পড়া হয়ে গেছে) */
+function renderChatTabBadges(){
+  const c=curChat&&curChat!=='_broadcast'?chatTabCounts(curChat,_chatUnreadAtOpen):{};
+  ['msg','prog','note'].forEach(k=>{
+    const b=document.getElementById('cst-'+k); if(!b) return;
+    let el=b.querySelector('.cs-tab-cnt');
+    if(!c[k]){ if(el) el.remove(); return; }
+    if(!el){ el=document.createElement('span'); el.className='cs-tab-cnt'; b.appendChild(el); }
+    el.textContent=rdBn(c[k]);
+  });
 }
 function openStudentDashTab(tab,noteView){
-  if(noteView) chatNoteView=noteView;
+  if(noteView==='teacher'){ openTeacherNotes(); return; }
   switchChatTab(tab, document.getElementById('cst-'+tab));
 }
 function stuDashKpi(color,val,label,tab,noteView){
@@ -461,38 +474,36 @@ function isWeeklyReceiptNote(n){
 }
 function renderChatNotes(){
   const el=document.getElementById('csp-note'); if(!el||!curChat) return;
-  const view=chatNoteView==='student'?'student':'teacher';
-  const sourceBar=`<div class="csp-note-source">
-    <button type="button" class="${view==='student'?'active':''}" onclick="setChatNoteView('student')">ছাত্রের বিবরণ</button>
-    <button type="button" class="${view==='teacher'?'active':''}" onclick="setChatNoteView('teacher')">জিম্মাদারের নোট</button>
-  </div>`;
-  if(view==='student'){
-    const notes=(API.StudentNotes?API.StudentNotes.getAll(curChat):[]).filter(n=>!isWeeklyReceiptNote(n)).slice().sort((a,b)=>String((b.date||'')+(b.time||'')).localeCompare(String((a.date||'')+(a.time||''))));
-    el.innerHTML=sourceBar+(notes.length?notes.map(n=>{
-      const cat=API.StudentNotes&&API.StudentNotes.catLabel?API.StudentNotes.catLabel(n.categoryId):'বিবরণ';
-      const pending=n.reviewStatus!=='done';
-      return `<div class="csp-note-item">
-        ${n.title?`<div class="csp-note-title">${esc(n.title)}</div>`:''}
-        <div class="csp-note-body">${esc(n.text)}</div>
-        <div class="csp-note-time">${pending?'<span class="doc-pending-badge">পর্যালোচনাধীন</span>':''}<span class="csp-note-cat">${esc(cat)}</span> ${n.date||''} ${n.time||''}${pending?`<button type="button" class="doc-btn done" style="width:22px;height:22px;display:inline-flex;vertical-align:middle;margin-left:6px" onclick="markNoteReviewed('${esc(n.id)}')" title="পর্যালোচনা সম্পন্ন" aria-label="পর্যালোচনা সম্পন্ন">✓</button>`:''}</div>
-      </div>`;
-    }).join(''):'<div class="csp-empty" style="padding:16px 0">ছাত্রের কোনো বিবরণ নেই।</div>');
-    return;
-  }
+  const notes=(API.StudentNotes?API.StudentNotes.getAll(curChat):[]).filter(n=>!isWeeklyReceiptNote(n)).slice().sort((a,b)=>String((b.date||'')+(b.time||'')).localeCompare(String((a.date||'')+(a.time||''))));
+  el.innerHTML=notes.length?notes.map(n=>{
+    const cat=API.StudentNotes&&API.StudentNotes.catLabel?API.StudentNotes.catLabel(n.categoryId):'বিবরণ';
+    const pending=n.reviewStatus!=='done';
+    return `<div class="csp-note-item">
+      ${n.title?`<div class="csp-note-title">${esc(n.title)}</div>`:''}
+      <div class="csp-note-body">${esc(n.text)}</div>
+      <div class="csp-note-time">${pending?'<span class="doc-pending-badge">পর্যালোচনাধীন</span>':''}<span class="csp-note-cat">${esc(cat)}</span> ${n.date||''} ${n.time||''}${pending?`<button type="button" class="doc-btn done" style="width:22px;height:22px;display:inline-flex;vertical-align:middle;margin-left:6px" onclick="markNoteReviewed('${esc(n.id)}')" title="পর্যালোচনা সম্পন্ন" aria-label="পর্যালোচনা সম্পন্ন">✓</button>`:''}</div>
+    </div>`;
+  }).join(''):'<div class="csp-empty" style="padding:16px 0">ছাত্রের কোনো বিবরণ নেই।</div>';
+}
+/** জিম্মাদারের নিজের নোট — নামের পাশের আইকন থেকে, নিচের ড্রয়ারে (ছাত্র দেখে না) */
+function openTeacherNotes(){
+  if(!curChat||curChat==='_broadcast') return;
+  renderTeacherNotes();
+  openModal('tNoteSheet');
+}
+function renderTeacherNotes(){
+  const el=document.getElementById('tNoteSheetBody'); if(!el||!curChat) return;
+  const s=API.Students.getById(curChat);
+  const t=document.getElementById('tNoteSheetTitle'); if(t) t.textContent=`জিম্মাদারের নোট${s?' — '+s.name:''}`;
   const notes=API.TeacherNotes.getAll(curChat);
-  el.innerHTML=sourceBar+(notes.length?notes.slice().reverse().map(n=>`
+  el.innerHTML=`<div class="csp-note-add">
+      <textarea id="chatNoteInput" placeholder="নতুন নোট লিখুন..." rows="2"></textarea>
+      <button onclick="saveChatNote()">যোগ</button>
+    </div>`+(notes.length?notes.slice().reverse().map(n=>`
     <div class="csp-note-item">
       <div class="csp-note-body">${esc(n.text)}</div>
       <div class="csp-note-time">${n.date||''} ${n.time||''}</div>
-    </div>`).join(''):'<div class="csp-empty" style="padding:16px 0">কোনো নোট নেই।</div>')
-  +`<div class="csp-note-add">
-      <textarea id="chatNoteInput" placeholder="নতুন নোট লিখুন..." rows="2"></textarea>
-      <button onclick="saveChatNote()">যোগ</button>
-    </div>`;
-}
-function setChatNoteView(view){
-  chatNoteView=view==='student'?'student':'teacher';
-  renderChatNotes();
+    </div>`).join(''):'<div class="csp-empty" style="padding:16px 0">কোনো নোট নেই। এখানে যা লিখবেন, ছাত্র দেখবে না।</div>');
 }
 async function markNoteReviewed(noteId){
   if(!curChat||!API.StudentNotes) return;
@@ -505,7 +516,7 @@ async function markNoteReviewed(noteId){
 async function saveChatNote(){
   const inp=document.getElementById('chatNoteInput'); if(!inp||!curChat) return;
   const text=inp.value.trim(); if(!text){ showToast('নোট লিখুন!'); return; }
-  try{ await API.TeacherNotes.add(curChat,text); inp.value=''; renderChatNotes(); showToast('✅ নোট সংরক্ষিত'); }
+  try{ await API.TeacherNotes.add(curChat,text); renderTeacherNotes(); showToast('✅ নোট সংরক্ষিত'); }
   catch(e){ console.error(e); showToast('❌ নোট সেভ হয়নি'); }
 }
 

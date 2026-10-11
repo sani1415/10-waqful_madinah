@@ -320,7 +320,6 @@ button.rd-mini{cursor:pointer}
 .rd-hlist{padding:2px 0;overflow:hidden}
 .rd-hrow{border-top:1px solid var(--rd-line)}
 .rd-hlist>.rd-hrow:first-child{border-top:0}
-.rd-hrow-main{display:flex;align-items:stretch}
 .rd-hrow-tap{flex:1;min-width:0;display:flex;gap:11px;align-items:flex-start;padding:12px 4px 12px 14px;border:0;background:none;text-align:start;color:inherit;cursor:pointer}
 .rd-hrow-tap:active{background:var(--rd-surface-2)}
 .rd-hrow-tap .rd-av{margin-top:2px}
@@ -336,24 +335,9 @@ button.rd-mini{cursor:pointer}
 .k-ok{background:var(--rd-surface-2);color:var(--rd-ink-3);border:1px solid var(--rd-line)}
 .rd-hrow-prev{font-size:13.5px;color:var(--rd-ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rd-hrow.has-pending .rd-hrow-prev{color:var(--rd-ink)}
-.rd-hrow-go{flex:0 0 44px;border:0;background:none;color:var(--rd-ink-3);display:grid;place-items:center;cursor:pointer}
-.rd-hrow-go:active{background:var(--rd-surface-2);color:var(--rd-accent)}
-.rd-hrow-body{display:none}
-.rd-hrow.open{background:var(--rd-surface-2)}
-.rd-hrow.open .rd-hrow-body{display:grid;gap:10px;padding:2px 14px 14px;animation:rdRise .3s var(--rd-ease) both}
 .rd-hrow .rd-card{box-shadow:none;animation:none}
 .rd-hrow .rd-card-body{-webkit-line-clamp:6}
 .rd-who--mini{justify-content:space-between}
-.rd-hmsgs{display:grid;gap:6px}
-.rd-hmsg{max-width:88%;padding:8px 12px;border-radius:16px;font-size:14.5px;line-height:1.5;background:var(--rd-surface);border:1px solid var(--rd-line);border-bottom-left-radius:6px}
-.rd-hmsg.out{justify-self:end;background:#DDEBDA;border-color:transparent;border-bottom-left-radius:16px;border-bottom-right-radius:6px}
-.rd-hmsg span{display:block;font-size:11px;color:var(--rd-ink-3);margin-top:2px;text-align:end}
-.rd-hreply{display:flex;gap:8px;align-items:flex-end}
-.rd-hreply textarea{flex:1;min-height:46px;max-height:140px;resize:vertical;border:1px solid var(--rd-line);border-radius:16px;background:#fff;padding:11px 14px;font:inherit;font-size:15px;color:var(--rd-ink);outline:none}
-.rd-hreply textarea:focus{border-color:var(--rd-accent-2)}
-.rd-hsend{flex:0 0 46px;height:46px;border-radius:50%;border:0;background:var(--rd-accent);color:#fff;display:grid;place-items:center;cursor:pointer}
-.rd-hsend .rd-i{width:20px;height:20px}
-.rd-hfoot{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
 .rd-pill.ghost{background:var(--rd-surface);border:1px solid var(--rd-line);color:var(--rd-ink-2)}
 .rd-stat4 button.rd-mini{cursor:pointer;border:0;font:inherit;color:inherit}
 .rd-stat4 button.rd-mini--main{color:#fff}
@@ -383,19 +367,6 @@ button.rd-mini{cursor:pointer}
 #teaBottomNav #tBadge{display:none!important}
 /* খোলা ছাত্র: আলাদা ফ্রেম, নাম ওপরে আটকে থাকে, বাকিরা ঝাপসা */
 .rd-hlist{overflow:visible}
-.rd-hrow-close{display:none;align-self:center;border:0;border-radius:99px;background:var(--rd-surface);border:1px solid var(--rd-line);color:var(--rd-ink-2);font:inherit;font-size:13px;font-weight:600;padding:5px 12px;cursor:pointer}
-.rd-hrow.open{margin:10px 8px;border:1.5px solid var(--rd-accent-soft)!important;border-radius:18px;background:var(--rd-surface-2);box-shadow:0 12px 28px -18px rgb(31 36 32 / .35);scroll-margin-top:8px}
-.rd-hrow.open+.rd-hrow{border-top:0}
-.rd-hrow.open .rd-hrow-main{position:sticky;top:0;z-index:4;background:var(--rd-tint);border-radius:16px 16px 0 0;border-bottom:1px solid var(--rd-line)}
-.rd-hrow.open .rd-hrow-close{display:inline-block}
-.rd-hrow.open .rd-hrow-cnt,.rd-hrow.open .rd-hrow-prev{display:none}
-.rd-hrow.open .rd-hrow-body{padding-top:12px}
-.rd-hrow-end{justify-self:center;margin-top:4px;border:0;background:none;color:var(--rd-accent);font:inherit;font-size:13.5px;font-weight:600;padding:8px 14px;border-radius:99px;cursor:pointer}
-.rd-hrow-end::before{content:"▴ "}
-.rd-hrow-end:active{background:var(--rd-tint)}
-.rd-hlist.has-open .rd-hrow:not(.open){opacity:.45;transition:opacity .2s}
-.rd-hlist.has-open .rd-hrow:not(.open):hover{opacity:.8}
-.rd-hrow.open .rd-hrow-main{top:-6px;box-shadow:0 -14px 0 0 var(--rd-bg),0 6px 14px -10px rgb(31 36 32 / .3)}
 
 /* ── টপ বার: আগের মতো রঙিন (গাঢ় সবুজ), সাদা লেখা ── */
 #app .header{background:var(--rd-accent)!important;color:#fff;border-bottom:0}
@@ -422,14 +393,20 @@ button.rd-mini{cursor:pointer}
 .rd-hrow.tn-5{--tn-bg:#E3F1EF;--tn-deep:#2B6F66}
 #todayList .rd-hrow .rd-av{background:rgb(255 255 255 / .75)!important;color:var(--tn-deep)!important}
 .rd-hrow-top b{color:var(--tn-deep)}
-.rd-hrow-tap:active,.rd-hrow-go:active{background:rgb(255 255 255 / .35)}
-.rd-hrow-go{color:var(--tn-deep);opacity:.7}
-.rd-hrow.open{margin:0;border:1.5px solid var(--tn-deep)!important;background:var(--tn-bg)}
-.rd-hrow.open .rd-hrow-main{background:var(--tn-bg);border-bottom:1px solid rgb(31 36 32 / .08);box-shadow:0 -14px 0 0 var(--rd-bg),0 6px 14px -10px rgb(31 36 32 / .3)}
-.rd-hrow.open .rd-hrow-body .rd-card{background:rgb(255 255 255 / .82)}
-.rd-hrow-end{color:var(--tn-deep)}
-.rd-hrow-end:active{background:rgb(255 255 255 / .5)}
-.rd-hlist.has-open .rd-hrow:not(.open){opacity:.55}
 #teaMainShell .header-actions{gap:6px}
 #teaMainShell .header-btn{width:36px;height:36px}
 #teaMainShell .header-btn svg{width:18px;height:18px}
+
+/* ── আজ v4: নামে চাপলেই ছাত্রের পাতা; কী বাকি তা নামের পাশে ── */
+.rd-hrow-tap{width:100%;padding:12px 14px;border-radius:18px}
+.rd-hrow-nm{display:flex;align-items:baseline;gap:6px;min-width:0;flex:1}
+.rd-hrow-nm b{flex:none;max-width:60%;overflow:hidden;text-overflow:ellipsis}
+#todayList .rd-hrow-sum{display:block;flex:1;min-width:0;font-size:12.5px;color:var(--tn-deep);opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#todayList .rd-hrow-sum::before{content:"· "}
+.rd-hrow-cnt{background:var(--tn-deep)!important;color:#fff!important}
+/* ছাত্রের পাতা: ট্যাবে কয়টা বাকি; নামের পাশে জিম্মাদারের নোট */
+.cs-tab{position:relative}
+.cs-tab-cnt{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-inline-start:4px;border-radius:99px;background:var(--rd-accent);color:#fff;font-size:11px;font-weight:700;line-height:1}
+#tNoteBtn{display:none;flex:none}
+#app.in-chat #tNoteBtn{display:flex}
+#app.in-chat #diaryToggleBtn,#app.in-chat #aiHeaderBtn{display:none!important}

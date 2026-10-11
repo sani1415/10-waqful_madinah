@@ -66,6 +66,18 @@ function getTodayItems(){
   return items.sort((a,b)=>b.ts-a.ts);
 }
 
+/** ছাত্রের পাতার ট্যাবে কয়টা বাকি: রিসালা (অপঠিত + সময়সূচি), অগ্রগতি (ফাইল + নম্বর), বিবরণ */
+function chatTabCounts(sid,unreadMsgs){
+  const c={msg:unreadMsgs||0,prog:0,note:0};
+  getTodayItems().forEach(it=>{
+    if(it.sid!==sid) return;
+    if(it.kind==='note') c.note++;
+    else if(it.kind==='sched') c.msg++;
+    else c.prog++;
+  });
+  return c;
+}
+
 function _rdAgo(ts){
   if(!ts) return '';
   const min=Math.round((Date.now()-ts)/60000);
@@ -150,11 +162,9 @@ async function todayMarkNoteReviewed(sid,noteId){
   try{ await API.StudentNotes.markReviewed(sid,noteId); showToast('✅ পর্যালোচিত হিসেবে চিহ্নিত'); renderAll(); }
   catch(e){ console.error(e); showToast('❌ আপডেট হয়নি'); }
 }
-// ══ হোম: «আজ» + ছাত্রতালিকা একসাথে — প্রতি ছাত্র এক সারি ════════════
-// যার কিছু বাকি (রিসালা, বিবরণ, ফাইল, সময়সূচি, নম্বর) সে ওপরে। সারিতে চাপলে সেখানেই খোলে
-// (সিদ্ধান্তের কার্ড + মেসেজ + উত্তর লেখার ঘর); ডানের তীরে পুরো পাতা।
-const _homeOpen=new Set();
-const _homeDrafts={};
+// ══ হোম: «আজ» + ছাত্রতালিকা একসাথে — প্রতি ছাত্র এক রঙিন সারি ════════
+// যার কিছু বাকি (রিসালা, বিবরণ, ফাইল, সময়সূচি, নম্বর) সে ওপরে। নামে চাপলেই ছাত্রের পাতা খোলে —
+// ওপরে নাম, তার নিচে ট্যাব (প্রতিটিতে কয়টা বাকি), দুটোই স্ক্রলে স্থির থাকে।
 const HOME_FILTERS=[['pending','বিবরণ'],['unread','বার্তা'],['all','মোট']];
 
 function _msgTs(m){
@@ -209,40 +219,18 @@ function _homeTime(r){
   }
   return _rdAgo(r.ts);
 }
-function _homeBody(r){
-  const sid=rdJs(r.s.id), key=_todayKey('h',r.s.id);
-  const msgs=(r.unread.length?r.unread.slice(-4):r.thread.slice(-2)).filter(m=>m.text||m.fileName);
-  return `${r.dec.map(it=>_rdCard(it,{compact:true})).join('')}
-    ${msgs.length?`<div class="rd-hmsgs">${msgs.map(m=>`<div class="rd-hmsg ${m.role==='in'?'in':'out'}">${esc(String(m.text||m.fileName||''))}<span>${esc(m.time||'')}</span></div>`).join('')}</div>`:''}
-    <div class="rd-hreply">
-      <textarea id="hr-${key}" rows="2" placeholder="উত্তর লিখুন…" oninput="_homeDrafts['${key}']=this.value">${rdText(_homeDrafts[key])}</textarea>
-      <button type="button" class="rd-hsend" onclick="homeReply('${sid}','${key}')" aria-label="পাঠান">${rdIcon('send')}</button>
-    </div>
-    <div class="rd-hfoot">
-      ${r.unread.length?`<button type="button" class="rd-pill ghost" onclick="homeMarkRead('${sid}')">পড়া হয়েছে</button>`:''}
-      ${r.behind?`<button type="button" class="rd-pill ghost" onclick="homeRemind('${sid}','${key}')">আমলের কথা মনে করিয়ে দিন</button>`:''}
-      <button type="button" class="rd-pill" onclick="openChat('${sid}')">পুরো রিসালা ও অগ্রগতি</button>
-    </div>
-    <button type="button" class="rd-hrow-end" onclick="toggleHomeRow('${sid}')">${esc(r.s.name.split(' ')[0])}-এর অংশ বন্ধ করুন</button>`;
-}
 function _homeRow(r){
-  const sid=rdJs(r.s.id), open=_homeOpen.has(r.s.id);
+  const sid=rdJs(r.s.id);
   const sum=_homeSummary(r);
-  const prev=r.unread.length?_homePreview(r):(r.pending?'':_homePreview(r));
+  const prev=_homePreview(r);
   let h=0; for(const ch of String(r.s.id)) h=(h*31+ch.charCodeAt(0))>>>0;
-  return `<div class="rd-hrow tn-${h%6}${open?' open':''}${r.pending?' has-pending':''}" data-sid="${esc(r.s.id)}">
-    <div class="rd-hrow-main">
-      <button type="button" class="rd-hrow-tap" onclick="toggleHomeRow('${sid}')" aria-expanded="${open}">
-        ${rdAvatar(r.s)}
-        <span class="rd-hrow-t"><span class="rd-hrow-top"><b>${esc(r.s.name)}</b><span class="rd-time">${esc(_homeTime(r))}</span></span>
-          ${sum?`<span class="rd-hrow-sum">${esc(sum)}</span>`:''}
-          ${prev?`<span class="rd-hrow-prev">${esc(prev)}</span>`:''}</span>
-        ${r.pending?`<span class="rd-cnt rd-hrow-cnt">${rdBn(r.pending)}</span>`:''}
-      </button>
-      <button type="button" class="rd-hrow-close" onclick="toggleHomeRow('${sid}')">বন্ধ</button>
-      <button type="button" class="rd-hrow-go" onclick="openChat('${sid}')" aria-label="${esc(r.s.name)}-এর পুরো পাতা">${rdIcon('chevR')}</button>
-    </div>
-    <div class="rd-hrow-body">${open?_homeBody(r):''}</div>
+  return `<div class="rd-hrow tn-${h%6}${r.pending?' has-pending':''}" data-sid="${esc(r.s.id)}">
+    <button type="button" class="rd-hrow-tap" onclick="openChat('${sid}')">
+      ${rdAvatar(r.s)}
+      <span class="rd-hrow-t"><span class="rd-hrow-top"><span class="rd-hrow-nm"><b>${esc(r.s.name)}</b>${sum?`<span class="rd-hrow-sum">${esc(sum)}</span>`:''}</span><span class="rd-time">${esc(_homeTime(r))}</span></span>
+        ${prev?`<span class="rd-hrow-prev">${esc(prev)}</span>`:''}</span>
+      ${r.pending?`<span class="rd-cnt rd-hrow-cnt">${rdBn(r.pending)}</span>`:''}
+    </button>
   </div>`;
 }
 function _homeListHtml(data){
@@ -252,46 +240,7 @@ function _homeListHtml(data){
     ?`<div class="rd-hempty"><b>সব কাজ শেষ, আলহামদুলিল্লাহ</b><span>নতুন রিসালা বা জমা এলে এখানে দেখাবে।</span><button type="button" class="rd-pill" onclick="setTodayFilter('all')">সবাইকে দেখুন</button></div>`
     :'<div class="rd-hempty"><span>এই তালিকায় এখন কেউ নেই।</span></div>';
   return `<div class="rd-hfilters" role="tablist">${HOME_FILTERS.map(([k,l])=>`<button type="button" role="tab" aria-selected="${_todayFilter===k}" class="rd-hfilter${_todayFilter===k?' on':''}" onclick="setTodayFilter('${k}')">${l} <b>${rdBn(cnt[k])}</b></button>`).join('')}</div>
-  ${rows.length?`<div class="rd-hlist${rows.some(r=>_homeOpen.has(r.s.id))?' has-open':''}">${rows.map(_homeRow).join('')}</div>`:empty}`;
-}
-/** একটাই খোলা থাকে — নতুন জনকে খুললে আগেরজন বন্ধ হয় */
-function toggleHomeRow(sid){
-  const row=document.querySelector(`#todayList .rd-hrow[data-sid="${CSS.escape(sid)}"]`); if(!row) return;
-  const open=!row.classList.contains('open');
-  document.querySelectorAll('#todayList .rd-hrow.open').forEach(o=>{
-    if(o===row) return;
-    o.classList.remove('open');
-    o.querySelector('.rd-hrow-body').innerHTML='';
-    o.querySelector('.rd-hrow-tap')?.setAttribute('aria-expanded','false');
-  });
-  _homeOpen.clear();
-  if(open){
-    _homeOpen.add(sid);
-    const r=_homeRows().rows.find(x=>x.s.id===sid);
-    row.querySelector('.rd-hrow-body').innerHTML=r?_homeBody(r):'';
-  }
-  row.classList.toggle('open',open);
-  row.closest('.rd-hlist')?.classList.toggle('has-open',open);
-  row.querySelector('.rd-hrow-tap')?.setAttribute('aria-expanded',String(open));
-  // খুললে নামটা পর্দার মাথায় আনি; বন্ধ করলে সারিটা যেন চোখের সামনে থাকে
-  requestAnimationFrame(()=>row.scrollIntoView({block:open?'start':'nearest',behavior:'smooth'}));
-}
-async function homeReply(sid,key){
-  const ta=document.getElementById('hr-'+key); const text=(ta&&ta.value||'').trim();
-  if(!text){ showToast('উত্তর লিখুন'); return; }
-  try{
-    await API.Messages.send(sid,text,'text');
-    API.Messages.markRead(sid,'in');
-    delete _homeDrafts[key]; _homeOpen.delete(sid);
-    showToast('✅ পাঠানো হয়েছে');
-    renderAll();
-  }catch(e){ console.error(e); showToast('❌ পাঠানো যায়নি'); }
-}
-function homeMarkRead(sid){ API.Messages.markRead(sid,'in'); renderAll(); }
-function homeRemind(sid,key){
-  const ta=document.getElementById('hr-'+key); if(!ta) return;
-  if(!ta.value.trim()){ ta.value='আজকের আমলগুলো শেষ করতে ভুলো না, ইন শা আল্লাহ।'; _homeDrafts[key]=ta.value; }
-  ta.focus();
+  ${rows.length?`<div class="rd-hlist">${rows.map(_homeRow).join('')}</div>`:empty}`;
 }
 /** ফিল্টার বদলালে শুধু তালিকা বদলায় — ওপরের অংশ, স্ক্রল ও অ্যানিমেশন স্থির থাকে */
 function setTodayFilter(f){

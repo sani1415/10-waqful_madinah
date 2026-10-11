@@ -78,6 +78,7 @@
   <div class="header-avatar" id="hAvatar" style="display:none;background:#3F6B4A" onclick="if(curChat&&curChat!=='_broadcast')openStudentProfile(curChat)"></div>
   <div class="rd-hdr-greet" id="hGreet" aria-hidden="true"></div>
   <div class="header-info" style="cursor:default" id="hInfo" onclick="if(curChat&&curChat!=='_broadcast')openStudentProfile(curChat)"><div class="header-title header-title--ar" id="hTitle" lang="ar">وقف المدينة</div><div class="header-sub" id="hSub" style="display:none"></div></div>
+  <button type="button" class="header-btn rd-tnote-btn" id="tNoteBtn" onclick="openTeacherNotes()" title="জিম্মাদারের নোট" aria-label="জিম্মাদারের নোট"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button>
   <div class="header-actions">
     <button type="button" class="header-btn" id="inChatSearchBtn" style="display:none" onclick="toggleInChatSearch()" title="এই চ্যাটে খুঁজুন" aria-label="এই চ্যাটে খুঁজুন"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
     <button type="button" class="header-btn" id="diaryToggleBtn" onclick="toggleDiary()" title="ডায়েরি" aria-label="ডায়েরি"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M8 7h8M8 11h6"/></svg></button>
@@ -560,6 +561,12 @@
   </div>
   <button class="btn-primary" onclick="addTask()">📋 আমল দিন</button>
   <button class="btn-secondary" onclick="closeModal('addTaskModal')">বাতিল</button>
+</div></div>
+
+<div class="modal-overlay" id="tNoteSheet"><div class="modal-sheet rd-settings-sheet">
+  <div class="modal-handle"></div>
+  <div class="rd-settings-hd"><div class="modal-title" id="tNoteSheetTitle">জিম্মাদারের নোট</div><button type="button" class="rd-pill ghost" onclick="closeModal('tNoteSheet')">বন্ধ</button></div>
+  <div id="tNoteSheetBody"></div>
 </div></div>
 
 <div class="modal-overlay" id="settingsSheet"><div class="modal-sheet rd-settings-sheet">
