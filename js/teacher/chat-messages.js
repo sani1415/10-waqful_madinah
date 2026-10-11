@@ -1,17 +1,47 @@
 /* Waqful Madinah — js/teacher/chat-messages.js: message thread, files, reply, edit/delete, swipe, send */
+/** ছাত্র যা জমা দেয় কিন্তু বার্তা নয় — বিবরণ, আর খাতা থেকে পাঠানো ফাইল — রিসালায় সময় অনুযায়ী কার্ড */
+function _chatSubmissions(sid){
+  if(!sid||sid==='_broadcast') return [];
+  const s=API.Students.getById(sid); if(!s) return [];
+  const out=[];
+  (API.StudentNotes?API.StudentNotes.getAll(sid):[]).filter(n=>!isWeeklyReceiptNote(n)).forEach(n=>{
+    const t=Date.parse(`${n.date||''}T${String(n.time||'00:00').slice(0,5)}:00+06:00`);
+    out.push({kind:'note',sid,s,note:n,ts:t?t+59999:0,ds:n.date||null}); // মিনিটের শেষ ধরে — একই মিনিটের বার্তার পরে
+  });
+  const inChat=new Set(API.Messages.getThread(sid).filter(m=>m.docId).map(m=>m.docId));
+  API.Docs.getForStudent(sid).filter(d=>d.sentBy!=='teacher'&&!inChat.has(d.id)).forEach(d=>{
+    const t=Date.parse(d.uploadedAt||'')||0;
+    out.push({kind:'doc',sid,s,doc:d,ts:t,ds:t?API.bdDateStr(t):null});
+  });
+  return out.sort((a,b)=>a.ts-b.ts);
+}
+function _chatSubCard(it){
+  const pending=it.kind==='note'?it.note.reviewStatus!=='done':it.doc.reviewStatus==='pending';
+  if(pending) return `<div class="msg-wrap in chat-sub-wrap"><div class="chat-sub">${_rdCard(it,{compact:true,kp:'c'})}</div></div>`;
+  if(it.kind==='note'){
+    const n=it.note;
+    return `<div class="msg-wrap in chat-sub-wrap"><div class="chat-sub chat-sub-done"><div class="cs-hd">📖 বিবরণ · <b>✓ পর্যালোচিত</b></div>${n.title?`<div class="cs-title">${esc(n.title)}</div>`:''}<p>${esc(n.text||'')}</p><span class="msg-time">${esc(String(n.time||'').slice(0,5))}</span></div></div>`;
+  }
+  const d=it.doc;
+  return `<div class="msg-wrap in chat-sub-wrap"><button type="button" class="chat-sub chat-sub-done" onclick="teacherPreviewChatDoc('${rdJs(d.id)}',true)"><div class="cs-hd">📄 ফাইল (খাতা থেকে) · <b>✓ পর্যালোচিত</b></div><div class="cs-title">${esc(d.fileName||'ফাইল')}</div>${d.reviewComment?`<p>মন্তব্য: ${esc(d.reviewComment)}</p>`:''}</button></div>`;
+}
 function renderMsgs(id){
   const msgs=API.Messages.getThread(id==='_broadcast'?'_bc':id);
   const el=document.getElementById('chatMsgs');
-  if(!msgs.length){
+  const subs=_chatSubmissions(id);
+  if(!msgs.length&&!subs.length){
     el.innerHTML='<div style="text-align:center;padding:30px;color:var(--gray-400);font-size:13px">কথোপকথন শুরু করুন 👋</div>';
   } else {
   const todayStr=API.today();
   function _msgDateStr(m){ const ts=m._ts||parseInt(/^m(\d{13})/.exec(m.id)?.[1]||'0'); if(!ts) return null; return API.bdDateStr(ts); }
   function _dateSepLabel(ds){ if(!ds) return null; if(ds===todayStr) return 'আজ'; const d=new Date(ds+'T00:00:00Z'); return `${d.getUTCDate()}/${d.getUTCMonth()+1}/${d.getUTCFullYear()}`; }
-  let h='', lastDs=null;
+  let h='', lastDs=null, si=0;
+  function _sep(ds){ if(ds && ds!==lastDs){ const lbl=_dateSepLabel(ds); if(lbl) h+=`<div class="msg-date-sep"><span>${lbl}</span></div>`; lastDs=ds; } }
+  function _flushSubs(upTo){ while(si<subs.length&&subs[si].ts<=upTo){ const it=subs[si++]; _sep(it.ds); h+=_chatSubCard(it); } }
   msgs.forEach(m=>{
+    const mts=m._ts||parseInt(/^m(\d{13})/.exec(m.id)?.[1]||'0'); if(mts) _flushSubs(mts);
     const ds=_msgDateStr(m);
-    if(ds && ds!==lastDs){ const lbl=_dateSepLabel(ds); if(lbl) h+=`<div class="msg-date-sep"><span>${lbl}</span></div>`; lastDs=ds; }
+    _sep(ds);
     const replyRef=m.replyTo?`<div class="msg-reply-ref" onclick="scrollToMsg('${m.replyTo.id}')"><div class="rr-sender">${esc(m.replyTo.senderLabel||'')}</div><div class="rr-text">${esc(m.replyTo.text||'')}</div></div>`:'';
     const swiIcon=`<div class="swipe-reply-icon">↩</div>`;
     if(m.type==='task'){
@@ -21,7 +51,9 @@ function renderMsgs(id){
       const ic=fileIcon(m.fileType);
       const markRead=m.role==='in';
       const previewBtn=m.docId?`<button type="button" class="chat-doc-view-btn" onclick="teacherPreviewChatDoc('${m.docId}',${markRead})"><span class="ic-svg">${_svgEye}</span> দেখুন</button>`:'';
-      const card=`${replyRef}<div class="msg-doc-card"><div class="msg-doc-tile">${ic}</div><div class="msg-doc-info"><div class="msg-doc-name">${esc(m.fileName)}</div><div class="msg-doc-size">${m.fileSize?formatBytes(m.fileSize):''}</div></div></div>${previewBtn}`;
+      const dm=m.role==='in'&&m.docId?API.Docs.getById(m.docId):null;
+      const revTag=dm?(dm.reviewStatus==='pending'?'<span class="chat-doc-rev pending">পর্যালোচনা বাকি</span>':'<span class="chat-doc-rev">✓ পর্যালোচিত</span>'):'';
+      const card=`${replyRef}${revTag}<div class="msg-doc-card"><div class="msg-doc-tile">${ic}</div><div class="msg-doc-info"><div class="msg-doc-name">${esc(m.fileName)}</div><div class="msg-doc-size">${m.fileSize?formatBytes(m.fileSize):''}</div></div></div>${previewBtn}`;
       if(m.role==='in'){
         h+=`<div class="msg-wrap in" data-mid="${m.id}">${swiIcon}<div class="msg-doc-bubble">${card}</div><div style="font-size:11px;color:var(--gray-400);margin-top:2px;padding-left:4px">${m.time}</div></div>`;
       } else {
@@ -38,6 +70,7 @@ function renderMsgs(id){
       h+=`<div class="msg-wrap ${m.role}" data-mid="${m.id}">${swiIcon}<div class="msg-bubble ${m.role}">${replyRef}${bodyHtml}<div class="msg-meta"><span class="msg-time">${m.time}${editedTag}</span>${tickHtml}${owBar}</div></div>${rcpt}</div>`;
     }
   });
+  _flushSubs(Infinity);
   el.innerHTML=h;
   }
   setTimeout(()=>el.scrollTop=9e9,50);

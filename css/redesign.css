@@ -494,7 +494,6 @@ html,body{background:var(--rd-bg)!important}
 .stu-today-sub{font-size:13px;font-weight:600;color:var(--rd-ink-3);padding:4px 4px 0}
 .stu-today-exams .exam-card{margin:0}
 .stu-exams-more{justify-self:center}
-.chat-note-btn{color:var(--rd-butter-deep)!important}
 .chat-note-wrap{justify-content:flex-end}
 .chat-note-card{max-width:82%;box-sizing:border-box;background:var(--rd-butter-tint);border:1px solid rgb(126 92 14 / .14);border-radius:18px 18px 6px 18px;padding:10px 13px;display:grid;gap:4px}
 .chat-note-card .cnc-hd{font-size:12px;font-weight:600;color:var(--rd-butter-deep)}
@@ -525,3 +524,25 @@ html,body{background:var(--rd-bg)!important}
 @media (max-width:380px){#stuMainShell .stu-h-days-lbl{display:none}}
 /* জানালা (বিবরণ, সেটিংস…) নিচেও গোল — পর্দার মাঝে ভাসে */
 #app .modal-sheet{border-radius:26px}
+/* ── ছাত্র: রিসালার ওপরে «বিবরণ লিখুন» ── */
+.chat-note-bar{flex:none;display:flex;justify-content:center;padding:8px 8px 4px}
+.chat-note-bar button{display:inline-flex;align-items:center;gap:7px;border:1px solid rgb(126 92 14 / .18);background:var(--rd-butter-tint);color:var(--rd-butter-deep);font:inherit;font-size:14px;font-weight:600;padding:7px 16px;border-radius:99px;cursor:pointer;box-shadow:0 4px 12px -8px rgb(126 92 14 / .5)}
+.chat-note-bar button:active{transform:scale(.97)}
+.chat-note-bar svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+/* ── শিক্ষক: রিসালায় ছাত্রের বিবরণ / খাতার ফাইল ── */
+.chat-sub-wrap{justify-content:flex-start}
+.chat-sub{width:88%;max-width:440px;box-sizing:border-box}
+.chat-sub .rd-card{margin:0;border:1px solid rgb(126 92 14 / .14);background:var(--rd-butter-tint)}
+.chat-sub-done{display:grid;gap:3px;justify-items:start;text-align:start;background:var(--rd-surface);border:1px solid var(--rd-line);border-radius:18px 18px 18px 6px;padding:10px 13px;font:inherit;color:inherit}
+button.chat-sub-done{cursor:pointer}
+.chat-sub-done .cs-hd{font-size:12px;color:var(--rd-ink-3)}
+.chat-sub-done .cs-hd b{color:var(--rd-accent);font-weight:600}
+.chat-sub-done .cs-title{font-weight:600;font-size:15px;color:var(--rd-ink)}
+.chat-sub-done p{margin:0;font-size:14.5px;line-height:1.65;color:var(--rd-ink-2);white-space:pre-wrap;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.chat-sub-done .msg-time{font-size:11px;color:var(--rd-ink-3)}
+.chat-doc-rev{display:inline-block;font-size:11.5px;font-weight:600;color:var(--rd-accent);background:var(--rd-tint);border-radius:99px;padding:2px 9px;margin-bottom:6px}
+.chat-doc-rev.pending{color:var(--rd-butter-deep);background:var(--rd-butter-tint)}
+.chat-sub{width:92%}
+.chat-sub .rd-acts{flex-wrap:wrap}
+.chat-sub .rd-btn{white-space:nowrap;flex:1 1 auto}
+.chat-sub-done .cs-hd b{white-space:nowrap}

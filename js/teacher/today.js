@@ -102,7 +102,7 @@ function _rdCard(it,opts){
       <div class="rd-acts"><button type="button" class="rd-btn ghost" onclick="teacherRejectSchedulePrompt('${sid}')">${rdIcon('undo')}ফেরত দিন</button><button type="button" class="rd-btn pri" onclick="teacherApproveSchedule('${sid}')">${rdIcon('check')}অনুমোদন</button></div></div>`;
   }
   if(it.kind==='note'){
-    const n=it.note, nid=rdJs(n.id), key=_todayKey('n',n.id), open=_todayOpen.has(key);
+    const n=it.note, nid=rdJs(n.id), key=_todayKey(((opts&&opts.kp)||'')+'n',n.id), open=_todayOpen.has(key);
     return `<div class="rd-card rd-expand${open?' open':''}" data-key="${key}">${who}<span class="rd-kind k-note">${rdIcon('book')}বিবরণ</span></div>
       ${n.title?`<div class="rd-card-title">${esc(n.title)}</div>`:''}<div class="rd-card-body">${esc(n.text||'')}</div>
       <div class="rd-acts"><button type="button" class="rd-btn ghost" onclick="toggleTodayCard('${key}')"><span class="rd-when-closed">পুরোটা পড়ুন ও উত্তর দিন</span><span class="rd-when-open">ছোট করুন</span></button><button type="button" class="rd-btn soft" onclick="todayMarkNoteReviewed('${sid}','${nid}')">${rdIcon('check')}পর্যালোচিত</button></div>
@@ -112,7 +112,7 @@ function _rdCard(it,opts){
       </div></div>`;
   }
   if(it.kind==='doc'){
-    const d=it.doc, key=_todayKey('d',d.id), open=_todayOpen.has(key);
+    const d=it.doc, key=_todayKey(((opts&&opts.kp)||'')+'d',d.id), open=_todayOpen.has(key);
     return `<div class="rd-card rd-expand${open?' open':''}" data-key="${key}">${who}<span class="rd-kind k-doc">${rdIcon('file')}ফাইল</span></div>
       <div class="rd-card-title">${esc(d.fileName||'ফাইল')}</div>${d.note?`<div class="rd-card-body">${esc(d.note)}</div>`:''}
       <div class="rd-acts"><button type="button" class="rd-btn ghost" onclick="toggleTodayCard('${key}')"><span class="rd-when-closed">মন্তব্য লিখুন</span><span class="rd-when-open">ছোট করুন</span></button><button type="button" class="rd-btn soft" onclick="openDocPreview('${rdJs(d.id)}',true)">${rdIcon('eye')}খুলে দেখুন</button></div>
