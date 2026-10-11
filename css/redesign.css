@@ -381,3 +381,18 @@ button.rd-mini{cursor:pointer}
 .rd-hempty .rd-pill{margin-top:8px}
 /* পরিকল্পনার ব্যাজ = ছাত্রদের অসম্পূর্ণ আমল — শিক্ষকের করণীয় নয়, তাই নেভে দেখাই না */
 #teaBottomNav #tBadge{display:none!important}
+/* খোলা ছাত্র: আলাদা ফ্রেম, নাম ওপরে আটকে থাকে, বাকিরা ঝাপসা */
+.rd-hlist{overflow:visible}
+.rd-hrow-close{display:none;align-self:center;border:0;border-radius:99px;background:var(--rd-surface);border:1px solid var(--rd-line);color:var(--rd-ink-2);font:inherit;font-size:13px;font-weight:600;padding:5px 12px;cursor:pointer}
+.rd-hrow.open{margin:10px 8px;border:1.5px solid var(--rd-accent-soft)!important;border-radius:18px;background:var(--rd-surface-2);box-shadow:0 12px 28px -18px rgb(31 36 32 / .35);scroll-margin-top:8px}
+.rd-hrow.open+.rd-hrow{border-top:0}
+.rd-hrow.open .rd-hrow-main{position:sticky;top:0;z-index:4;background:var(--rd-tint);border-radius:16px 16px 0 0;border-bottom:1px solid var(--rd-line)}
+.rd-hrow.open .rd-hrow-close{display:inline-block}
+.rd-hrow.open .rd-hrow-cnt,.rd-hrow.open .rd-hrow-prev{display:none}
+.rd-hrow.open .rd-hrow-body{padding-top:12px}
+.rd-hrow-end{justify-self:center;margin-top:4px;border:0;background:none;color:var(--rd-accent);font:inherit;font-size:13.5px;font-weight:600;padding:8px 14px;border-radius:99px;cursor:pointer}
+.rd-hrow-end::before{content:"▴ "}
+.rd-hrow-end:active{background:var(--rd-tint)}
+.rd-hlist.has-open .rd-hrow:not(.open){opacity:.45;transition:opacity .2s}
+.rd-hlist.has-open .rd-hrow:not(.open):hover{opacity:.8}
+.rd-hrow.open .rd-hrow-main{top:-6px;box-shadow:0 -14px 0 0 var(--rd-bg),0 6px 14px -10px rgb(31 36 32 / .3)}

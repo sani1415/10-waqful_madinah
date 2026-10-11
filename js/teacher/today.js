@@ -222,7 +222,8 @@ function _homeBody(r){
       ${r.unread.length?`<button type="button" class="rd-pill ghost" onclick="homeMarkRead('${sid}')">পড়া হয়েছে</button>`:''}
       ${r.behind?`<button type="button" class="rd-pill ghost" onclick="homeRemind('${sid}','${key}')">আমলের কথা মনে করিয়ে দিন</button>`:''}
       <button type="button" class="rd-pill" onclick="openChat('${sid}')">পুরো রিসালা ও অগ্রগতি</button>
-    </div>`;
+    </div>
+    <button type="button" class="rd-hrow-end" onclick="toggleHomeRow('${sid}')">${esc(r.s.name.split(' ')[0])}-এর অংশ বন্ধ করুন</button>`;
 }
 function _homeRow(r){
   const sid=rdJs(r.s.id), open=_homeOpen.has(r.s.id);
@@ -237,6 +238,7 @@ function _homeRow(r){
           ${prev?`<span class="rd-hrow-prev">${esc(prev)}</span>`:''}</span>
         ${r.pending?`<span class="rd-cnt rd-hrow-cnt">${rdBn(r.pending)}</span>`:''}
       </button>
+      <button type="button" class="rd-hrow-close" onclick="toggleHomeRow('${sid}')">বন্ধ</button>
       <button type="button" class="rd-hrow-go" onclick="openChat('${sid}')" aria-label="${esc(r.s.name)}-এর পুরো পাতা">${rdIcon('chevR')}</button>
     </div>
     <div class="rd-hrow-body">${open?_homeBody(r):''}</div>
@@ -249,7 +251,7 @@ function _homeListHtml(data){
     ?`<div class="rd-hempty"><b>সব কাজ শেষ, আলহামদুলিল্লাহ</b><span>নতুন রিসালা বা জমা এলে এখানে দেখাবে।</span><button type="button" class="rd-pill" onclick="setTodayFilter('all')">সবাইকে দেখুন</button></div>`
     :'<div class="rd-hempty"><span>এই তালিকায় এখন কেউ নেই।</span></div>';
   return `<div class="rd-hfilters" role="tablist">${HOME_FILTERS.map(([k,l])=>`<button type="button" role="tab" aria-selected="${_todayFilter===k}" class="rd-hfilter${_todayFilter===k?' on':''}" onclick="setTodayFilter('${k}')">${l} <b>${rdBn(cnt[k])}</b></button>`).join('')}</div>
-  ${rows.length?`<div class="rd-card rd-hlist">${rows.map(_homeRow).join('')}</div>`:empty}`;
+  ${rows.length?`<div class="rd-card rd-hlist${rows.some(r=>_homeOpen.has(r.s.id))?' has-open':''}">${rows.map(_homeRow).join('')}</div>`:empty}`;
 }
 /** একটাই খোলা থাকে — নতুন জনকে খুললে আগেরজন বন্ধ হয় */
 function toggleHomeRow(sid){
@@ -268,8 +270,10 @@ function toggleHomeRow(sid){
     row.querySelector('.rd-hrow-body').innerHTML=r?_homeBody(r):'';
   }
   row.classList.toggle('open',open);
+  row.closest('.rd-hlist')?.classList.toggle('has-open',open);
   row.querySelector('.rd-hrow-tap')?.setAttribute('aria-expanded',String(open));
-  if(open) requestAnimationFrame(()=>row.scrollIntoView({block:'nearest',behavior:'smooth'}));
+  // খুললে নামটা পর্দার মাথায় আনি; বন্ধ করলে সারিটা যেন চোখের সামনে থাকে
+  requestAnimationFrame(()=>row.scrollIntoView({block:open?'start':'nearest',behavior:'smooth'}));
 }
 async function homeReply(sid,key){
   const ta=document.getElementById('hr-'+key); const text=(ta&&ta.value||'').trim();
