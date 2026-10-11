@@ -416,7 +416,6 @@ button.rd-mini{cursor:pointer}
 .rd-hrow-end{display:inline-flex;align-items:center;gap:6px;flex:none}
 .rd-hrow-end .rd-hrow-cnt{margin:0;align-self:center}
 /* ছাত্রের পাতা: তথ্য ট্যাবের বদলে নামের পাশে প্রোফাইল আইকন */
-#cst-info{display:none!important}
 #tProfileBtn{display:none;flex:none}
 #app.in-chat #tProfileBtn{display:flex}
 /* জিম্মাদারের নোট — বড়, শান্ত ড্রয়ার */

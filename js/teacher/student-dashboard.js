@@ -26,7 +26,6 @@ function switchChatTab(tab,btn){
   else if(tab==='note') renderChatNotes();
   if(typeof renderChatScheduleStrip==='function') renderChatScheduleStrip();
   if(tab!=='msg') _chatUnreadAtOpen=0;
-  document.getElementById('tProfileBtn')?.classList.toggle('header-btn--active',tab==='info');
   renderChatTabBadges();
 }
 /** ট্যাবের পাশে কয়টা বাকি — রিসালা ট্যাব ছাড়লে অপঠিতের গোনা মুছে যায় (খোলার সময়ই পড়া হয়ে গেছে) */
@@ -177,7 +176,6 @@ function renderChatInfo(){
   if(hero){
     hero.outerHTML=`<div class="stu-dash-topbar">
       <span class="stu-dash-status ${row.needsAttention?'warn':''}">${row.needsAttention?'মনোযোগ দরকার':'স্বাভাবিক'}</span>
-      <button type="button" class="stu-dash-edit-btn" onclick="openProfileEditModal()">প্রোফাইল সম্পাদনা</button>
     </div>`;
   }
   el.querySelector('.stu-dash-edit')?.remove();
