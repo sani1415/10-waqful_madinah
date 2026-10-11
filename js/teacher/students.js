@@ -205,20 +205,20 @@ function loadProgressSettingsUI(){
   if(cu) cu.checked=cfg.mode==='custom';
   const wrap=document.getElementById('progCustomWrap');
   const inp=document.getElementById('progCustomFrom');
-  if(wrap) wrap.style.display=cfg.mode==='custom'?'block':'none';
+  if(wrap) wrap.style.display=cfg.mode==='custom'?'':'none';
   if(inp) inp.value=cfg.customFrom||'';
 }
 function onProgModeChange(){
   const mode=(document.querySelector('input[name="progMode"]:checked')||{}).value||'enrollment';
   const wrap=document.getElementById('progCustomWrap');
-  if(wrap) wrap.style.display=mode==='custom'?'block':'none';
+  if(wrap) wrap.style.display=mode==='custom'?'':'none';
+  // নির্দিষ্ট তারিখ বাছলে তারিখের ঘরে ফোকাস — তারিখ দিলেই সংরক্ষণ হয়
+  if(mode==='custom'&&!(document.getElementById('progCustomFrom')||{}).value) setTimeout(()=>document.getElementById('progCustomFrom')?.focus(),30);
 }
 function saveProgressSettings(){
   const mode=(document.querySelector('input[name="progMode"]:checked')||{}).value||'enrollment';
   const customFrom=(document.getElementById('progCustomFrom')||{}).value||'';
-  if(mode==='custom'&&!/^\d{4}-\d{2}-\d{2}$/.test(customFrom)){
-    showToast('শুরুর তারিখ দিন'); return;
-  }
+  if(mode==='custom'&&!/^\d{4}-\d{2}-\d{2}$/.test(customFrom)) return; // তারিখ দিলে তখন সংরক্ষণ
   API.ProgressSettings.save({ mode, customFrom });
   showToast('✅ সংরক্ষিত');
   renderBiboronSummary();
@@ -231,11 +231,17 @@ function renderNoteCatSettings(){
   if(!cats.length){ el.innerHTML='<p style="font-size:13px;color:var(--gray-500)">কোনো ক্যাটাগরি নেই</p>'; return; }
   el.innerHTML=cats.map(c=>{
     const locked=c.id==='general';
-    return `<div class="note-cat-row">
-      <span class="note-cat-name">${esc(c.label)}${locked?' <span style="font-size:11px;color:var(--gray-400)">(ডিফল্ট)</span>':''}</span>
-      <button type="button" class="note-cat-del" ${locked?'disabled':''} onclick="deleteNoteCategory('${esc(c.id)}')">মুছুন</button>
-    </div>`;
+    return locked
+      ?`<span class="rd-sb-chip lock" title="ডিফল্ট — মুছা যায় না"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>${esc(c.label)}</span>`
+      :`<span class="rd-sb-chip">${esc(c.label)}<button type="button" onclick="deleteNoteCategory('${esc(c.id)}')" aria-label="${esc(c.label)} মুছুন">✕</button></span>`;
   }).join('');
+}
+/** «＋ নতুন» চাপলে সেখানেই লেখার ঘর খোলে */
+function toggleSbAdd(id,on){
+  const box=document.getElementById(id); if(!box) return;
+  box.classList.toggle('open',on);
+  const inp=box.querySelector('input');
+  if(on&&inp) setTimeout(()=>inp.focus(),20); else if(inp) inp.value='';
 }
 async function addNoteCategory(){
   const inp=document.getElementById('noteCatNewIn');
@@ -245,7 +251,8 @@ async function addNoteCategory(){
   try{
     await API.StudentNotes.upsertCategory({ id:API.uid('nc'), label });
     if(inp) inp.value='';
-    renderNoteCatSettings();
+    toggleSbAdd('noteCatAdd',false);
+    renderNoteCatSettings(); refreshFnCategoryOptions();
     showToast('ক্যাটাগরি যোগ হয়েছে');
   }catch(e){
     console.error(e);
@@ -279,15 +286,25 @@ function renderFortnightlySettings(){
     if(cfg.categoryId) sel.value=cfg.categoryId;
   }
   renderFnQuestionList();
+  syncFnCard();
+}
+/** নতুন ক্যাটাগরি এলে শুধু তালিকা বদলায় — না-সংরক্ষিত লকের ঘরগুলো অক্ষত থাকে */
+function refreshFnCategoryOptions(){
+  const sel=document.getElementById('fnCategorySelect'); if(!sel||!API.StudentNotes) return;
+  const cur=sel.value;
+  sel.innerHTML=API.StudentNotes.getCategories().map(c=>`<option value="${esc(c.id)}">${esc(c.label)}</option>`).join('');
+  if(cur) sel.value=cur;
+}
+/** লক বন্ধ থাকলে কার্ড এক লাইনের — ভেতরের ঘরগুলো লুকানো */
+function syncFnCard(){
+  const on=!!(document.getElementById('fnEnabled')||{}).checked;
+  document.getElementById('fnCard')?.classList.toggle('off',!on);
 }
 function renderFnQuestionList(){
   const el=document.getElementById('fnQuestionList');
   if(!el) return;
-  if(!_fnQuestions.length){ el.innerHTML='<p style="font-size:13px;color:var(--gray-500)">কোনো প্রশ্ন যোগ করা হয়নি — ছাত্র শুধু একটি সাধারণ লেখা জমা দেবে।</p>'; return; }
-  el.innerHTML=_fnQuestions.map((q,i)=>`<div class="note-cat-row">
-    <span class="note-cat-name">${i+1}. ${esc(q.text)}</span>
-    <button type="button" class="note-cat-del" onclick="removeFnQuestion(${i})">মুছুন</button>
-  </div>`).join('');
+  if(!_fnQuestions.length){ el.innerHTML='<p class="rd-sb-hint">প্রশ্ন নেই — ছাত্র একটি সাধারণ লেখা জমা দেবে।</p>'; return; }
+  el.innerHTML=_fnQuestions.map((q,i)=>`<div class="rd-sb-q"><span>${rdBn(i+1)}. ${esc(q.text)}</span><button type="button" onclick="removeFnQuestion(${i})" aria-label="প্রশ্ন মুছুন">✕</button></div>`).join('');
 }
 function addFnQuestion(){
   const inp=document.getElementById('fnQuestionNewIn');
@@ -296,6 +313,7 @@ function addFnQuestion(){
   _fnQuestions.push({id:API.uid('fq'),text});
   if(inp) inp.value='';
   renderFnQuestionList();
+  setTimeout(()=>inp&&inp.focus(),20); // পরপর কয়েকটা প্রশ্ন লেখা যায়
 }
 function removeFnQuestion(i){
   _fnQuestions.splice(i,1);

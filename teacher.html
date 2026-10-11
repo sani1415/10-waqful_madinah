@@ -246,48 +246,44 @@
         <button class="backup-btn" onclick="changeTPin()">🔑 পিন পরিবর্তন</button>
       </div>
     </div>
-    <div class="settings-pane" id="settings-pane-biboron" style="display:none">
-      <div class="sec-hd">বিবরণ তালিকার অবস্থা %</div>
-      <div class="backup-card">
-        <p style="margin-bottom:10px">শতাংশ বার কোন তারিখ থেকে হিসাব হবে।</p>
-        <label class="prog-mode-opt"><input type="radio" name="progMode" value="enrollment" onchange="onProgModeChange()"> ভর্তির তারিখ থেকে</label>
-        <label class="prog-mode-opt"><input type="radio" name="progMode" value="custom" onchange="onProgModeChange()"> নির্দিষ্ট তারিখ থেকে</label>
-        <div class="form-group" id="progCustomWrap" style="margin-top:10px;display:none">
-          <label class="form-label">শুরুর তারিখ</label>
-          <input class="form-input" type="date" id="progCustomFrom">
-        </div>
-        <button class="btn-primary" style="margin-top:12px" onclick="saveProgressSettings()">✅ সংরক্ষণ</button>
-      </div>
-      <div class="sec-hd">বিবরণ ক্যাটাগরি</div>
-      <div class="backup-card">
-        <p style="margin-bottom:8px">ছাত্র নোটের ক্যাটাগরি। নতুন যোগ করতে পারেন; «সাধারণ» মুছা যাবে না।</p>
-        <div id="noteCatList"></div>
-        <div class="note-cat-add">
-          <input class="form-input" id="noteCatNewIn" placeholder="নতুন ক্যাটাগরির নাম" maxlength="40" onkeydown="if(event.key==='Enter'){event.preventDefault();addNoteCategory();}">
-          <button type="button" class="btn-primary" style="width:auto;padding:10px 14px;flex-shrink:0" onclick="addNoteCategory()">যোগ</button>
-        </div>
-      </div>
-      <div class="sec-hd">পাক্ষিক বিবরণ লক</div>
-      <div class="backup-card">
-        <p style="margin-bottom:8px">চালু করলে, নির্ধারিত দিন পার হয়ে গেলে ছাত্র লগইন করার পর সরাসরি পাক্ষিক বিবরণ লেখার পেইজে যাবে — বিবরণ জমা না দেওয়া পর্যন্ত অ্যাপের বাকি অংশ ব্যবহার করতে পারবে না।</p>
-        <label class="prog-mode-opt"><input type="checkbox" id="fnEnabled"> লক চালু রাখুন</label>
-        <div class="form-group" style="margin-top:10px">
-          <label class="form-label">কত দিন পর পর জমা দিতে হবে</label>
-          <input class="form-input" type="number" id="fnIntervalDays" min="1" value="15">
-        </div>
-        <div class="form-group">
-          <label class="form-label">কোন ক্যাটাগরি «পাক্ষিক বিবরণ» হিসেবে গণ্য হবে</label>
-          <select class="form-input" id="fnCategorySelect"></select>
-        </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">প্রশ্ন (ঐচ্ছিক — দিলে ছাত্রকে প্রতিটির উত্তর দিতেই হবে)</label>
-          <div id="fnQuestionList"></div>
-          <div class="note-cat-add">
-            <input class="form-input" id="fnQuestionNewIn" placeholder="নতুন প্রশ্ন লিখুন" maxlength="200" onkeydown="if(event.key==='Enter'){event.preventDefault();addFnQuestion();}">
-            <button type="button" class="btn-primary" style="width:auto;padding:10px 14px;flex-shrink:0" onclick="addFnQuestion()">যোগ</button>
+    <div class="settings-pane rd-set-bib" id="settings-pane-biboron" style="display:none">
+      <div class="rd-sb-card">
+        <div class="rd-sb-hd"><b>শতাংশের হিসাব শুরু</b><span>বদলালেই সংরক্ষণ</span></div>
+        <div class="rd-sb-row">
+          <div class="rd-sb-seg" role="radiogroup" aria-label="শতাংশের হিসাব শুরু">
+            <label><input type="radio" name="progMode" value="enrollment" onchange="onProgModeChange();saveProgressSettings()"><span>ভর্তি থেকে</span></label>
+            <label><input type="radio" name="progMode" value="custom" onchange="onProgModeChange();saveProgressSettings()"><span>নির্দিষ্ট তারিখ</span></label>
           </div>
+          <span id="progCustomWrap" style="display:none"><input class="rd-sb-date" type="date" id="progCustomFrom" aria-label="শুরুর তারিখ" onchange="saveProgressSettings()"></span>
         </div>
-        <button class="btn-primary" style="margin-top:12px" onclick="saveFortnightlySettings()">✅ সংরক্ষণ</button>
+      </div>
+      <div class="rd-sb-card">
+        <div class="rd-sb-hd"><b>বিবরণ ক্যাটাগরি</b></div>
+        <div class="rd-sb-chips">
+          <span id="noteCatList"></span>
+          <span class="rd-sb-add" id="noteCatAdd">
+            <button type="button" class="rd-sb-addbtn" onclick="toggleSbAdd('noteCatAdd',true)">＋ নতুন</button>
+            <input id="noteCatNewIn" placeholder="ক্যাটাগরির নাম" maxlength="40" onkeydown="if(event.key==='Enter'){event.preventDefault();addNoteCategory();}else if(event.key==='Escape')toggleSbAdd('noteCatAdd',false)">
+            <button type="button" class="rd-sb-ok" onclick="addNoteCategory()">যোগ</button>
+          </span>
+        </div>
+      </div>
+      <div class="rd-sb-card" id="fnCard">
+        <div class="rd-sb-hd"><b>পাক্ষিক বিবরণ লক</b><label class="rd-switch"><input type="checkbox" id="fnEnabled" onchange="syncFnCard()" aria-label="পাক্ষিক বিবরণ লক চালু"><span></span></label></div>
+        <p class="rd-sb-hint">চালু থাকলে নির্ধারিত দিন পার হলে ছাত্রকে লগইনের পর আগে বিবরণ জমা দিতে হবে।</p>
+        <div class="rd-sb-fn">
+          <div class="rd-sb-2">
+            <label class="rd-sb-field"><span>প্রতি</span><input type="number" id="fnIntervalDays" min="1" value="15" inputmode="numeric"><span>দিন</span></label>
+            <label class="rd-sb-field"><span>ক্যাটাগরি</span><select id="fnCategorySelect"></select></label>
+          </div>
+          <div id="fnQuestionList"></div>
+          <span class="rd-sb-add" id="fnQAdd">
+            <button type="button" class="rd-sb-addbtn" onclick="toggleSbAdd('fnQAdd',true)">＋ প্রশ্ন যোগ</button>
+            <input id="fnQuestionNewIn" placeholder="নতুন প্রশ্ন" maxlength="200" onkeydown="if(event.key==='Enter'){event.preventDefault();addFnQuestion();}else if(event.key==='Escape')toggleSbAdd('fnQAdd',false)">
+            <button type="button" class="rd-sb-ok" onclick="addFnQuestion()">যোগ</button>
+          </span>
+        </div>
+        <button type="button" class="btn-primary rd-sb-save" onclick="saveFortnightlySettings()">সংরক্ষণ</button>
       </div>
     </div>
     <div class="settings-pane" id="settings-pane-backup" style="display:none">
