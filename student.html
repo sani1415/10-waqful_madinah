@@ -123,15 +123,15 @@ function skd(field){if(field==='id'){_skId=_skId.slice(0,-1);_skUpdateIdDisplay(
 <div id="stuMainShell" class="stu-main-shell">
 <!-- ══ HEADER ════════════════════════════════════════════ -->
 <div class="header stu-h-wrap">
-  <div class="stu-h-top" id="hWaqfDays" aria-live="polite">
-    <div class="stu-h-days-row"><span class="stu-h-days-lbl">ওয়াকফের</span><span class="stu-h-days-num" id="hWaqfDaysNum">—</span><span class="stu-h-days-unit">দিন</span></div>
-  </div>
   <div class="stu-h-card">
     <button type="button" class="stu-h-avatar" id="hAvatarBtn" onclick="openStudentSelfProfile()" title="প্রোফাইল" aria-label="প্রোফাইল">
       <svg class="stu-h-ring" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="16" fill="none" stroke="#e8e8e8" stroke-width="3.5"/><circle id="hAvatarRing" cx="20" cy="20" r="16" fill="none" stroke="#3F6B4A" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="100.5" stroke-dashoffset="100.5" transform="rotate(-90 20 20)"/></svg>
       <span class="stu-h-pct" id="hAvatarPct">—</span>
     </button>
     <div class="header-info" role="button" tabindex="0" onclick="if(me)openStudentSelfProfile()" title="প্রোফাইল ও পিন"><div class="header-title" id="hTitle">আসছে...</div><div class="header-sub" id="hSub" style="display:none"></div></div>
+    <div class="stu-h-top" id="hWaqfDays" aria-live="polite">
+      <div class="stu-h-days-row"><span class="stu-h-days-lbl">ওয়াকফের</span><span class="stu-h-days-num" id="hWaqfDaysNum">—</span><span class="stu-h-days-unit">দিন</span></div>
+    </div>
     <div class="stu-h-actions">
       <button type="button" class="header-btn" id="stuInChatSearchBtn" style="display:none" onclick="toggleStuInChatSearch()" title="রিসালা খুঁজুন" aria-label="রিসালা খুঁজুন"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
       <button type="button" class="header-btn" onclick="logout()" title="লগআউট" aria-label="লগআউট"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>

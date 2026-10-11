@@ -508,3 +508,20 @@ html,body{background:var(--rd-bg)!important}
 #stuMainShell .stu-h-card .header-info{cursor:pointer}
 #khata-docs .stu-doc-scroll{background:transparent}
 #khata-docs .doc-tabs{background:transparent}
+/* ── ছাত্রের টপ বার: শিক্ষকের মতো সবুজ; «ওয়াকফের … দিন» নামের পাশে সারিতে (আর নামের ওপর চাপে না) ── */
+#stuMainShell .header.stu-h-wrap{background:var(--rd-accent)!important;border-bottom:0;color:#fff}
+#stuMainShell .stu-h-card .header-title{color:#fff}
+#stuMainShell .stu-h-card .header-sub{color:rgb(255 255 255 / .8)!important}
+#stuMainShell .stu-h-card .header-btn{background:rgb(255 255 255 / .14);border:1px solid rgb(255 255 255 / .18);color:#fff}
+#stuMainShell .stu-h-card .header-btn:active{background:rgb(255 255 255 / .28)}
+#stuMainShell .stu-h-pct{background:rgb(255 255 255 / .92);color:var(--rd-accent)}
+#stuMainShell .stu-h-card{display:flex;align-items:center;gap:8px}
+#stuMainShell .stu-h-card .header-info{flex:1 1 auto;min-width:0;max-width:none!important}
+#stuMainShell .stu-h-top{position:static;transform:none;flex:none;padding:0;pointer-events:none;color:#fff}
+#stuMainShell .stu-h-days-row{background:rgb(255 255 255 / .16);border:1px solid rgb(255 255 255 / .2);padding:4px 9px}
+#stuMainShell .stu-h-days-lbl,#stuMainShell .stu-h-days-unit{color:rgb(255 255 255 / .85)}
+#stuMainShell .stu-h-days-num{color:#fff}
+#stuMainShell .stu-h-actions{margin-left:0;flex:none}
+@media (max-width:380px){#stuMainShell .stu-h-days-lbl{display:none}}
+/* জানালা (বিবরণ, সেটিংস…) নিচেও গোল — পর্দার মাঝে ভাসে */
+#app .modal-sheet{border-radius:26px}
