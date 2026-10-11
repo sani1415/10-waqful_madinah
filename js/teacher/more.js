@@ -1,4 +1,4 @@
-/* Waqful Madinah — js/teacher/more.js: «আরও» menu + পরিকল্পনা › «ঘোষণা ও গ্রুপ» pane */
+/* Waqful Madinah — js/teacher/more.js: আমল › «ঘোষণা ও গ্রুপ» pane (+ its icons) */
 const _MORE_IC={
   folder:'<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>',
   diary:'<path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4M2 6h4M2 10h4M2 14h4M2 18h4"/><path d="M21.4 5.6a2 2 0 1 0-2.8-2.8l-5.4 5.4L12 11l2.8-1.2Z"/>',
@@ -14,35 +14,6 @@ const _MORE_IC={
   chevR:'<path d="m9 18 6-6-6-6"/>',
 };
 function moreIcon(k){ return `<svg class="rd-i" viewBox="0 0 24 24" aria-hidden="true">${_MORE_IC[k]||''}</svg>`; }
-function _moreRow(icon,tone,title,sub,onclick,count){
-  return `<button type="button" class="rd-menu-row" onclick="${onclick}"><span class="rd-menu-ic ${tone}">${moreIcon(icon)}</span><span class="rd-menu-t"><b>${title}</b>${sub?`<span>${sub}</span>`:''}</span>${count?`<span class="rd-cnt">${rdBn(count)}</span>`:''}${moreIcon('chevR')}</button>`;
-}
-const _SETTINGS_TITLES={profile:'প্রোফাইল ও পিন',biboron:'বিবরণ ও অগ্রগতি',backup:'ব্যাকআপ',more:'অন্যান্য'};
-/** «আরও»-র সেটিংস সারি → নিচ থেকে ড্রয়ার (আলাদা ট্যাবওয়ালা স্ক্রিন নয়) */
-function openSettingsPane(tab){
-  const body=document.getElementById('settingsSheetBody'), sc=document.getElementById('settingsScroll');
-  if(body&&sc&&sc.parentElement!==body) body.appendChild(sc);
-  goSettingsTab(tab);
-  const t=document.getElementById('settingsSheetTitle'); if(t) t.textContent=_SETTINGS_TITLES[settingsTab]||'সেটিংস';
-  openModal('settingsSheet');
-}
-
-// ডায়েরি ও AI এখন টপ বারে — «আরও»-তে শুধু সেটিংস
-function renderMore(){
-  const el=document.getElementById('morePane'); if(!el) return;
-  const pendingDocs=API.Docs.getAll().filter(d=>d.sentBy!=='teacher'&&d.reviewStatus==='pending').length;
-  const t=API.DB.getTeacher();
-  el.innerHTML=`
-  <div class="rd-top"><div class="rd-date">${esc(t.name||'উস্তাদ')}</div><h1 class="rd-title">সেটিংস</h1></div>
-  <div class="rd-card rd-menu">
-    ${_moreRow('user','tone-sky','প্রোফাইল ও পিন','নাম, মাদরাসার নাম, জিম্মাদারের পিন',"openSettingsPane('profile')")}
-    ${_moreRow('report','tone-sage','বিবরণ ও অগ্রগতি','হিসাবের সময়সীমা, ক্যাটাগরি, পাক্ষিক লক',"openSettingsPane('biboron')")}
-    ${_moreRow('save','tone-plum','ব্যাকআপ','সব ডেটা ডাউনলোড বা ফিরিয়ে আনা',"openSettingsPane('backup')")}
-    ${_moreRow('sliders','tone-sky','অন্যান্য','নোটিফিকেশন, ছাত্র প্যানেল, লগআউট',"openSettingsPane('more')")}
-  </div>
-  <div class="rd-bottom-space"></div>`;
-}
-
 function renderGroupsPane(){
   const el=document.getElementById('groupsPane'); if(!el) return;
   const bc=API.Messages.getThread('_bc'); const last=bc[bc.length-1];

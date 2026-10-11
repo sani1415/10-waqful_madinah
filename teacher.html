@@ -225,7 +225,7 @@
 
 <!-- ══ SETTINGS ═══════════════════════════════════════════ -->
 <div class="screen" id="screen-settings">
-  <div class="settings-tabs" id="settingsTabs">
+  <div class="settings-tabs rd-set-tabs" id="settingsTabs" role="tablist">
     <button type="button" class="settings-tab active" data-tab="profile" onclick="goSettingsTab('profile',this)">প্রোফাইল</button>
     <button type="button" class="settings-tab" data-tab="biboron" onclick="goSettingsTab('biboron',this)">বিবরণ</button>
     <button type="button" class="settings-tab" data-tab="backup" onclick="goSettingsTab('backup',this)">ব্যাকআপ</button>
@@ -325,10 +325,6 @@
   <div class="list-scroll rd-pad" id="groupsPane"></div>
 </div>
 
-<!-- ══ আরও ══════════════════════════════════════════════ -->
-<div class="screen" id="screen-more">
-  <div class="list-scroll rd-pad" id="morePane"></div>
-</div>
 
 <!-- ══ DIARY / নোট ════════════════════════════════════════ -->
 <div class="screen" id="screen-diary">
@@ -417,7 +413,7 @@
     <button type="button" class="tab-btn" onclick="goTab('plan')" id="tab-plan"><span class="tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12 2 10 5-10 5L2 7l10-5Z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/></svg></span><span class="tab-lbl">আমল</span><span class="tab-badge" id="tBadge"></span></button>
     <button type="button" class="rd-nav-create" onclick="openCreateSheet()" aria-label="নতুন তৈরি করুন"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 12h14M12 5v14"/></svg></button>
     <button type="button" class="tab-btn" onclick="goTab('docs')" id="tab-docs"><span class="tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg></span><span class="tab-lbl">ফাইল</span><span class="tab-badge" id="docBadge"></span></button>
-    <button type="button" class="tab-btn" onclick="goTab('more')" id="tab-more"><span class="tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></span><span class="tab-lbl">আরও</span></button>
+    <button type="button" class="tab-btn" onclick="goTab('more')" id="tab-more"><span class="tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 7h-9M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg></span><span class="tab-lbl">সেটিংস</span></button>
   </div>
 </nav>
 
@@ -567,12 +563,6 @@
   <div class="modal-handle"></div>
   <div class="rd-settings-hd"><div><div class="modal-title">জিম্মাদারের নোট</div><div class="rd-tn-sub" id="tNoteSheetSub"></div></div><button type="button" class="rd-pill ghost" onclick="closeModal('tNoteSheet')">বন্ধ</button></div>
   <div id="tNoteSheetBody"></div>
-</div></div>
-
-<div class="modal-overlay" id="settingsSheet"><div class="modal-sheet rd-settings-sheet">
-  <div class="modal-handle"></div>
-  <div class="rd-settings-hd"><div class="modal-title" id="settingsSheetTitle">সেটিংস</div><button type="button" class="rd-pill ghost" onclick="closeModal('settingsSheet')">বন্ধ</button></div>
-  <div id="settingsSheetBody"></div>
 </div></div>
 
 <div class="modal-overlay" id="bcModal"><div class="modal-sheet">

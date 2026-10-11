@@ -380,7 +380,6 @@ button.rd-mini{cursor:pointer}
 .rd-settings-sheet{max-height:88dvh;overflow:auto}
 .rd-settings-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
 .rd-settings-hd .modal-title{margin:0}
-#settingsSheetBody #settingsScroll{overflow:visible;height:auto;flex:none;padding:0}
 
 /* ── আজ: প্রতিজন আলাদা রঙের বাক্স (＋ মেনুর রংগুলো) ── */
 .rd-hfilters{justify-content:center}
@@ -554,3 +553,7 @@ button.chat-sub-done{cursor:pointer}
 #todayList{padding-top:0}
 #todayList .rd-hfilters{position:sticky;top:0;z-index:5;margin:0 -8px 8px;padding:0 8px;background:var(--rd-bg)}
 #todayList .rd-hfilter{padding:7px 12px 6px}
+/* শিক্ষক › সেটিংস: চারটি ট্যাব (প্রোফাইল · বিবরণ · ব্যাকআপ · অন্যান্য) */
+#app .rd-set-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:10px 8px 6px;padding:4px;background:var(--rd-surface);border:1px solid var(--rd-line);border-radius:16px;border-bottom:1px solid var(--rd-line)}
+#app .rd-set-tabs .settings-tab{border:0;margin:0;border-radius:12px;padding:8px 2px;font-size:14px;font-weight:500;color:var(--rd-ink-2)}
+#app .rd-set-tabs .settings-tab.active{background:var(--rd-ink);color:#fff;font-weight:600}

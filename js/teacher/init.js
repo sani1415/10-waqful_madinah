@@ -177,7 +177,7 @@ function refreshBCReadCounts(){
 }
 function renderAll(){
   renderBiboronSummary(); renderChatList(); renderTaskList(); renderQuizList(); renderDocsGrouped(); updateBadge(); updateDocBadge();
-  renderToday(); if(curTab==='more') renderMore(); if(curTab==='groups') renderGroupsPane();
+  renderToday(); if(curTab==='groups') renderGroupsPane();
   syncAppBadge();
   refreshBCReadCounts();
   if(curChat){

@@ -54,6 +54,7 @@ function toggleDiary(){
 function goTab(tab, opts){
   uiViewTransition(()=>{
   if(tab==='students'||tab==='chats') tab='today'; // ছাত্রতালিকা «আজ»-এর ভেতরে
+  if(tab==='more') tab='settings'; // নিচের «সেটিংস» বোতাম সরাসরি ট্যাবওয়ালা সেটিংস পাতায়
   if(tab==='plan') tab=_planTab;
   if(tab==='tasks'||tab==='exams'||tab==='groups') _planTab=tab;
   if((tab==='settings'||tab==='diary')&&curTab!=='settings'&&curTab!=='diary')
@@ -101,7 +102,6 @@ function goTab(tab, opts){
   if(tab==='diary'){ renderDiaryList(); }
   if(tab==='chats'){ renderBiboronSummary(); renderChatList(''); }
   if(tab==='today')  { renderToday(); }
-  if(tab==='more')   { renderMore(); }
   if(tab==='groups') { renderGroupsPane(); }
   if(tab==='exams')  { renderQuizList(); goExamTab('list'); }
   if(tab==='docs')   { renderDocsGrouped(); }
