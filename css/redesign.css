@@ -363,3 +363,21 @@ button.rd-mini{cursor:pointer}
 .rd-select{position:relative;display:inline-flex}
 .rd-select select{appearance:none;-webkit-appearance:none;font:inherit;font-size:14px;font-weight:500;color:var(--rd-ink);background:var(--rd-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2359605A' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;border:1px solid var(--rd-line);border-radius:99px;padding:7px 32px 7px 14px;cursor:pointer;outline:none}
 .rd-select select:focus-visible{border-color:var(--rd-accent-2);box-shadow:0 0 0 3px var(--rd-tint)}
+/* হোম — শান্ত সংস্করণ: এক রঙ, কম চিহ্ন */
+.rd-hfilters{display:flex;gap:4px;margin:10px 0 12px;border-bottom:1px solid var(--rd-line)}
+.rd-hfilter{border:0;background:none;padding:10px 12px 9px;font-size:15px;font-weight:500;color:var(--rd-ink-3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.rd-hfilter b{font-weight:600;color:var(--rd-ink-3)}
+.rd-hfilter.on{color:var(--rd-ink);border-bottom-color:var(--rd-accent);font-weight:600}
+.rd-hfilter.on b{color:var(--rd-accent)}
+#todayList .rd-av{background:var(--rd-tint)!important;color:var(--rd-accent)!important}
+.rd-hrow-sum{display:block;font-size:13.5px;color:var(--rd-ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rd-hrow-prev{color:var(--rd-ink-3)!important}
+.rd-hrow.has-pending .rd-hrow-prev{color:var(--rd-ink-2)!important}
+.rd-hrow-tap{align-items:center}
+.rd-hrow-tap .rd-av{margin-top:0}
+.rd-hrow-cnt{align-self:center;margin-inline-start:6px}
+.rd-hempty{display:grid;justify-items:center;gap:6px;text-align:center;padding:40px 20px;color:var(--rd-ink-2)}
+.rd-hempty b{font-family:var(--rd-head);font-weight:600;font-size:17px;color:var(--rd-ink)}
+.rd-hempty .rd-pill{margin-top:8px}
+/* পরিকল্পনার ব্যাজ = ছাত্রদের অসম্পূর্ণ আমল — শিক্ষকের করণীয় নয়, তাই নেভে দেখাই না */
+#teaBottomNav #tBadge{display:none!important}

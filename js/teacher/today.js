@@ -1,7 +1,7 @@
 /* Waqful Madinah — js/teacher/today.js: «আজ» — everything waiting on the teacher, in one list.
    Reads only existing data (schedule proposals, pending বিবরণ, pending files, quizzes to grade,
    unread messages, today's আমল) and reuses the existing actions. */
-let _todayFilter='all'; // হোমের ফিল্টার: all | pending | unread | dec | behind
+let _todayFilter='pending'; // হোমের ফিল্টার: pending (বাকি আছে) | unread | all
 // খোলা কার্ড ও না-পাঠানো খসড়া — রি-রেন্ডারেও (লাইভ সিঙ্ক) হারায় না
 const _todayOpen=new Set();
 const _todayDrafts={};
@@ -155,7 +155,7 @@ async function todayMarkNoteReviewed(sid,noteId){
 // (সিদ্ধান্তের কার্ড + মেসেজ + উত্তর লেখার ঘর); ডানের তীরে পুরো পাতা।
 const _homeOpen=new Set();
 const _homeDrafts={};
-const HOME_FILTERS=[['all','সব'],['pending','কিছু বাকি'],['unread','অপঠিত'],['dec','সিদ্ধান্ত'],['behind','আমল বাকি']];
+const HOME_FILTERS=[['pending','বাকি আছে'],['unread','অপঠিত'],['all','সবাই']];
 
 function _msgTs(m){
   if(!m) return 0;
@@ -182,21 +182,18 @@ function _homeRows(){
 function _homeMatch(r,f){
   if(f==='pending') return r.pending>0;
   if(f==='unread') return r.unread.length>0;
-  if(f==='dec') return r.dec.length>0;
-  if(f==='behind') return r.behind;
   return true;
 }
+/** কী বাকি — রঙিন চিপ নয়, এক লাইনের সাধারণ লেখা */
 function _homeSummary(r){
   const n={sched:0,note:0,doc:0,grade:0}; r.dec.forEach(d=>n[d.kind]++);
   const bits=[];
-  if(r.unread.length) bits.push(`<span class="rd-kind k-msg">${rdIcon('msg')}${rdBn(r.unread.length)} রিসালা</span>`);
-  if(n.sched) bits.push(`<span class="rd-kind k-sched">${rdIcon('clock')}সময়সূচি</span>`);
-  if(n.note) bits.push(`<span class="rd-kind k-note">${rdIcon('book')}${rdBn(n.note)} বিবরণ</span>`);
-  if(n.doc) bits.push(`<span class="rd-kind k-doc">${rdIcon('file')}${rdBn(n.doc)} ফাইল</span>`);
-  if(n.grade) bits.push(`<span class="rd-kind k-exam">${rdIcon('pen')}${rdBn(n.grade)} নম্বর</span>`);
-  if(r.prog.total>0) bits.push(`<span class="rd-kind k-amal${r.behind?'':' done'}">আমল ${rdBn(r.prog.done)}/${rdBn(r.prog.total)}</span>`);
-  if(!r.pending&&!r.behind) bits.push(`<span class="rd-kind k-ok">${rdIcon('check')}সব ঠিক আছে</span>`);
-  return bits.join('');
+  if(r.unread.length) bits.push(`${rdBn(r.unread.length)}টি নতুন রিসালা`);
+  if(n.sched) bits.push('সময়সূচির প্রস্তাব');
+  if(n.note) bits.push(`${rdBn(n.note)}টি বিবরণ`);
+  if(n.doc) bits.push(`${rdBn(n.doc)}টি ফাইল`);
+  if(n.grade) bits.push(`${rdBn(n.grade)}টি পরীক্ষার নম্বর`);
+  return bits.join(' · ');
 }
 function _homePreview(r){
   const m=r.unread.length?r.unread[r.unread.length-1]:r.last;
@@ -229,13 +226,16 @@ function _homeBody(r){
 }
 function _homeRow(r){
   const sid=rdJs(r.s.id), open=_homeOpen.has(r.s.id);
+  const sum=_homeSummary(r);
+  const prev=r.unread.length?_homePreview(r):(r.pending?'':_homePreview(r));
   return `<div class="rd-hrow${open?' open':''}${r.pending?' has-pending':''}" data-sid="${esc(r.s.id)}">
     <div class="rd-hrow-main">
       <button type="button" class="rd-hrow-tap" onclick="toggleHomeRow('${sid}')" aria-expanded="${open}">
         ${rdAvatar(r.s)}
         <span class="rd-hrow-t"><span class="rd-hrow-top"><b>${esc(r.s.name)}</b><span class="rd-time">${esc(_homeTime(r))}</span></span>
-          <span class="rd-hrow-sum">${_homeSummary(r)}</span>
-          ${_homePreview(r)?`<span class="rd-hrow-prev">${esc(_homePreview(r))}</span>`:''}</span>
+          ${sum?`<span class="rd-hrow-sum">${esc(sum)}</span>`:''}
+          ${prev?`<span class="rd-hrow-prev">${esc(prev)}</span>`:''}</span>
+        ${r.pending?`<span class="rd-cnt rd-hrow-cnt">${rdBn(r.pending)}</span>`:''}
       </button>
       <button type="button" class="rd-hrow-go" onclick="openChat('${sid}')" aria-label="${esc(r.s.name)}-এর পুরো পাতা">${rdIcon('chevR')}</button>
     </div>
@@ -244,20 +244,32 @@ function _homeRow(r){
 }
 function _homeListHtml(data){
   const rows=data.rows.filter(r=>_homeMatch(r,_todayFilter));
-  const cnt={all:data.rows.length}; HOME_FILTERS.forEach(([k])=>{ if(k!=='all') cnt[k]=data.rows.filter(r=>_homeMatch(r,k)).length; });
-  return `<div class="rd-chips rd-today-chips">${HOME_FILTERS.map(([k,l])=>`<button type="button" class="rd-chip${_todayFilter===k?' on':''}" onclick="setTodayFilter('${k}')">${l}<b>${rdBn(cnt[k])}</b></button>`).join('')}</div>
-  <div class="rd-card rd-hlist">${rows.map(_homeRow).join('')||'<div class="rd-empty" style="padding:14px">এই তালিকায় এখন কেউ নেই।</div>'}</div>`;
+  const cnt={}; HOME_FILTERS.forEach(([k])=>{ cnt[k]=data.rows.filter(r=>_homeMatch(r,k)).length; });
+  const empty=_todayFilter==='pending'
+    ?`<div class="rd-hempty"><b>সব কাজ শেষ, আলহামদুলিল্লাহ</b><span>নতুন রিসালা বা জমা এলে এখানে দেখাবে।</span><button type="button" class="rd-pill" onclick="setTodayFilter('all')">সবাইকে দেখুন</button></div>`
+    :'<div class="rd-hempty"><span>এই তালিকায় এখন কেউ নেই।</span></div>';
+  return `<div class="rd-hfilters" role="tablist">${HOME_FILTERS.map(([k,l])=>`<button type="button" role="tab" aria-selected="${_todayFilter===k}" class="rd-hfilter${_todayFilter===k?' on':''}" onclick="setTodayFilter('${k}')">${l} <b>${rdBn(cnt[k])}</b></button>`).join('')}</div>
+  ${rows.length?`<div class="rd-card rd-hlist">${rows.map(_homeRow).join('')}</div>`:empty}`;
 }
+/** একটাই খোলা থাকে — নতুন জনকে খুললে আগেরজন বন্ধ হয় */
 function toggleHomeRow(sid){
   const row=document.querySelector(`#todayList .rd-hrow[data-sid="${CSS.escape(sid)}"]`); if(!row) return;
   const open=!row.classList.contains('open');
+  document.querySelectorAll('#todayList .rd-hrow.open').forEach(o=>{
+    if(o===row) return;
+    o.classList.remove('open');
+    o.querySelector('.rd-hrow-body').innerHTML='';
+    o.querySelector('.rd-hrow-tap')?.setAttribute('aria-expanded','false');
+  });
+  _homeOpen.clear();
   if(open){
     _homeOpen.add(sid);
     const r=_homeRows().rows.find(x=>x.s.id===sid);
     row.querySelector('.rd-hrow-body').innerHTML=r?_homeBody(r):'';
-  } else _homeOpen.delete(sid);
+  }
   row.classList.toggle('open',open);
   row.querySelector('.rd-hrow-tap')?.setAttribute('aria-expanded',String(open));
+  if(open) requestAnimationFrame(()=>row.scrollIntoView({block:'nearest',behavior:'smooth'}));
 }
 async function homeReply(sid,key){
   const ta=document.getElementById('hr-'+key); const text=(ta&&ta.value||'').trim();
@@ -289,27 +301,13 @@ function setTodayFilter(f){
 function renderToday(){
   const el=document.getElementById('todayList'); if(!el) return;
   const data=_homeRows();
-  const decCount=data.items.length;
-  const unreadTotal=data.rows.reduce((a,r)=>a+r.unread.length,0);
+  const waiting=data.rows.filter(r=>r.pending>0).length;
   const badge=document.getElementById('todayBadge');
-  const badgeN=decCount+unreadTotal;
-  if(badge){ badge.textContent=badgeN?rdBn(badgeN):''; badge.classList.toggle('show',badgeN>0); }
+  if(badge){ badge.textContent=waiting?rdBn(waiting):''; badge.classList.toggle('show',waiting>0); }
   if(curTab!=='today') return;
   const firstPaint=!el.dataset.painted; el.dataset.painted='1';
   const keepTop=el.scrollTop;
-  const withTasks=data.rows.filter(r=>r.prog.total>0);
-  let d=0,tot=0; withTasks.forEach(r=>{ d+=r.prog.done; tot+=r.prog.total; });
-  const amalPct=tot?Math.round(d/tot*100):0;
-  const behind=data.rows.filter(r=>r.behind).length;
-  el.innerHTML=`
-  <div class="rd-arch rd-stat4">
-    <button type="button" class="rd-mini rd-mini--main" onclick="setTodayFilter('dec')"><b>${rdBn(decCount)}</b><span>${decCount?'সিদ্ধান্ত বাকি':'সিদ্ধান্ত বাকি নেই'}</span></button>
-    <button type="button" class="rd-mini" onclick="setTodayFilter('unread')"><b>${rdBn(unreadTotal)}</b><span>অপঠিত রিসালা</span></button>
-    <button type="button" class="rd-mini" onclick="goTab('tasks')"><b>${rdBn(amalPct)}%</b><span>আজকের আমল</span></button>
-    <button type="button" class="rd-mini" onclick="setTodayFilter('behind')"><b>${rdBn(behind)}</b><span>জনের আমল বাকি</span></button>
-  </div>
-  <div id="todayDecisions">${_homeListHtml(data)}</div>
-  <div class="rd-bottom-space"></div>`;
+  el.innerHTML=`<div id="todayDecisions">${_homeListHtml(data)}</div><div class="rd-bottom-space"></div>`;
   el.classList.toggle('rd-still',!firstPaint);
   if(!firstPaint) el.scrollTop=keepTop;
 }
