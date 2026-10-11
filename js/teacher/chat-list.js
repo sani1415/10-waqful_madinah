@@ -198,7 +198,7 @@ function openChat(id, initialTab){
   document.getElementById('searchToggleBtn').style.display='none';
   const _setBtn=document.getElementById('settingsToggleBtn'); if(_setBtn) _setBtn.style.display='none';
   document.getElementById('inChatSearchBtn').style.display='flex';
-  const _tn=document.getElementById('tNoteBtn'); if(_tn) _tn.style.display=isBC?'none':'';
+  const _tn=document.getElementById('tNoteBtn'); if(_tn) _tn.style.display=isBC?'none':''; const _tp=document.getElementById('tProfileBtn'); if(_tp) _tp.style.display=isBC?'none':'';
   document.getElementById('bcNotice').classList.toggle('show',isBC);
   // Student tabs — only for 1:1 chats
   const tabs=document.getElementById('chatStudentTabs');

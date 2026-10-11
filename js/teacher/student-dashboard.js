@@ -26,6 +26,7 @@ function switchChatTab(tab,btn){
   else if(tab==='note') renderChatNotes();
   if(typeof renderChatScheduleStrip==='function') renderChatScheduleStrip();
   if(tab!=='msg') _chatUnreadAtOpen=0;
+  document.getElementById('tProfileBtn')?.classList.toggle('header-btn--active',tab==='info');
   renderChatTabBadges();
 }
 /** ট্যাবের পাশে কয়টা বাকি — রিসালা ট্যাব ছাড়লে অপঠিতের গোনা মুছে যায় (খোলার সময়ই পড়া হয়ে গেছে) */
@@ -494,16 +495,15 @@ function openTeacherNotes(){
 function renderTeacherNotes(){
   const el=document.getElementById('tNoteSheetBody'); if(!el||!curChat) return;
   const s=API.Students.getById(curChat);
-  const t=document.getElementById('tNoteSheetTitle'); if(t) t.textContent=`জিম্মাদারের নোট${s?' — '+s.name:''}`;
-  const notes=API.TeacherNotes.getAll(curChat);
-  el.innerHTML=`<div class="csp-note-add">
-      <textarea id="chatNoteInput" placeholder="নতুন নোট লিখুন..." rows="2"></textarea>
-      <button onclick="saveChatNote()">যোগ</button>
-    </div>`+(notes.length?notes.slice().reverse().map(n=>`
-    <div class="csp-note-item">
-      <div class="csp-note-body">${esc(n.text)}</div>
-      <div class="csp-note-time">${n.date||''} ${n.time||''}</div>
-    </div>`).join(''):'<div class="csp-empty" style="padding:16px 0">কোনো নোট নেই। এখানে যা লিখবেন, ছাত্র দেখবে না।</div>');
+  const sub=document.getElementById('tNoteSheetSub'); if(sub) sub.textContent=s?s.name:'';
+  const notes=API.TeacherNotes.getAll(curChat).slice().reverse();
+  el.innerHTML=`<div class="rd-tn-compose">
+      <textarea id="chatNoteInput" rows="4" placeholder="এই ছাত্র সম্পর্কে আপনার পর্যবেক্ষণ, পরিকল্পনা বা মনে রাখার কথা…"></textarea>
+      <div class="rd-tn-compose-ft"><span>${rdIcon('lock')}শুধু আপনি দেখবেন</span><button type="button" class="rd-btn pri" onclick="saveChatNote()">সংরক্ষণ</button></div>
+    </div>
+    ${notes.length?`<div class="rd-tn-h">আগের নোট · ${rdBn(notes.length)}টি</div><div class="rd-tn-list">${notes.map(n=>`
+      <div class="rd-tn-item"><p>${esc(n.text)}</p><span>${esc([n.date,n.time].filter(Boolean).join(' · '))}</span></div>`).join('')}</div>`
+      :'<div class="rd-tn-empty">এখনো কোনো নোট লেখা হয়নি।</div>'}`;
 }
 async function markNoteReviewed(noteId){
   if(!curChat||!API.StudentNotes) return;

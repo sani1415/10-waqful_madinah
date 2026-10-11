@@ -7,6 +7,7 @@ const _todayOpen=new Set();
 const _todayDrafts={};
 
 const _RD_IC={
+  lock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
   clock:'<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
   book:'<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
   file:'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4M16 13H8M16 17H8"/>',
@@ -194,17 +195,6 @@ function _homeMatch(r,f){
   if(f==='unread') return r.unread.length>0;
   return true;
 }
-/** কী বাকি — রঙিন চিপ নয়, এক লাইনের সাধারণ লেখা */
-function _homeSummary(r){
-  const n={sched:0,note:0,doc:0,grade:0}; r.dec.forEach(d=>n[d.kind]++);
-  const bits=[];
-  if(r.unread.length) bits.push(`${rdBn(r.unread.length)}টি নতুন রিসালা`);
-  if(n.sched) bits.push('সময়সূচির প্রস্তাব');
-  if(n.note) bits.push(`${rdBn(n.note)}টি বিবরণ`);
-  if(n.doc) bits.push(`${rdBn(n.doc)}টি ফাইল`);
-  if(n.grade) bits.push(`${rdBn(n.grade)}টি পরীক্ষার নম্বর`);
-  return bits.join(' · ');
-}
 function _homePreview(r){
   const m=r.unread.length?r.unread[r.unread.length-1]:r.last;
   if(!m) return '';
@@ -221,15 +211,14 @@ function _homeTime(r){
 }
 function _homeRow(r){
   const sid=rdJs(r.s.id);
-  const sum=_homeSummary(r);
+  const meta=[r.s.waqfId?rdBn(API.Students.displayWaqfId(r.s.waqfId)):'',API.Students.formatBatchYear(r.s.enrollmentDate)||''].filter(Boolean).join(' · ');
   const prev=_homePreview(r);
   let h=0; for(const ch of String(r.s.id)) h=(h*31+ch.charCodeAt(0))>>>0;
   return `<div class="rd-hrow tn-${h%6}${r.pending?' has-pending':''}" data-sid="${esc(r.s.id)}">
     <button type="button" class="rd-hrow-tap" onclick="openChat('${sid}')">
       ${rdAvatar(r.s)}
-      <span class="rd-hrow-t"><span class="rd-hrow-top"><span class="rd-hrow-nm"><b>${esc(r.s.name)}</b>${sum?`<span class="rd-hrow-sum">${esc(sum)}</span>`:''}</span><span class="rd-time">${esc(_homeTime(r))}</span></span>
+      <span class="rd-hrow-t"><span class="rd-hrow-top"><span class="rd-hrow-nm"><b>${esc(r.s.name)}</b>${meta?`<span class="rd-hrow-meta">${esc(meta)}</span>`:''}</span><span class="rd-hrow-end"><span class="rd-time">${esc(_homeTime(r))}</span>${r.pending?`<span class="rd-cnt rd-hrow-cnt">${rdBn(r.pending)}</span>`:''}</span></span>
         ${prev?`<span class="rd-hrow-prev">${esc(prev)}</span>`:''}</span>
-      ${r.pending?`<span class="rd-cnt rd-hrow-cnt">${rdBn(r.pending)}</span>`:''}
     </button>
   </div>`;
 }

@@ -410,3 +410,30 @@ button.rd-mini{cursor:pointer}
 #tNoteBtn{display:none;flex:none}
 #app.in-chat #tNoteBtn{display:flex}
 #app.in-chat #diaryToggleBtn,#app.in-chat #aiHeaderBtn{display:none!important}
+/* ── আজ v5: নামের পাশে ওয়াকফ আইডি ও বর্ষ; সংখ্যা সময়ের পাশে, নামের লাইনে ── */
+#todayList .rd-hrow-meta{flex:1;min-width:0;font-size:12.5px;color:var(--tn-deep);opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#todayList .rd-hrow-meta::before{content:"· "}
+.rd-hrow-end{display:inline-flex;align-items:center;gap:6px;flex:none}
+.rd-hrow-end .rd-hrow-cnt{margin:0;align-self:center}
+/* ছাত্রের পাতা: তথ্য ট্যাবের বদলে নামের পাশে প্রোফাইল আইকন */
+#cst-info{display:none!important}
+#tProfileBtn{display:none;flex:none}
+#app.in-chat #tProfileBtn{display:flex}
+/* জিম্মাদারের নোট — বড়, শান্ত ড্রয়ার */
+.rd-tn-sheet{min-height:72dvh;max-height:92dvh;padding-bottom:28px}
+.rd-tn-sub{font-size:13.5px;color:var(--rd-ink-3);margin-top:2px}
+.rd-tn-compose{background:var(--rd-butter-tint);border-radius:18px;padding:12px;margin:10px 0 18px}
+.rd-tn-compose textarea{width:100%;min-height:120px;border:1px solid rgb(126 92 14 / .15);border-radius:14px;background:#fff;padding:12px 14px;font:inherit;font-size:15.5px;line-height:1.7;color:var(--rd-ink);resize:vertical;box-sizing:border-box}
+.rd-tn-compose textarea:focus{outline:2px solid rgb(126 92 14 / .3);outline-offset:1px}
+.rd-tn-compose-ft{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+.rd-tn-compose-ft span{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--rd-butter-deep)}
+.rd-tn-compose-ft .rd-i{width:14px;height:14px}
+.rd-tn-h{font-size:13px;font-weight:600;color:var(--rd-ink-3);margin:0 2px 8px}
+.rd-tn-list{display:grid;gap:10px}
+.rd-tn-item{background:var(--rd-surface-2);border:1px solid var(--rd-line);border-radius:16px;padding:12px 14px}
+.rd-tn-item p{margin:0 0 6px;font-size:15px;line-height:1.75;color:var(--rd-ink);white-space:pre-wrap}
+.rd-tn-item span{font-size:12px;color:var(--rd-ink-3)}
+.rd-tn-empty{text-align:center;color:var(--rd-ink-3);font-size:14px;padding:22px 0}
+.rd-tn-compose-ft .rd-btn{flex:none;width:auto;padding-inline:22px}
+#app.in-chat #hInfo{min-width:0;flex:1}
+#app.in-chat #hTitle,#app.in-chat #hSub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
