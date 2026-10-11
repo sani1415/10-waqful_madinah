@@ -504,7 +504,6 @@ html,body{background:var(--rd-bg)!important}
 .chat-note-card .cnc-st.done{color:var(--rd-accent)}
 .chat-note-card .msg-time{font-size:11px;color:var(--rd-ink-3)}
 .chat-note-card button{margin-inline-start:auto;border:0;background:none;color:var(--rd-butter-deep);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;padding:2px 0}
-#stuMainShell .stu-h-card .header-info{cursor:pointer}
 #khata-docs .stu-doc-scroll{background:transparent}
 #khata-docs .doc-tabs{background:transparent}
 /* ── ছাত্রের টপ বার: শিক্ষকের মতো সবুজ; «ওয়াকফের … দিন» নামের পাশে সারিতে (আর নামের ওপর চাপে না) ── */
@@ -524,11 +523,13 @@ html,body{background:var(--rd-bg)!important}
 @media (max-width:380px){#stuMainShell .stu-h-days-lbl{display:none}}
 /* জানালা (বিবরণ, সেটিংস…) নিচেও গোল — পর্দার মাঝে ভাসে */
 #app .modal-sheet{border-radius:26px}
-/* ── ছাত্র: রিসালার ওপরে «বিবরণ লিখুন» ── */
-.chat-note-bar{flex:none;display:flex;justify-content:center;padding:8px 8px 4px}
-.chat-note-bar button{display:inline-flex;align-items:center;gap:7px;border:1px solid rgb(126 92 14 / .18);background:var(--rd-butter-tint);color:var(--rd-butter-deep);font:inherit;font-size:14px;font-weight:600;padding:7px 16px;border-radius:99px;cursor:pointer;box-shadow:0 4px 12px -8px rgb(126 92 14 / .5)}
+/* ── ছাত্র: রিসালার ওপরে ভাসমান লাল «বিবরণ লিখুন» ── */
+#screen-chat{position:relative}
+.chat-note-bar{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:6;pointer-events:none;background:none;padding:0}
+.chat-note-bar button{pointer-events:auto;display:inline-flex;align-items:center;gap:7px;border:0;background:var(--rd-rose-deep);color:#fff;font:inherit;font-size:14.5px;font-weight:600;padding:8px 18px;border-radius:99px;cursor:pointer;box-shadow:0 8px 20px -8px rgb(162 70 62 / .7),0 2px 6px rgb(0 0 0 / .12)}
 .chat-note-bar button:active{transform:scale(.97)}
-.chat-note-bar svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.chat-note-bar svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+#screen-chat #chatMsgs{padding-top:58px}
 /* ── শিক্ষক: রিসালায় ছাত্রের বিবরণ / খাতার ফাইল ── */
 .chat-sub-wrap{justify-content:flex-start}
 .chat-sub{width:88%;max-width:440px;box-sizing:border-box}
@@ -546,3 +547,6 @@ button.chat-sub-done{cursor:pointer}
 .chat-sub .rd-acts{flex-wrap:wrap}
 .chat-sub .rd-btn{white-space:nowrap;flex:1 1 auto}
 .chat-sub-done .cs-hd b{white-space:nowrap}
+/* ছাত্রের টপ বার: দিনের সংখ্যা হলুদে */
+#stuMainShell .stu-h-days-num{color:var(--rd-butter)!important}
+#stuMainShell .stu-h-avatar{cursor:default}

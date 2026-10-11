@@ -41,6 +41,8 @@ function goTab(tab,instant){
   document.getElementById('tab-'+tab)?.classList.add('active');
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+tab).classList.add('active');
+  // প্রোফাইল আইকন শুধু «আজ»-এ
+  const pb=document.getElementById('stuProfileBtn'); if(pb) pb.style.display=tab==='tasks'?'':'none';
   const sb=document.getElementById('stuInChatSearchBtn');
   if(sb) sb.style.display=tab==='chat'&&me?'flex':'none';
   if(tab!=='chat') closeStuInChatSearch();

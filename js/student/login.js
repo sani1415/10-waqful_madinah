@@ -191,7 +191,7 @@ function updateHeaderStats(){
     ring.setAttribute('stroke-dashoffset', String(C*(1-pct/100)));
   }
   const days=waqfDaysSinceEnrollment(me);
-  if(daysNumEl) daysNumEl.textContent=days==null?'—':String(days);
+  if(daysNumEl) daysNumEl.textContent=days==null?'—':String(days).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
 }
 function logout(){
   goTab('tasks',true);
