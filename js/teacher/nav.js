@@ -6,7 +6,7 @@ function _headerBackTab(){
   return (b&&b!=='settings'&&b!=='diary')?b:'today';
 }
 // নিচের ৪টি ট্যাব: প্রতিটি স্ক্রিন কোন ট্যাবের অধীনে
-const NAV_OF={today:'today',chats:'chats',tasks:'plan',exams:'plan',groups:'plan',more:'more',docs:'more',settings:'more',diary:'more'};
+const NAV_OF={today:'today',chats:'today',tasks:'plan',exams:'plan',groups:'plan',more:'more',docs:'docs',settings:'more',diary:'more'};
 let _planTab='tasks';
 function openCreateSheet(){ openModal('fabMenu'); }
 function openCreateExam(){
@@ -53,7 +53,7 @@ function toggleDiary(){
 }
 function goTab(tab, opts){
   uiViewTransition(()=>{
-  if(tab==='students') tab='chats';
+  if(tab==='students'||tab==='chats') tab='today'; // ছাত্রতালিকা «আজ»-এর ভেতরে
   if(tab==='plan') tab=_planTab;
   if(tab==='tasks'||tab==='exams'||tab==='groups') _planTab=tab;
   if((tab==='settings'||tab==='diary')&&curTab!=='settings'&&curTab!=='diary')

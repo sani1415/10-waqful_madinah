@@ -2,7 +2,7 @@
 // ══ EXAMS ══════════════════════════════════════════════════
 function goExamTab(tab,btn){
   examTab=tab;
-  document.querySelectorAll('.exam-tab-btn').forEach(b=>b.classList.remove('active')); if(btn) btn.classList.add('active');
+  const vs=document.getElementById('examViewSel'); if(vs) vs.value=tab;
   document.getElementById('examListPane').style.display    = tab==='list'?'block':'none';
   document.getElementById('examCreatePane').style.display  = tab==='create'?'block':'none';
   document.getElementById('examResultsPane').style.display = tab==='results'?'block':'none';
@@ -186,7 +186,7 @@ async function saveExamFromChat(){
 function renderQuizList(){
   const quizzes=API.Exams.getQuizzes();
   const el=document.getElementById('quizList');
-  if(!quizzes.length){ el.innerHTML='<div class="empty-state"><div class="icon">📝</div><p>কোনো পরীক্ষা নেই।<br>নতুন ট্যাবে যোগ করুন।</p></div>'; return; }
+  if(!quizzes.length){ el.innerHTML='<div class="empty-state"><div class="icon">📝</div><p>কোনো পরীক্ষা নেই।<br>নিচের ＋ বোতাম থেকে যোগ করুন।</p></div>'; return; }
   el.innerHTML=quizzes.map(q=>{
     const subs=API.Exams.getSubmissionsForQuiz(q.id); const assigned=q.assigneeIds?.length||0;
     return `<div class="quiz-card">
@@ -201,6 +201,7 @@ function renderQuizList(){
         <span class="quiz-stat">👥 ${assigned} জন নির্ধারিত</span>
         <span class="quiz-stat">✅ ${subs.length} জমা</span>
         ${q.deadline?`<span class="quiz-stat">📅 ${q.deadline}</span>`:''}
+        <button onclick="showQuizResults('${q.id}')" class="rd-pill" style="margin-inline-start:auto">ফলাফল</button>
         <button onclick="deleteQuiz('${q.id}')" style="background:var(--red-lt);color:var(--red);border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">🗑 মুছুন</button>
       </div>
     </div>`;
@@ -208,6 +209,12 @@ function renderQuizList(){
 }
 async function deleteQuiz(qid){ if(!confirm('এই পরীক্ষা মুছবেন?')) return; try{ await API.Exams.deleteQuiz(qid); renderQuizList(); showToast('🗑 মুছে ফেলা হয়েছে'); }catch(e){ console.error(e); showToast('❌ পরীক্ষা মোছা যায়নি'); } }
 
+/** কার্ড থেকে সরাসরি সেই পরীক্ষার ফলাফল */
+function showQuizResults(qid){
+  goExamTab('results');
+  const sel=document.getElementById('resultQuizSelect');
+  if(sel){ sel.value=qid; renderResults(); }
+}
 function initResultsQuizSelect(){
   const sel=document.getElementById('resultQuizSelect');
   const quizzes=API.Exams.getQuizzes();

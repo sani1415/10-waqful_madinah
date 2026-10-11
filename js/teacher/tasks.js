@@ -108,6 +108,8 @@ function goAmalTab(tab,btn){
   if(btn) btn.classList.add('active');
   document.querySelectorAll('#screen-tasks .amal-panel').forEach(p=>p.style.display='none');
   document.getElementById('amal-panel-'+tab).style.display='';
+  const vs=document.getElementById('amalViewSel'); if(vs) vs.value=tab;
+  const fw=document.getElementById('amalFilterWrap'); if(fw) fw.style.display=tab==='list'?'':'none';
   if(tab==='overview') renderAmalOverview();
   else if(tab==='students') renderAmalLeaderboard();
   else renderTaskList();

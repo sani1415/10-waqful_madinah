@@ -1,7 +1,7 @@
 /* Waqful Madinah — js/teacher/today.js: «আজ» — everything waiting on the teacher, in one list.
    Reads only existing data (schedule proposals, pending বিবরণ, pending files, quizzes to grade,
    unread messages, today's আমল) and reuses the existing actions. */
-let _todayFilter='all';
+let _todayFilter='all'; // হোমের ফিল্টার: all | pending | unread | dec | behind
 // খোলা কার্ড ও না-পাঠানো খসড়া — রি-রেন্ডারেও (লাইভ সিঙ্ক) হারায় না
 const _todayOpen=new Set();
 const _todayDrafts={};
@@ -16,6 +16,7 @@ const _RD_IC={
   eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
   chevR:'<path d="m9 18 6-6-6-6"/>',
   send:'<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+  msg:'<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
 };
 function rdIcon(k){ return `<svg class="rd-i" viewBox="0 0 24 24" aria-hidden="true">${_RD_IC[k]||''}</svg>`; }
 function rdBn(n){ return String(n).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]); }
@@ -76,9 +77,11 @@ function _rdAgo(ts){
   return d===1?'গতকাল':`${rdBn(d)} দিন আগে`;
 }
 
-function _rdCard(it){
-  const s=it.s, sid=rdJs(it.sid);
-  const who=`<div class="rd-who">${rdAvatar(s)}<div class="rd-who-t"><b>${esc(s.name)}</b><span>${[rdWaqf(s),s.cls,_rdAgo(it.ts)].filter(Boolean).map(esc).join(' · ')}</span></div>`;
+function _rdCard(it,opts){
+  const s=it.s, sid=rdJs(it.sid), compact=!!(opts&&opts.compact);
+  const who=compact
+    ?`<div class="rd-who rd-who--mini"><span class="rd-time">${esc(_rdAgo(it.ts))}</span>`
+    :`<div class="rd-who">${rdAvatar(s)}<div class="rd-who-t"><b>${esc(s.name)}</b><span>${[rdWaqf(s),s.cls,_rdAgo(it.ts)].filter(Boolean).map(esc).join(' · ')}</span></div>`;
   if(it.kind==='sched'){
     const diff=it.emptyAll
       ?`<div class="rd-diff"><div class="del">পুরো সময়সূচি মুছে ফেলার প্রস্তাব</div></div>`
@@ -147,72 +150,165 @@ async function todayMarkNoteReviewed(sid,noteId){
   try{ await API.StudentNotes.markReviewed(sid,noteId); showToast('✅ পর্যালোচিত হিসেবে চিহ্নিত'); renderAll(); }
   catch(e){ console.error(e); showToast('❌ আপডেট হয়নি'); }
 }
-function _todayDecisionsHtml(items,counts){
-  if(!items.length) return '';
-  const shown=_todayFilter==='all'?items:items.filter(i=>i.group===_todayFilter);
-  const chip=(k,l)=>`<button type="button" class="rd-chip${_todayFilter===k?' on':''}" onclick="setTodayFilter('${k}')">${l}<b>${rdBn(counts[k])}</b></button>`;
-  return `<div class="rd-chips rd-chips--center rd-today-chips">${chip('all','সব')}${chip('approve','অনুমোদন')}${chip('review','পর্যালোচনা')}${chip('grade','নম্বর দিন')}</div>
-  <div class="rd-stack">${shown.map(_rdCard).join('')||'<div class="rd-empty">এই ধরনের কিছু বাকি নেই।</div>'}</div>`;
+// ══ হোম: «আজ» + ছাত্রতালিকা একসাথে — প্রতি ছাত্র এক সারি ════════════
+// যার কিছু বাকি (রিসালা, বিবরণ, ফাইল, সময়সূচি, নম্বর) সে ওপরে। সারিতে চাপলে সেখানেই খোলে
+// (সিদ্ধান্তের কার্ড + মেসেজ + উত্তর লেখার ঘর); ডানের তীরে পুরো পাতা।
+const _homeOpen=new Set();
+const _homeDrafts={};
+const HOME_FILTERS=[['all','সব'],['pending','কিছু বাকি'],['unread','অপঠিত'],['dec','সিদ্ধান্ত'],['behind','আমল বাকি']];
+
+function _msgTs(m){
+  if(!m) return 0;
+  if(m._ts) return Number(m._ts)||0;
+  const x=/^m(\d{13})/.exec(m.id||''); return x?Number(x[1]):0;
 }
-/** ফিল্টার বদলালে শুধু নিচের কার্ডগুলো বদলায় — ওপরের অংশ, স্ক্রল ও অ্যানিমেশন স্থির থাকে */
+function _homeRows(){
+  const items=getTodayItems(); const by={};
+  items.forEach(it=>(by[it.sid]=by[it.sid]||[]).push(it));
+  const t=API.today();
+  const rows=API.Students.getAll().map(s=>{
+    const thread=API.Messages.getThread(s.id)||[];
+    const last=thread[thread.length-1];
+    const unread=thread.filter(m=>m.role==='in'&&!m.read);
+    const prog=API.Tasks.getRangeProgress(s.id,t,t);
+    const dec=by[s.id]||[];
+    const ts=Math.max(_msgTs(last),...dec.map(d=>d.ts||0),0);
+    const behind=prog.total>0&&prog.done<prog.total;
+    return {s,dec,unread,last,thread,prog,ts,behind,pending:dec.length+unread.length};
+  });
+  rows.sort((a,b)=>(b.pending>0)-(a.pending>0)||b.ts-a.ts);
+  return {rows,items};
+}
+function _homeMatch(r,f){
+  if(f==='pending') return r.pending>0;
+  if(f==='unread') return r.unread.length>0;
+  if(f==='dec') return r.dec.length>0;
+  if(f==='behind') return r.behind;
+  return true;
+}
+function _homeSummary(r){
+  const n={sched:0,note:0,doc:0,grade:0}; r.dec.forEach(d=>n[d.kind]++);
+  const bits=[];
+  if(r.unread.length) bits.push(`<span class="rd-kind k-msg">${rdIcon('msg')}${rdBn(r.unread.length)} রিসালা</span>`);
+  if(n.sched) bits.push(`<span class="rd-kind k-sched">${rdIcon('clock')}সময়সূচি</span>`);
+  if(n.note) bits.push(`<span class="rd-kind k-note">${rdIcon('book')}${rdBn(n.note)} বিবরণ</span>`);
+  if(n.doc) bits.push(`<span class="rd-kind k-doc">${rdIcon('file')}${rdBn(n.doc)} ফাইল</span>`);
+  if(n.grade) bits.push(`<span class="rd-kind k-exam">${rdIcon('pen')}${rdBn(n.grade)} নম্বর</span>`);
+  if(r.prog.total>0) bits.push(`<span class="rd-kind k-amal${r.behind?'':' done'}">আমল ${rdBn(r.prog.done)}/${rdBn(r.prog.total)}</span>`);
+  if(!r.pending&&!r.behind) bits.push(`<span class="rd-kind k-ok">${rdIcon('check')}সব ঠিক আছে</span>`);
+  return bits.join('');
+}
+function _homePreview(r){
+  const m=r.unread.length?r.unread[r.unread.length-1]:r.last;
+  if(!m) return '';
+  const txt=String(m.text||m.fileName||'').replace(/\s+/g,' ').trim();
+  return (m.role==='out'?'আপনি: ':'')+txt;
+}
+function _homeTime(r){
+  const m=r.last;
+  if(m&&_msgTs(m)===r.ts&&m.time){
+    const d=new Date(r.ts); const today=new Date();
+    return d.toDateString()===today.toDateString()?rdBn(m.time):_rdAgo(r.ts);
+  }
+  return _rdAgo(r.ts);
+}
+function _homeBody(r){
+  const sid=rdJs(r.s.id), key=_todayKey('h',r.s.id);
+  const msgs=(r.unread.length?r.unread.slice(-4):r.thread.slice(-2)).filter(m=>m.text||m.fileName);
+  return `${r.dec.map(it=>_rdCard(it,{compact:true})).join('')}
+    ${msgs.length?`<div class="rd-hmsgs">${msgs.map(m=>`<div class="rd-hmsg ${m.role==='in'?'in':'out'}">${esc(String(m.text||m.fileName||''))}<span>${esc(m.time||'')}</span></div>`).join('')}</div>`:''}
+    <div class="rd-hreply">
+      <textarea id="hr-${key}" rows="2" placeholder="উত্তর লিখুন…" oninput="_homeDrafts['${key}']=this.value">${rdText(_homeDrafts[key])}</textarea>
+      <button type="button" class="rd-hsend" onclick="homeReply('${sid}','${key}')" aria-label="পাঠান">${rdIcon('send')}</button>
+    </div>
+    <div class="rd-hfoot">
+      ${r.unread.length?`<button type="button" class="rd-pill ghost" onclick="homeMarkRead('${sid}')">পড়া হয়েছে</button>`:''}
+      ${r.behind?`<button type="button" class="rd-pill ghost" onclick="homeRemind('${sid}','${key}')">আমলের কথা মনে করিয়ে দিন</button>`:''}
+      <button type="button" class="rd-pill" onclick="openChat('${sid}')">পুরো রিসালা ও অগ্রগতি</button>
+    </div>`;
+}
+function _homeRow(r){
+  const sid=rdJs(r.s.id), open=_homeOpen.has(r.s.id);
+  return `<div class="rd-hrow${open?' open':''}${r.pending?' has-pending':''}" data-sid="${esc(r.s.id)}">
+    <div class="rd-hrow-main">
+      <button type="button" class="rd-hrow-tap" onclick="toggleHomeRow('${sid}')" aria-expanded="${open}">
+        ${rdAvatar(r.s)}
+        <span class="rd-hrow-t"><span class="rd-hrow-top"><b>${esc(r.s.name)}</b><span class="rd-time">${esc(_homeTime(r))}</span></span>
+          <span class="rd-hrow-sum">${_homeSummary(r)}</span>
+          ${_homePreview(r)?`<span class="rd-hrow-prev">${esc(_homePreview(r))}</span>`:''}</span>
+      </button>
+      <button type="button" class="rd-hrow-go" onclick="openChat('${sid}')" aria-label="${esc(r.s.name)}-এর পুরো পাতা">${rdIcon('chevR')}</button>
+    </div>
+    <div class="rd-hrow-body">${open?_homeBody(r):''}</div>
+  </div>`;
+}
+function _homeListHtml(data){
+  const rows=data.rows.filter(r=>_homeMatch(r,_todayFilter));
+  const cnt={all:data.rows.length}; HOME_FILTERS.forEach(([k])=>{ if(k!=='all') cnt[k]=data.rows.filter(r=>_homeMatch(r,k)).length; });
+  return `<div class="rd-chips rd-today-chips">${HOME_FILTERS.map(([k,l])=>`<button type="button" class="rd-chip${_todayFilter===k?' on':''}" onclick="setTodayFilter('${k}')">${l}<b>${rdBn(cnt[k])}</b></button>`).join('')}</div>
+  <div class="rd-card rd-hlist">${rows.map(_homeRow).join('')||'<div class="rd-empty" style="padding:14px">এই তালিকায় এখন কেউ নেই।</div>'}</div>`;
+}
+function toggleHomeRow(sid){
+  const row=document.querySelector(`#todayList .rd-hrow[data-sid="${CSS.escape(sid)}"]`); if(!row) return;
+  const open=!row.classList.contains('open');
+  if(open){
+    _homeOpen.add(sid);
+    const r=_homeRows().rows.find(x=>x.s.id===sid);
+    row.querySelector('.rd-hrow-body').innerHTML=r?_homeBody(r):'';
+  } else _homeOpen.delete(sid);
+  row.classList.toggle('open',open);
+  row.querySelector('.rd-hrow-tap')?.setAttribute('aria-expanded',String(open));
+}
+async function homeReply(sid,key){
+  const ta=document.getElementById('hr-'+key); const text=(ta&&ta.value||'').trim();
+  if(!text){ showToast('উত্তর লিখুন'); return; }
+  try{
+    await API.Messages.send(sid,text,'text');
+    API.Messages.markRead(sid,'in');
+    delete _homeDrafts[key]; _homeOpen.delete(sid);
+    showToast('✅ পাঠানো হয়েছে');
+    renderAll();
+  }catch(e){ console.error(e); showToast('❌ পাঠানো যায়নি'); }
+}
+function homeMarkRead(sid){ API.Messages.markRead(sid,'in'); renderAll(); }
+function homeRemind(sid,key){
+  const ta=document.getElementById('hr-'+key); if(!ta) return;
+  if(!ta.value.trim()){ ta.value='আজকের আমলগুলো শেষ করতে ভুলো না, ইন শা আল্লাহ।'; _homeDrafts[key]=ta.value; }
+  ta.focus();
+}
+/** ফিল্টার বদলালে শুধু তালিকা বদলায় — ওপরের অংশ, স্ক্রল ও অ্যানিমেশন স্থির থাকে */
 function setTodayFilter(f){
   _todayFilter=f;
   const box=document.getElementById('todayDecisions'); if(!box){ renderToday(); return; }
-  const items=getTodayItems();
-  const counts={all:items.length,approve:0,review:0,grade:0}; items.forEach(i=>counts[i.group]++);
-  const list=document.getElementById('todayList');
-  const top=list?list.scrollTop:0;
+  const list=document.getElementById('todayList'); const top=list?list.scrollTop:0;
   box.classList.add('rd-still');
-  box.innerHTML=_todayDecisionsHtml(items,counts);
+  box.innerHTML=_homeListHtml(_homeRows());
   if(list) list.scrollTop=top;
-}
-function todayRemind(sid){
-  openChat(sid,'msg');
-  const inp=document.getElementById('msgIn');
-  if(inp&&!inp.value.trim()){ inp.value='আজকের আমলগুলো শেষ করতে ভুলো না, ইন শা আল্লাহ।'; if(typeof autoResize==='function') autoResize(inp); inp.focus(); }
-}
-
-function _todayAmal(){
-  const t=API.today();
-  const rows=API.Students.getAll().map(s=>({s,p:API.Tasks.getRangeProgress(s.id,t,t)})).filter(r=>r.p.total>0);
-  const done=rows.filter(r=>r.p.done>=r.p.total).length;
-  let d=0,tot=0; rows.forEach(r=>{ d+=r.p.done; tot+=r.p.total; });
-  const behind=rows.filter(r=>r.p.done<r.p.total).sort((a,b)=>(a.p.done/a.p.total)-(b.p.done/b.p.total));
-  return { pct:tot?Math.round(d/tot*100):0, withTasks:rows.length, complete:done, behind };
 }
 
 function renderToday(){
   const el=document.getElementById('todayList'); if(!el) return;
-  const items=getTodayItems();
-  const counts={all:items.length,approve:0,review:0,grade:0};
-  items.forEach(i=>counts[i.group]++);
+  const data=_homeRows();
+  const decCount=data.items.length;
+  const unreadTotal=data.rows.reduce((a,r)=>a+r.unread.length,0);
   const badge=document.getElementById('todayBadge');
-  if(badge){ badge.textContent=items.length||''; badge.classList.toggle('show',items.length>0); }
+  const badgeN=decCount+unreadTotal;
+  if(badge){ badge.textContent=badgeN?rdBn(badgeN):''; badge.classList.toggle('show',badgeN>0); }
   if(curTab!=='today') return;
   const firstPaint=!el.dataset.painted; el.dataset.painted='1';
   const keepTop=el.scrollTop;
-
-  const students=API.Students.getAll();
-  const unread=students.map(s=>({s,n:API.Messages.unreadCount(s.id,'in')|0,last:(API.Messages.getThread(s.id)||[]).slice(-1)[0]})).filter(r=>r.n>0)
-    .sort((a,b)=>(b.last&&b.last._ts||0)-(a.last&&a.last._ts||0));
-  const unreadTotal=unread.reduce((a,r)=>a+r.n,0);
-  const amal=_todayAmal();
-
+  const withTasks=data.rows.filter(r=>r.prog.total>0);
+  let d=0,tot=0; withTasks.forEach(r=>{ d+=r.prog.done; tot+=r.prog.total; });
+  const amalPct=tot?Math.round(d/tot*100):0;
+  const behind=data.rows.filter(r=>r.behind).length;
   el.innerHTML=`
   <div class="rd-arch rd-stat4">
-    <div class="rd-mini rd-mini--main"><b>${rdBn(items.length)}</b><span>${items.length?'সিদ্ধান্ত বাকি':'সব সিদ্ধান্ত হয়ে গেছে'}</span></div>
-    <button type="button" class="rd-mini" onclick="goTab('chats')"><b>${rdBn(unreadTotal)}</b><span>অপঠিত রিসালা</span></button>
-    <div class="rd-mini"><b>${rdBn(amal.pct)}%</b><span>আজকের আমল</span></div>
-    <div class="rd-mini"><b>${rdBn(amal.behind.length)}</b><span>জনের আমল বাকি</span></div>
+    <button type="button" class="rd-mini rd-mini--main" onclick="setTodayFilter('dec')"><b>${rdBn(decCount)}</b><span>${decCount?'সিদ্ধান্ত বাকি':'সিদ্ধান্ত বাকি নেই'}</span></button>
+    <button type="button" class="rd-mini" onclick="setTodayFilter('unread')"><b>${rdBn(unreadTotal)}</b><span>অপঠিত রিসালা</span></button>
+    <button type="button" class="rd-mini" onclick="goTab('tasks')"><b>${rdBn(amalPct)}%</b><span>আজকের আমল</span></button>
+    <button type="button" class="rd-mini" onclick="setTodayFilter('behind')"><b>${rdBn(behind)}</b><span>জনের আমল বাকি</span></button>
   </div>
-  <div id="todayDecisions">${_todayDecisionsHtml(items,counts)}</div>
-  ${unread.length?`<div class="rd-sec-h"><h4>অপঠিত রিসালা</h4><button type="button" onclick="goTab('chats')">সব ছাত্র</button></div>
-  <div class="rd-card rd-list">${unread.slice(0,5).map(r=>`<button type="button" class="rd-row" onclick="openChat('${rdJs(r.s.id)}')">${rdAvatar(r.s,'sm')}<div class="rd-who-t"><b>${esc(r.s.name)}</b><span>${esc(r.last&&(r.last.text||r.last.fileName)||'')}</span></div><div class="rd-row-end"><span class="rd-time">${esc(r.last&&r.last.time||'')}</span><span class="rd-cnt">${rdBn(r.n)}</span></div></button>`).join('')}</div>`:''}
-  ${amal.withTasks?`<div class="rd-sec-h"><h4>আজকের আমল</h4><button type="button" onclick="goTab('tasks')">বিস্তারিত</button></div>
-  <div class="rd-card">
-    <div class="rd-pulse"><div class="rd-ring" style="--p:${amal.pct}"><span>${rdBn(amal.pct)}%</span></div><div><b>${rdBn(amal.withTasks)} জনের ${rdBn(amal.complete)} জন সব শেষ করেছে</b><span>ছাত্ররা টিক দিলে সাথে সাথে বদলায়</span></div></div>
-    ${amal.behind.slice(0,3).map(r=>`<div class="rd-row">${rdAvatar(r.s,'sm')}<div class="rd-who-t"><b>${esc(r.s.name)}</b><span>${rdBn(r.p.total)}টির ${rdBn(r.p.done)}টি</span></div><button type="button" class="rd-pill" onclick="todayRemind('${rdJs(r.s.id)}')">মনে করিয়ে দিন</button></div>`).join('')}
-  </div>`:''}
+  <div id="todayDecisions">${_homeListHtml(data)}</div>
   <div class="rd-bottom-space"></div>`;
   el.classList.toggle('rd-still',!firstPaint);
   if(!firstPaint) el.scrollTop=keepTop;

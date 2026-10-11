@@ -26,7 +26,6 @@ function renderMore(){
   el.innerHTML=`
   <div class="rd-top"><div class="rd-date">${esc(t.name||'উস্তাদ')}</div><h1 class="rd-title">আরও</h1></div>
   <div class="rd-card rd-menu">
-    ${_moreRow('folder','tone-plum','ফাইল ও ডকুমেন্ট','ছাত্রদের পাঠানো ও আপনার পাঠানো ফাইল',"goTab('docs')",pendingDocs)}
     ${_moreRow('diary','tone-butter','ডায়েরি','শুধু আপনার, ছাত্র দেখবে না',"goTab('diary')")}
     ${_moreRow('ai','tone-sage','AI সহকারী','প্রশ্ন করুন, রিসালার খসড়া করান',"if(window.AdminAi)AdminAi.open()")}
   </div>

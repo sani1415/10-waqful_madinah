@@ -112,19 +112,11 @@
     <button type="button" class="rd-plan-seg-btn" data-plan="exams" onclick="goTab('exams')">পরীক্ষা</button>
     <button type="button" class="rd-plan-seg-btn" data-plan="groups" onclick="goTab('groups')">ঘোষণা ও গ্রুপ</button>
   </div>
-  <div class="amal-sub-tabs">
-    <button type="button" class="amal-sub-tab active" onclick="goAmalTab('list',this)"><span class="amal-sub-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 12h6M9 16h6"/></svg></span><span class="amal-sub-lbl">তালিকা</span></button>
-    <button type="button" class="amal-sub-tab"        onclick="goAmalTab('overview',this)"><span class="amal-sub-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18 20V10M12 20V4M6 20v-6"/></svg></span><span class="amal-sub-lbl">সারসংক্ষেপ</span></button>
-    <button type="button" class="amal-sub-tab"        onclick="goAmalTab('students',this)"><span class="amal-sub-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></span><span class="amal-sub-lbl">ছাত্রভিত্তিক</span></button>
+  <div class="rd-toolbar">
+    <label class="rd-select"><span class="sr-only">দেখুন</span><select id="amalViewSel" onchange="goAmalTab(this.value)"><option value="list">সব আমল</option><option value="overview">আজকের সারসংক্ষেপ</option><option value="students">ছাত্রভিত্তিক</option></select></label>
+    <label class="rd-select" id="amalFilterWrap"><span class="sr-only">ধরন</span><select id="amalFilterSel" onchange="renderTaskList(this.value)"><option value="all">সব ধরন</option><option value="daily">দৈনিক</option><option value="onetime">এককালীন</option><option value="done">সম্পন্ন</option><option value="late">দেরি</option></select></label>
   </div>
   <div id="amal-panel-list" class="amal-panel">
-    <div class="stu-amal-filters no-scrollbar">
-      <button type="button" class="stu-filter-pill active" onclick="fTask('all',this)">সব</button>
-      <button type="button" class="stu-filter-pill"        onclick="fTask('daily',this)">দৈনিক</button>
-      <button type="button" class="stu-filter-pill"        onclick="fTask('onetime',this)">এককালীন</button>
-      <button type="button" class="stu-filter-pill"        onclick="fTask('done',this)">সম্পন্ন</button>
-      <button type="button" class="stu-filter-pill"        onclick="fTask('late',this)">দেরি</button>
-    </div>
     <div class="list-scroll tea-amal-list" id="taskList"></div>
   </div>
   <div id="amal-panel-overview" class="amal-panel" style="display:none">
@@ -142,10 +134,8 @@
     <button type="button" class="rd-plan-seg-btn" data-plan="exams" onclick="goTab('exams')">পরীক্ষা</button>
     <button type="button" class="rd-plan-seg-btn" data-plan="groups" onclick="goTab('groups')">ঘোষণা ও গ্রুপ</button>
   </div>
-  <div class="exam-tabs">
-    <button class="exam-tab-btn active" onclick="goExamTab('list',this)">📋 সব পরীক্ষা</button>
-    <button class="exam-tab-btn"        onclick="goExamTab('create',this)">➕ নতুন</button>
-    <button class="exam-tab-btn"        onclick="goExamTab('results',this)">📊 ফলাফল</button>
+  <div class="rd-toolbar">
+    <label class="rd-select"><span class="sr-only">দেখুন</span><select id="examViewSel" onchange="goExamTab(this.value)"><option value="list">সব পরীক্ষা</option><option value="results">ফলাফল ও নম্বর</option><option value="create">নতুন পরীক্ষা</option></select></label>
   </div>
   <div class="list-scroll">
     <!-- Quiz list -->
@@ -423,10 +413,10 @@
 <nav id="teaBottomNav" class="tea-float-nav-wrap" aria-label="প্রধান মেনু">
   <div class="tea-float-nav-inner">
     <button type="button" class="tab-btn active" onclick="goTab('today')" id="tab-today"><span class="tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/></svg></span><span class="tab-lbl">আজ</span><span class="tab-badge" id="todayBadge"></span></button>
-    <button type="button" class="tab-btn" onclick="goTab('chats')" id="tab-chats"><span class="tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></svg></span><span class="tab-lbl">ছাত্র</span><span class="tab-badge tab-badge--sched" id="schedBadge" title="সময়সূচি অনুমোদন"></span></button>
-    <button type="button" class="rd-nav-create" onclick="openCreateSheet()" aria-label="নতুন তৈরি করুন"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 12h14M12 5v14"/></svg></button>
     <button type="button" class="tab-btn" onclick="goTab('plan')" id="tab-plan"><span class="tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m12 2 10 5-10 5L2 7l10-5Z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/></svg></span><span class="tab-lbl">পরিকল্পনা</span><span class="tab-badge" id="tBadge"></span></button>
-    <button type="button" class="tab-btn" onclick="goTab('more')" id="tab-more"><span class="tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></span><span class="tab-lbl">আরও</span><span class="tab-badge" id="docBadge"></span></button>
+    <button type="button" class="rd-nav-create" onclick="openCreateSheet()" aria-label="নতুন তৈরি করুন"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 12h14M12 5v14"/></svg></button>
+    <button type="button" class="tab-btn" onclick="goTab('docs')" id="tab-docs"><span class="tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg></span><span class="tab-lbl">ফাইল</span><span class="tab-badge" id="docBadge"></span></button>
+    <button type="button" class="tab-btn" onclick="goTab('more')" id="tab-more"><span class="tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></span><span class="tab-lbl">আরও</span></button>
   </div>
 </nav>
 

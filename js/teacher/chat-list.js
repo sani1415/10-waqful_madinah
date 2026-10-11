@@ -228,7 +228,8 @@ function closeChat(){
   try{ if(typeof stopChatVoice==='function') stopChatVoice(false); }catch(e){}
   closeInChatSearch();
   uiViewTransition(()=>{
-  const returnTab=(chatReturnTab&&document.getElementById('screen-'+chatReturnTab))?chatReturnTab:'chats';
+  // ছাত্রতালিকা এখন «আজ»-এর ভেতরে — পুরনো 'chats' ফেরত গেলেও «আজ»-এ যাই
+  let returnTab=(chatReturnTab&&chatReturnTab!=='chats'&&document.getElementById('screen-'+chatReturnTab))?chatReturnTab:'today';
   curChat=null; curChatTab='msg'; document.getElementById('chatView').classList.remove('open');
   const _schedStrip=document.getElementById('chatSchedulePendingStrip');
   if(_schedStrip){ _schedStrip.style.display='none'; _schedStrip.innerHTML=''; }
@@ -251,9 +252,10 @@ function closeChat(){
   curTab=returnTab;
   document.getElementById('screen-'+curTab).classList.add('active');
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  const tabBtn=document.getElementById('tab-'+curTab);
+  const tabBtn=document.getElementById('tab-'+((typeof NAV_OF!=='undefined'&&NAV_OF[curTab])||curTab));
   if(tabBtn) tabBtn.classList.add('active');
   if(curTab==='chats'){ renderBiboronSummary(); renderChatList(''); }
+  if(curTab==='today') renderToday();
   updateBadge();
   syncHeaderBtns();
   });
