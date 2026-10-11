@@ -3,7 +3,8 @@
 function updateBadges(){
   if(!me) return;
   const ur=API.Messages.unreadCount(me.id,'out'); const ub=document.getElementById('urBadge'); ub.textContent=ur; ub.classList.toggle('show',ur>0);
-  const pn=API.Tasks.pendingCount(me.id);          const tb=document.getElementById('tBadge');  tb.textContent=pn; tb.classList.toggle('show',pn>0);
+  const pn=API.Tasks.pendingCount(me.id)+API.Exams.getQuizzesForStudent(me.id).filter(q=>!API.Exams.getSubmission(q.id,me.id)).length;
+  const tb=document.getElementById('tBadge');  tb.textContent=pn; tb.classList.toggle('show',pn>0);
   updateExamBadge();
   syncAppBadge();
 }
@@ -31,23 +32,21 @@ function syncAppBadge(){
 
 // ══ NAV ════════════════════════════════════════════════════
 function goTab(tab,instant){
+  // পরীক্ষা এখন «আজ»-এ, ফাইল «খাতা»-য়; «আমি» মেনু নেই
+  if(tab==='exams'||tab==='me') tab='tasks';
+  if(tab==='docs'){ _khataTab='docs'; tab='goals'; }
   const run=()=>{
   closeAmalCalendar();
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  // ৪টি ট্যাব: পরীক্ষা ও ফাইল «আমি»-র অধীনে
-  const navId={exams:'me',docs:'me'}[tab]||tab;
-  document.getElementById('tab-'+navId)?.classList.add('active');
+  document.getElementById('tab-'+tab)?.classList.add('active');
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+tab).classList.add('active');
   const sb=document.getElementById('stuInChatSearchBtn');
   if(sb) sb.style.display=tab==='chat'&&me?'flex':'none';
   if(tab!=='chat') closeStuInChatSearch();
   if(tab==='chat' && me){ API.Messages.markRead(me.id,'out'); renderChat(); updateBadges(); setTimeout(()=>document.getElementById('chatMsgs').scrollTop=9e9,50); }
-  if(tab==='exams') renderExamList();
   if(tab==='tasks' && me){ renderAmalDashboard(); renderTaskList(); }
-  if(tab==='docs'){ renderSentDocs(); renderReceivedDocs(); }
   if(tab==='goals') goKhataTab(_khataTab);
-  if(tab==='me') renderMe();
   if(tab==='tasks'&&me) renderTodayDue();
   };
   if(instant) run(); else uiViewTransition(run);

@@ -485,3 +485,26 @@ html,body{background:var(--rd-bg)!important}
 .rd-joma-grade input{width:84px;padding:8px 10px;border:1px solid var(--rd-line);border-radius:12px;font:inherit;font-size:16px}
 .rd-joma-grade span{color:var(--rd-ink-3);font-size:14px}
 .rd-joma-grade .rd-btn{margin-inline-start:auto}
+/* ── ছাত্র: খাতা তিন ভাগ; «আজ»-এ পরীক্ষা; রিসালায় বিবরণ ── */
+.rd-seg3{grid-template-columns:repeat(3,1fr)}
+#khata-docs{display:flex;flex-direction:column;min-height:0;flex:1}
+.stu-today-exams{display:grid;gap:10px;margin-top:14px}
+.stu-today-sec{font-family:var(--rd-head);font-size:16px;font-weight:600;color:var(--rd-ink);padding:0 4px}
+.stu-today-sec b{font-size:12.5px;font-weight:600;color:var(--rd-rose-deep);background:var(--rd-rose-tint);border-radius:99px;padding:2px 9px;margin-inline-start:6px}
+.stu-today-sub{font-size:13px;font-weight:600;color:var(--rd-ink-3);padding:4px 4px 0}
+.stu-today-exams .exam-card{margin:0}
+.stu-exams-more{justify-self:center}
+.chat-note-btn{color:var(--rd-butter-deep)!important}
+.chat-note-wrap{justify-content:flex-end}
+.chat-note-card{max-width:82%;box-sizing:border-box;background:var(--rd-butter-tint);border:1px solid rgb(126 92 14 / .14);border-radius:18px 18px 6px 18px;padding:10px 13px;display:grid;gap:4px}
+.chat-note-card .cnc-hd{font-size:12px;font-weight:600;color:var(--rd-butter-deep)}
+.chat-note-card b{font-size:15px;font-weight:600;color:var(--rd-ink)}
+.chat-note-card p{margin:0;font-size:14.5px;line-height:1.65;color:var(--rd-ink-2);white-space:pre-wrap;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.chat-note-card .cnc-ft{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:2px}
+.chat-note-card .cnc-st{font-size:11.5px;font-weight:600;color:var(--rd-butter-deep);background:rgb(255 255 255 / .7);border-radius:99px;padding:2px 8px}
+.chat-note-card .cnc-st.done{color:var(--rd-accent)}
+.chat-note-card .msg-time{font-size:11px;color:var(--rd-ink-3)}
+.chat-note-card button{margin-inline-start:auto;border:0;background:none;color:var(--rd-butter-deep);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;padding:2px 0}
+#stuMainShell .stu-h-card .header-info{cursor:pointer}
+#khata-docs .stu-doc-scroll{background:transparent}
+#khata-docs .doc-tabs{background:transparent}

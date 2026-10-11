@@ -131,7 +131,7 @@ function skd(field){if(field==='id'){_skId=_skId.slice(0,-1);_skUpdateIdDisplay(
       <svg class="stu-h-ring" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="16" fill="none" stroke="#e8e8e8" stroke-width="3.5"/><circle id="hAvatarRing" cx="20" cy="20" r="16" fill="none" stroke="#3F6B4A" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="100.5" stroke-dashoffset="100.5" transform="rotate(-90 20 20)"/></svg>
       <span class="stu-h-pct" id="hAvatarPct">—</span>
     </button>
-    <div class="header-info"><div class="header-title" id="hTitle">আসছে...</div><div class="header-sub" id="hSub" style="display:none"></div></div>
+    <div class="header-info" role="button" tabindex="0" onclick="if(me)openStudentSelfProfile()" title="প্রোফাইল ও পিন"><div class="header-title" id="hTitle">আসছে...</div><div class="header-sub" id="hSub" style="display:none"></div></div>
     <div class="stu-h-actions">
       <button type="button" class="header-btn" id="stuInChatSearchBtn" style="display:none" onclick="toggleStuInChatSearch()" title="রিসালা খুঁজুন" aria-label="রিসালা খুঁজুন"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
       <button type="button" class="header-btn" onclick="logout()" title="লগআউট" aria-label="লগআউট"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
@@ -171,6 +171,7 @@ function skd(field){if(field==='id'){_skId=_skId.slice(0,-1);_skUpdateIdDisplay(
   </div>
   <input type="file" id="chatFileInput" style="display:none" multiple accept="image/*,.pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx" onchange="onChatFileChosen(this)">
   <div class="chat-input-bar">
+    <button type="button" class="attach-btn chat-note-btn" onclick="openDailyNoteModal()" title="বিবরণ লিখুন" aria-label="বিবরণ লিখুন"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2 4.5A1.5 1.5 0 013.5 3H9a3 3 0 013 3v15a2.5 2.5 0 00-2.5-2.5h-6A1.5 1.5 0 012 17V4.5z"/><path d="M22 4.5A1.5 1.5 0 0020.5 3H15a3 3 0 00-3 3v15a2.5 2.5 0 012.5-2.5h6A1.5 1.5 0 0022 17V4.5z"/></svg></button>
     <button type="button" class="attach-btn" onclick="document.getElementById('chatFileInput').click()" title="ফাইল পাঠান" aria-label="ফাইল পাঠান">
       <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
     </button>
@@ -203,10 +204,6 @@ function skd(field){if(field==='id'){_skId=_skId.slice(0,-1);_skUpdateIdDisplay(
   </div>
 </div>
 
-<!-- ══ EXAMS ══════════════════════════════════════════════ -->
-<div class="screen" id="screen-exams">
-  <div class="list-scroll" id="examList"></div>
-</div>
 
 <!-- ══ QUIZ TAKING VIEW (full screen overlay) ══════════════ -->
 <div class="quiz-view" id="quizView">
@@ -221,47 +218,12 @@ function skd(field){if(field==='id'){_skId=_skId.slice(0,-1);_skUpdateIdDisplay(
   </div>
 </div>
 
-<!-- ══ DOCUMENTS ══════════════════════════════════════════ -->
-<div class="screen" id="screen-docs">
-  <div class="doc-tabs">
-    <button type="button" class="doc-tab-btn active" id="sdtab-sent" onclick="goStudentDocTab('sent',this)"><span class="doc-tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span><span>প্রেরিত</span></button>
-    <button type="button" class="doc-tab-btn" id="sdtab-received" onclick="goStudentDocTab('received',this)"><span class="doc-tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 5v14M5 12l7 7 7-7"/></svg></span><span>প্রাপ্ত</span></button>
-  </div>
-  <div class="list-scroll stu-doc-scroll">
-    <div id="sDocsSentPane">
-      <button type="button" class="stu-doc-upload" onclick="document.getElementById('fileInput').click()">
-        <span class="stu-doc-upload-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg></span>
-        <span class="stu-doc-upload-txt"><span class="stu-doc-upload-lbl">ফাইল পাঠান</span><span class="stu-doc-upload-hint">ছবি / PDF · সর্বোচ্চ ১০ MB</span></span>
-        <span class="stu-doc-upload-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9 18l6-6-6-6"/></svg></span>
-      </button>
-      <input type="file" id="fileInput" style="display:none" multiple accept="image/*,.pdf,.doc,.docx,.txt" onchange="handleFileSelect(this)">
-      <div id="uploadPreview" class="stu-doc-preview" style="display:none">
-        <div class="form-group"><label class="form-label">বিভাগ</label>
-          <select class="form-input" id="uploadCat">
-            <option value="general">সাধারণ</option>
-            <option value="question">রোযনামচা</option>
-            <option value="report">বিবরণ</option>
-          </select>
-        </div>
-        <div class="form-group"><label class="form-label">তথ্য (ঐচ্ছিক)</label><input class="form-input" id="uploadNote" placeholder="উস্তাদের জন্য তথ্য..."></div>
-        <div id="uploadProgressWrap" style="display:none"><div class="upload-progress"><div class="upload-progress-fill" id="uploadProgressFill" style="width:0%"></div></div></div>
-        <button class="btn-primary" onclick="confirmUpload()">উস্তাদের কাছে পাঠান</button>
-        <button class="btn-secondary" onclick="cancelUpload()">বাতিল</button>
-      </div>
-      <div class="stu-doc-sec">পাঠানো ফাইল</div>
-      <div class="stu-doc-list" id="sentDocsList"></div>
-    </div>
-    <div id="sDocsReceivedPane" style="display:none">
-      <div class="stu-doc-list" id="receivedDocsList"></div>
-    </div>
-  </div>
-</div>
-
 <!-- ══ GOALS ══════════════════════════════════════════════ -->
 <div class="screen" id="screen-goals">
-  <div class="rd-plan-seg rd-seg2" role="tablist">
+  <div class="rd-plan-seg rd-seg3" role="tablist">
     <button type="button" class="rd-plan-seg-btn on" data-khata="notes" onclick="goKhataTab('notes')">বিবরণ</button>
     <button type="button" class="rd-plan-seg-btn" data-khata="goals" onclick="goKhataTab('goals')">লক্ষ্য</button>
+    <button type="button" class="rd-plan-seg-btn" data-khata="docs" onclick="goKhataTab('docs')">ফাইল</button>
   </div>
   <div class="rd-khata-pane" id="khata-notes">
     <div class="list-scroll">
@@ -299,11 +261,40 @@ function skd(field){if(field==='id'){_skId=_skId.slice(0,-1);_skUpdateIdDisplay(
     <div style="height:20px"></div>
   </div>
   </div>
-</div>
-
-<!-- ══ আমি — প্রোফাইল, পরীক্ষা, ফাইল (js/student/today.js) ═══ -->
-<div class="screen" id="screen-me">
-  <div class="list-scroll rd-pad" id="mePane"></div>
+  <div class="rd-khata-pane" id="khata-docs" style="display:none">
+  <div class="doc-tabs">
+    <button type="button" class="doc-tab-btn active" id="sdtab-sent" onclick="goStudentDocTab('sent',this)"><span class="doc-tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span><span>প্রেরিত</span></button>
+    <button type="button" class="doc-tab-btn" id="sdtab-received" onclick="goStudentDocTab('received',this)"><span class="doc-tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 5v14M5 12l7 7 7-7"/></svg></span><span>প্রাপ্ত</span></button>
+  </div>
+  <div class="list-scroll stu-doc-scroll">
+    <div id="sDocsSentPane">
+      <button type="button" class="stu-doc-upload" onclick="document.getElementById('fileInput').click()">
+        <span class="stu-doc-upload-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg></span>
+        <span class="stu-doc-upload-txt"><span class="stu-doc-upload-lbl">ফাইল পাঠান</span><span class="stu-doc-upload-hint">ছবি / PDF · সর্বোচ্চ ১০ MB</span></span>
+        <span class="stu-doc-upload-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9 18l6-6-6-6"/></svg></span>
+      </button>
+      <input type="file" id="fileInput" style="display:none" multiple accept="image/*,.pdf,.doc,.docx,.txt" onchange="handleFileSelect(this)">
+      <div id="uploadPreview" class="stu-doc-preview" style="display:none">
+        <div class="form-group"><label class="form-label">বিভাগ</label>
+          <select class="form-input" id="uploadCat">
+            <option value="general">সাধারণ</option>
+            <option value="question">রোযনামচা</option>
+            <option value="report">বিবরণ</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">তথ্য (ঐচ্ছিক)</label><input class="form-input" id="uploadNote" placeholder="উস্তাদের জন্য তথ্য..."></div>
+        <div id="uploadProgressWrap" style="display:none"><div class="upload-progress"><div class="upload-progress-fill" id="uploadProgressFill" style="width:0%"></div></div></div>
+        <button class="btn-primary" onclick="confirmUpload()">উস্তাদের কাছে পাঠান</button>
+        <button class="btn-secondary" onclick="cancelUpload()">বাতিল</button>
+      </div>
+      <div class="stu-doc-sec">পাঠানো ফাইল</div>
+      <div class="stu-doc-list" id="sentDocsList"></div>
+    </div>
+    <div id="sDocsReceivedPane" style="display:none">
+      <div class="stu-doc-list" id="receivedDocsList"></div>
+    </div>
+  </div>
+  </div>
 </div>
 
 </div><!-- /stuMainShell -->
@@ -314,7 +305,6 @@ function skd(field){if(field==='id'){_skId=_skId.slice(0,-1);_skUpdateIdDisplay(
     <button type="button" class="tab-btn active" onclick="goTab('tasks')" id="tab-tasks"><span class="tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/></svg></span><span class="tab-lbl">আজ</span><span class="tab-badge" id="tBadge"></span></button>
     <button type="button" class="tab-btn" onclick="goTab('chat')" id="tab-chat"><span class="tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg></span><span class="tab-lbl">রিসালা</span><span class="tab-badge" id="urBadge"></span></button>
     <button type="button" class="tab-btn" onclick="goTab('goals')" id="tab-goals"><span class="tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span><span class="tab-lbl">খাতা</span></button>
-    <button type="button" class="tab-btn" onclick="goTab('me')" id="tab-me"><span class="tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span><span class="tab-lbl">আমি</span><span class="tab-badge" id="examBadge"></span></button>
   </div>
 </nav>
 

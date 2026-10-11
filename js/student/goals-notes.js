@@ -252,6 +252,7 @@ async function saveDailyNote(){
     dailyNoteForced=false;
     closeDailyNoteModal();
     renderDailyNotes();
+    if(document.getElementById('screen-chat')?.classList.contains('active')) renderChat();
     showToast(wasForced?'✅ পাক্ষিক বিবরণ জমা হয়েছে':'বিবরণ সেভ হয়েছে');
   }catch(e){
     console.error(e);

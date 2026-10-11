@@ -71,7 +71,7 @@ function renderSentDocs(){
 
 function goStudentDocTab(tab, btn){
   studentDocTab=tab;
-  document.querySelectorAll('#screen-docs .doc-tab-btn').forEach(b=>b.classList.remove('active')); if(btn) btn.classList.add('active');
+  document.querySelectorAll('#khata-docs .doc-tab-btn').forEach(b=>b.classList.remove('active')); if(btn) btn.classList.add('active');
   document.getElementById('sDocsSentPane').style.display     = tab==='sent'?'block':'none';
   document.getElementById('sDocsReceivedPane').style.display = tab==='received'?'block':'none';
   if(tab==='sent') renderSentDocs();

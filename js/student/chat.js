@@ -59,15 +59,30 @@ async function downloadStudentChatDoc(){
   const a=document.createElement('a'); a.href=data; a.download=meta.fileName||'file'; a.rel='noopener'; a.click();
 }
 
+/** বিবরণ কথোপকথনের ভেতরে — সময় অনুযায়ী বার্তার ফাঁকে ছোট কার্ড */
+function _chatNoteTs(n){ const t=Date.parse(`${n.date||''}T${String(n.time||'00:00').slice(0,5)}:00+06:00`); return t?t+59999:0; } // মিনিটের শেষ ধরে — একই মিনিটের বার্তার পরে বসে
+function _chatNoteCard(n){
+  const cat=API.StudentNotes&&API.StudentNotes.catLabel?API.StudentNotes.catLabel(n.categoryId):'বিবরণ';
+  const done=n.reviewStatus==='done';
+  return `<div class="msg-wrap out chat-note-wrap"><div class="chat-note-card">
+    <div class="cnc-hd">📖 বিবরণ জমা দিয়েছ · ${esc(cat)}</div>
+    ${n.title?`<b>${esc(n.title)}</b>`:''}<p>${esc(n.text||'')}</p>
+    <div class="cnc-ft"><span class="cnc-st${done?' done':''}">${done?'✓ পর্যালোচিত':'পর্যালোচনাধীন'}</span><span class="msg-time">${esc(String(n.time||'').slice(0,5))}</span><button type="button" onclick="goTab('goals');goKhataTab('notes')">খাতায় দেখো</button></div>
+  </div></div>`;
+}
 function renderChat(){
   const msgs=API.Messages.getThread(me.id); const el=document.getElementById('chatMsgs');
-  if(!msgs.length){ el.innerHTML='<div style="text-align:center;padding:40px;color:var(--gray-400);font-size:14px">📖 উস্তাদকে সালাম দিন! 👋</div>'; return; }
+  const notes=(API.StudentNotes?API.StudentNotes.getAll(me.id):[]).filter(n=>!isWeeklyReceiptNote(n)).map(n=>({n,ts:_chatNoteTs(n)})).sort((a,b)=>a.ts-b.ts);
+  if(!msgs.length&&!notes.length){ el.innerHTML='<div style="text-align:center;padding:40px;color:var(--gray-400);font-size:14px">📖 উস্তাদকে সালাম দিন! 👋</div>'; return; }
   const _todayStr=API.today();
   function _mds(m){ const ts=m._ts||parseInt(/^m(\d{13})/.exec(m.id)?.[1]||'0'); if(!ts) return null; return API.bdDateStr(ts); }
   function _dlbl(ds){ if(!ds) return null; if(ds===_todayStr) return 'আজ'; const d=new Date(ds+'T00:00:00Z'); return `${d.getUTCDate()}/${d.getUTCMonth()+1}/${d.getUTCFullYear()}`; }
-  let h='', _lastDs=null;
+  let h='', _lastDs=null, _ni=0;
+  function _sep(ds){ if(ds&&ds!==_lastDs){ const _l=_dlbl(ds); if(_l) h+=`<div class="msg-date-sep"><span>${_l}</span></div>`; _lastDs=ds; } }
+  function _flushNotes(upTo){ while(_ni<notes.length&&notes[_ni].ts<=upTo){ const x=notes[_ni++]; _sep(x.n.date||null); h+=_chatNoteCard(x.n); } }
   msgs.forEach(m=>{
-    const _ds=_mds(m); if(_ds&&_ds!==_lastDs){ const _l=_dlbl(_ds); if(_l) h+=`<div class="msg-date-sep"><span>${_l}</span></div>`; _lastDs=_ds; }
+    const _mts=m._ts||parseInt(/^m(\d{13})/.exec(m.id)?.[1]||'0'); if(_mts) _flushNotes(_mts);
+    const _ds=_mds(m); _sep(_ds);
     const replyRef=m.replyTo?`<div class="msg-reply-ref" onclick="scrollToMsg('${m.replyTo.id}')"><div class="rr-sender">${esc(m.replyTo.senderLabel||'')}</div><div class="rr-text">${esc(m.replyTo.text||'')}</div></div>`:'';
     const swiIcon=`<div class="swipe-reply-icon">↩</div>`;
     if(m.type==='task'){
@@ -95,6 +110,7 @@ function renderChat(){
       }
     }
   });
+  _flushNotes(Infinity);
   el.innerHTML=h; setTimeout(()=>el.scrollTop=9e9,50);
 }
 async function openStudentMsgEdit(mid){

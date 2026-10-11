@@ -1,23 +1,19 @@
 /* Waqful Madinah — js/student/exams.js: exams / quiz taking */
 // ══ EXAMS ══════════════════════════════════════════════════
-function renderExamList(){
-  const quizzes=API.Exams.getQuizzesForStudent(me.id);
-  const el=document.getElementById('examList');
-  if(!quizzes.length){ el.innerHTML='<div class="empty-state"><div class="icon">📝</div><p>কোনো পরীক্ষা নেই।</p></div>'; return; }
-  el.innerHTML=quizzes.map(q=>{
-    const sub=API.Exams.getSubmission(q.id,me.id);
-    const isDone=!!sub;
-    return `<div class="exam-card">
+/** এক পরীক্ষার কার্ড — «আজ»-এর পরীক্ষা অংশে ব্যবহৃত */
+function examCardHtml(q){
+  const sub=API.Exams.getSubmission(q.id,me.id);
+  return `<div class="exam-card">
       <div class="exam-card-hd">
         <div class="exam-card-icon">📝</div>
         <div class="exam-card-info">
           <div class="exam-card-title">${esc(q.title)}</div>
           <div class="exam-card-meta">${esc(q.subject||'')} · ${q.questions?.length||0}টি প্রশ্ন · ${q.timeLimit} মিনিট</div>
-          ${q.deadline?`<div class="exam-card-meta">📅 শেষ তারিখ: ${q.deadline}</div>`:''}
+          ${q.deadline&&!sub?`<div class="exam-card-meta">📅 শেষ তারিখ: ${q.deadline}</div>`:''}
         </div>
       </div>
       <div class="exam-card-ft">
-        ${isDone
+        ${sub
           ? (sub.needsManualGrade
             ? `<span class="exam-done-chip">✅ জমা দেওয়া হয়েছে · ফলাফল অপেক্ষায়</span>`
             : `<span class="${sub.passed?'exam-done-chip':'exam-fail-chip'}">${sub.passed?'✅':'❌'} ${sub.score}/${sub.total} নম্বর · ${sub.passed?'উত্তীর্ণ':'অনুত্তীর্ণ'}</span>`)
@@ -25,7 +21,6 @@ function renderExamList(){
         }
       </div>
     </div>`;
-  }).join('');
 }
 
 function startQuiz(qid){
@@ -182,7 +177,7 @@ async function submitQuiz(auto=false){
   } else {
     showToast(`${sub.passed?'✅ উত্তীর্ণ':'❌ অনুত্তীর্ণ'} · ${sub.score}/${sub.total} নম্বর`,4000);
   }
-  renderExamList(); updateBadges();
+  renderTaskList(); updateBadges();
 }
 function exitQuiz(){
   if(activeQuizAudioId) stopQuizAudio(activeQuizAudioId,false);
@@ -197,7 +192,7 @@ function exitQuiz(){
     qv.removeEventListener('transitionend', onQte);
     var _sbn2=document.getElementById('stuBottomNav'); if(_sbn2) _sbn2.style.display='block';
     document.querySelector('.header').style.display='flex';
-    goTab('exams');
+    goTab('tasks');
   }
   function onQte(e){
     if(e.propertyName!=='transform') return;
@@ -215,7 +210,6 @@ function exitQuiz(){
 }
 
 function updateExamBadge(){
-  const n=API.Exams.getQuizzesForStudent(me?.id||'').filter(q=>!API.Exams.getSubmission(q.id,me?.id||'')).length;
-  const b=document.getElementById('examBadge'); b.textContent=n; b.classList.toggle('show',n>0);
+  // বাকি পরীক্ষা এখন «আজ» ট্যাবের ব্যাজে যোগ হয় (updateBadges)
   syncAppBadge();
 }

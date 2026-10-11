@@ -59,42 +59,29 @@ function renderTodayDue(){
 }
 
 function goKhataTab(tab){
-  _khataTab=tab==='goals'?'goals':'notes';
+  _khataTab=['goals','docs'].includes(tab)?tab:'notes';
   document.querySelectorAll('[data-khata]').forEach(b=>b.classList.toggle('on',b.dataset.khata===_khataTab));
-  const n=document.getElementById('khata-notes'), g=document.getElementById('khata-goals');
-  if(n) n.style.display=_khataTab==='notes'?'':'none';
-  if(g) g.style.display=_khataTab==='goals'?'':'none';
-  if(_khataTab==='notes') renderDailyNotes(); else renderGoals();
+  ['notes','goals','docs'].forEach(k=>{ const el=document.getElementById('khata-'+k); if(el) el.style.display=_khataTab===k?'':'none'; });
+  if(_khataTab==='notes') renderDailyNotes();
+  else if(_khataTab==='goals') renderGoals();
+  else { renderSentDocs(); renderReceivedDocs(); }
 }
 
-function _meRow(icon,tone,title,sub,onclick,count){
-  return `<button type="button" class="rd-menu-row" onclick="${onclick}"><span class="rd-menu-ic ${tone}">${srdIcon(icon)}</span><span class="rd-menu-t"><b>${title}</b>${sub?`<span>${sub}</span>`:''}</span>${count?`<span class="rd-cnt">${srdBn(count)}</span>`:''}${srdIcon('chevR')}</button>`;
+// ══ «আজ» › পরীক্ষার ফলাফল — আমলের তালিকার নিচে (দেওয়ার বাকি পরীক্ষা ওপরে «সামনে যা আছে»-তে) ══
+let _todayExamsAll=false;
+function todayExamsHtml(){
+  if(!me) return '';
+  const quizzes=API.Exams.getQuizzesForStudent(me.id);
+  if(!quizzes.length) return '';
+  const done=quizzes.filter(q=>API.Exams.getSubmission(q.id,me.id))
+    .sort((a,b)=>String(API.Exams.getSubmission(b.id,me.id).submittedAt||'').localeCompare(String(API.Exams.getSubmission(a.id,me.id).submittedAt||'')));
+  const shown=_todayExamsAll?done:done.slice(0,3);
+  const more=done.length>3?`<button type="button" class="rd-pill ghost stu-exams-more" onclick="_todayExamsAll=!_todayExamsAll;renderTaskList()">${_todayExamsAll?'কম দেখাও':`সব ফলাফল (${srdBn(done.length)})`}</button>`:'';
+  if(!done.length) return '';
+  return `<div class="stu-today-exams" id="todayExams">
+    <div class="stu-today-sec">পরীক্ষার ফলাফল</div>
+    ${shown.map(examCardHtml).join('')}${more}
+  </div>`;
 }
-function renderMe(){
-  const el=document.getElementById('mePane'); if(!el||!me) return;
-  const exams=API.Exams.getQuizzesForStudent(me.id);
-  const openExams=exams.filter(q=>!API.Exams.getSubmission(q.id,me.id)).length;
-  const days=typeof waqfDaysSinceEnrollment==='function'?waqfDaysSinceEnrollment(me):null;
-  const prog=API.Tasks.getListProgress(me.id);
-  el.innerHTML=`
-  <div class="rd-arch rd-me-hero">
-    <span class="rd-av lg c1">${esc(String(me.name||'?').slice(0,1))}</span>
-    <h3>${esc(me.name||'')}</h3>
-    <p>${[me.waqfId?'ওয়াকফ '+srdBn(API.Students.displayWaqfId(me.waqfId)):'',me.cls||'',days!=null&&days>=0?srdBn(days)+'তম দিন':''].filter(Boolean).map(esc).join(' · ')}</p>
-    <div class="rd-mini3">
-      <div class="rd-mini"><b>${srdBn(Math.max(0,Math.min(100,prog.percent|0)))}%</b><span>মোট আমল</span></div>
-      <div class="rd-mini"><b>${srdBn(exams.length)}</b><span>পরীক্ষা</span></div>
-      <div class="rd-mini"><b>${srdBn(API.Docs.getForStudent?API.Docs.getForStudent(me.id).length:0)}</b><span>ফাইল</span></div>
-    </div>
-  </div>
-  <div class="rd-card rd-menu" style="margin-top:14px">
-    ${_meRow('pen','tone-rose','পরীক্ষা','উস্তাদের দেওয়া সব পরীক্ষা ও ফলাফল',"goTab('exams')",openExams)}
-    ${_meRow('folder','tone-plum','ফাইল','উস্তাদকে পাঠানো ও উস্তাদের পাঠানো ফাইল',"goTab('docs')")}
-  </div>
-  <div class="rd-sec-h"><h4>অ্যাকাউন্ট</h4></div>
-  <div class="rd-card rd-menu">
-    ${_meRow('lock','tone-sky','প্রোফাইল ও পিন','ছবি বদলান, নতুন পিন দিন',"openStudentSelfProfile()")}
-    ${_meRow('out','tone-butter','লগআউট','এই ডিভাইস থেকে বের হন',"logout()")}
-  </div>
-  <div class="rd-bottom-space"></div>`;
-}
+
+

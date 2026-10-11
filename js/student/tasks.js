@@ -38,7 +38,8 @@ function renderTaskList(f){
     h+='<div class="stu-onetime-section-title">এককালীন আমল</div>';
     onetime.forEach(t=>{ h+=atCardHtml(t); });
   }
-  el.innerHTML=h? h+'<div style="height:20px"></div>' : '';
+  const ex=typeof todayExamsHtml==='function'?todayExamsHtml():'';
+  el.innerHTML=(h||ex)? h+ex+'<div style="height:20px"></div>' : '';
 }
 function weekDatesFor(date){
   if(window.ApiAmal&&ApiAmal.getWeekDates) return ApiAmal.getWeekDates(date||API.today());
