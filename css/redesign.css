@@ -381,17 +381,12 @@ button.rd-mini{cursor:pointer}
 .rd-settings-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
 .rd-settings-hd .modal-title{margin:0}
 
-/* ── আজ: প্রতিজন আলাদা রঙের বাক্স (＋ মেনুর রংগুলো) ── */
+/* ── আজ: নিরপেক্ষ বাক্স, হালকা বর্ডার; কাউন্ট সবুজে সাদা ── */
 .rd-hfilters{justify-content:center}
 .rd-hlist{display:grid;gap:8px;padding:0;background:none}
-.rd-hrow{--tn-bg:var(--rd-tint);--tn-deep:var(--rd-accent);background:var(--tn-bg);border:0!important;border-radius:18px}
-.rd-hrow.tn-1{--tn-bg:var(--rd-rose-tint);--tn-deep:var(--rd-rose-deep)}
-.rd-hrow.tn-2{--tn-bg:var(--rd-sky-tint);--tn-deep:var(--rd-sky-deep)}
-.rd-hrow.tn-3{--tn-bg:var(--rd-butter-tint);--tn-deep:var(--rd-butter-deep)}
-.rd-hrow.tn-4{--tn-bg:var(--rd-plum-tint);--tn-deep:var(--rd-plum-deep)}
-.rd-hrow.tn-5{--tn-bg:#E3F1EF;--tn-deep:#2B6F66}
-#todayList .rd-hrow .rd-av{background:rgb(255 255 255 / .75)!important;color:var(--tn-deep)!important}
-.rd-hrow-top b{color:var(--tn-deep)}
+.rd-hrow{--tn-deep:var(--rd-ink-2);background:var(--rd-surface-2);border:1px solid var(--rd-line)!important;border-radius:18px}
+#todayList .rd-hrow .rd-av{background:var(--rd-bg)!important;color:var(--rd-ink-2)!important}
+.rd-hrow-top b{color:var(--rd-ink)}
 #teaMainShell .header-actions{gap:6px}
 #teaMainShell .header-btn{width:36px;height:36px}
 #teaMainShell .header-btn svg{width:18px;height:18px}
@@ -402,7 +397,7 @@ button.rd-mini{cursor:pointer}
 .rd-hrow-nm b{flex:none;max-width:60%;overflow:hidden;text-overflow:ellipsis}
 #todayList .rd-hrow-sum{display:block;flex:1;min-width:0;font-size:12.5px;color:var(--tn-deep);opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #todayList .rd-hrow-sum::before{content:"· "}
-.rd-hrow-cnt{background:var(--tn-deep)!important;color:#fff!important}
+.rd-hrow-cnt{background:var(--rd-accent)!important;color:#fff!important}
 /* ছাত্রের পাতা: ট্যাবে কয়টা বাকি; নামের পাশে জিম্মাদারের নোট */
 .cs-tab{position:relative}
 .cs-tab-cnt{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-inline-start:4px;border-radius:99px;background:var(--rd-accent);color:#fff;font-size:11px;font-weight:700;line-height:1}
