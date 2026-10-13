@@ -30,6 +30,9 @@ function Run-PrivateProcess([string]$Binary, [string[]]$Arguments, [string]$Inpu
       'DATABASE_AUTH_FAILED' { throw 'Database password/authorization যাচাই ব্যর্থ হয়েছে। Database password আবার দিন; এটি অ্যাপের PIN নয়।' }
       'DATABASE_NETWORK_FAILED' { throw 'নেটওয়ার্কের কারণে database-এ পৌঁছানো যায়নি; password ভুল প্রমাণিত হয়নি।' }
       'DATABASE_TLS_FAILED' { throw 'Database-এর TLS/certificate যাচাই ব্যর্থ হয়েছে; password ভুল প্রমাণিত হয়নি।' }
+      'DATABASE_SECRET_WRITE_FAILED' { throw 'Database login সফল হয়েছে, কিন্তু GitHub Secret লেখা ব্যর্থ হয়েছে। Password আবার দেওয়ার প্রয়োজন নেই; GitHub access ঠিক করতে হবে।' }
+      'DATABASE_AUTH_COOLDOWN' { throw 'একাধিক authentication ব্যর্থতার পরে pooler সাময়িকভাবে আটকে আছে। কিছুক্ষণ অপেক্ষা করে আবার চেষ্টা করতে হবে।' }
+      'DATABASE_POOLER_CONFIG_FAILED' { throw 'Pooler database/user configuration মেলেনি; password ভুল প্রমাণিত হয়নি।' }
       'DATABASE_CONNECTION_FAILED' { throw 'Database connection/setup ব্যর্থ হয়েছে; password ভুল হয়েছে কি না নিশ্চিত নয়।' }
       default { throw 'A setup tool failed. Check sign-in, installed tools and access. Raw output is hidden to protect credentials.' }
     }
@@ -72,9 +75,18 @@ if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { throw 'Install/sign i
 if ($DatabaseOnly) {
   $poolerPath = Join-Path $PSScriptRoot '..\supabase\.temp\pooler-url'
   if (-not (Test-Path -LiteralPath $poolerPath)) { throw 'Linked Session pooler URL not available.' }
+  $poolerUrl = [IO.File]::ReadAllText($poolerPath).Trim()
+  $poolerHost = ([Uri]$poolerUrl).Host
+  $resolvedAddresses = @()
+  try {
+    # Windows' trust store can resolve HTTPS DNS even when local DNS/Node HTTPS
+    # is blocked. Only connection lookup changes; PostgreSQL TLS/SNI stays verified.
+    $dnsReply = Invoke-RestMethod -Uri ('https://dns.google/resolve?name='+[Uri]::EscapeDataString($poolerHost)+'&type=A')
+    $resolvedAddresses = @($dnsReply.Answer | Where-Object type -eq 1 | Select-Object -ExpandProperty data)
+  } catch { Write-Host 'HTTPS DNS unavailable; attempting normal database DNS.' }
   $password = Get-PrivateInput 'Enter the Supabase DATABASE password (not your app PIN; input is hidden)'
   try {
-    $inputData = @{poolerUrl=([IO.File]::ReadAllText($poolerPath).Trim()); password=$password; repository=$Repository} | ConvertTo-Json -Compress
+    $inputData = @{poolerUrl=$poolerUrl; password=$password; repository=$Repository; resolvedAddresses=$resolvedAddresses} | ConvertTo-Json -Compress
     Write-Host (Run-PrivateProcess 'node' @((Join-Path $PSScriptRoot 'configure-database.mjs')) $inputData)
   } finally { $password=$null; $inputData=$null }
   return

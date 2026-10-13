@@ -9,6 +9,7 @@ import pg from 'pg';
 import { assertConfig, selected, quoteIdent, slotFor, due, hash, safeSegment, validateMarker, retentionPlan,
   digestFile, command, validateObjectPath, removeTempDirectory, BACKUP_NAME, OBJECT_NAME } from './lib.mjs';
 import { countCopyRows, verifyCounts } from './verify.mjs';
+import { connectionOptions } from './database-connect.mjs';
 
 const config = JSON.parse(await readFile(new URL('./config.json', import.meta.url), 'utf8'));
 assertConfig(config);
@@ -74,10 +75,7 @@ function connectionEnv(url) {
     PGSSLROOTCERT: process.env.PGSSLROOTCERT || 'system', PGCONNECT_TIMEOUT: '30' };
 }
 function pgConfig(databaseUrl) {
-  const url = new URL(databaseUrl);
-  // pg's URL sslmode options otherwise overwrite the explicit TLS verification setting.
-  for (const key of ['sslmode', 'sslcert', 'sslkey', 'sslrootcert']) url.searchParams.delete(key);
-  return { connectionString: url.toString(), ssl: { rejectUnauthorized: true }, connectionTimeoutMillis: 30000 };
+  return connectionOptions(databaseUrl);
 }
 async function snapshotProject(project, root, previous, databaseUrl, serviceKey) {
   const startedAt = new Date().toISOString();
