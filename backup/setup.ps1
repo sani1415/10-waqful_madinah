@@ -25,7 +25,15 @@ function Run-PrivateProcess([string]$Binary, [string[]]$Arguments, [string]$Inpu
   $process.WaitForExit()
   $outputText = $outTask.GetAwaiter().GetResult()
   $null = $errTask.GetAwaiter().GetResult()
-  if ($process.ExitCode -ne 0) { throw 'A setup tool failed. Check sign-in, installed tools and access. Raw output is hidden to protect credentials.' }
+  if ($process.ExitCode -ne 0) {
+    switch ($outputText.Trim()) {
+      'DATABASE_AUTH_FAILED' { throw 'Database password/authorization যাচাই ব্যর্থ হয়েছে। Database password আবার দিন; এটি অ্যাপের PIN নয়।' }
+      'DATABASE_NETWORK_FAILED' { throw 'নেটওয়ার্কের কারণে database-এ পৌঁছানো যায়নি; password ভুল প্রমাণিত হয়নি।' }
+      'DATABASE_TLS_FAILED' { throw 'Database-এর TLS/certificate যাচাই ব্যর্থ হয়েছে; password ভুল প্রমাণিত হয়নি।' }
+      'DATABASE_CONNECTION_FAILED' { throw 'Database connection/setup ব্যর্থ হয়েছে; password ভুল হয়েছে কি না নিশ্চিত নয়।' }
+      default { throw 'A setup tool failed. Check sign-in, installed tools and access. Raw output is hidden to protect credentials.' }
+    }
+  }
   return $outputText
 }
 function Get-PrivateInput([string]$Prompt) {
