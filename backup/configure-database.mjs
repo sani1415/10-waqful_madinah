@@ -5,7 +5,7 @@ import { command } from './lib.mjs';
 import pg from 'pg';
 import { connectionOptions } from './database-connect.mjs';
 let raw = ''; for await (const chunk of process.stdin) raw += chunk;
-const { poolerUrl, password, repository, resolvedAddresses = [] } = JSON.parse(raw);
+const { poolerUrl, password, repository, resolvedAddresses = [], verifyLocally = true } = JSON.parse(raw);
 raw = '';
 const url = new URL(poolerUrl);
 const config = JSON.parse(await readFile(new URL('./config.json', import.meta.url), 'utf8'));
@@ -16,6 +16,12 @@ const client = new pg.Client(connectionOptions(url.toString(), resolvedAddresses
 let outcome = 'DATABASE_CONNECTION_FAILED';
 let phase = 'CONNECT', safeErrorCode = null;
 try {
+  if (!verifyLocally) {
+    phase = 'SECRET_WRITE';
+    await command('gh', ['secret','set','BACKUP_DATABASE_URL','--repo',repository], { stdin: url.toString() });
+    outcome = 'SAVED_FOR_CLOUD_CHECK';
+    console.log('Password saved securely. GitHub will verify the database connection; local network settings were not changed.');
+  } else {
   await client.connect();
   phase = 'READ_ONLY_CHECK';
   await client.query('BEGIN READ ONLY');
@@ -26,6 +32,7 @@ try {
   await command('gh', ['secret','set','BACKUP_DATABASE_URL','--repo',repository], { stdin: url.toString() });
   outcome = 'SUCCESS';
   console.log('Read-only database connection verified and GitHub Secret configured.');
+  }
 } catch (error) {
   // Only fixed status codes go to the local prompt. Never expose raw driver errors,
   // connection URLs, passwords or command output.

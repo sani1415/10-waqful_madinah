@@ -86,7 +86,7 @@ if ($DatabaseOnly) {
   } catch { Write-Host 'HTTPS DNS unavailable; attempting normal database DNS.' }
   $password = Get-PrivateInput 'Enter the Supabase DATABASE password (not your app PIN; input is hidden)'
   try {
-    $inputData = @{poolerUrl=$poolerUrl; password=$password; repository=$Repository; resolvedAddresses=$resolvedAddresses} | ConvertTo-Json -Compress
+    $inputData = @{poolerUrl=$poolerUrl; password=$password; repository=$Repository; resolvedAddresses=$resolvedAddresses; verifyLocally=$false} | ConvertTo-Json -Compress
     Write-Host (Run-PrivateProcess 'node' @((Join-Path $PSScriptRoot 'configure-database.mjs')) $inputData)
   } finally { $password=$null; $inputData=$null }
   return

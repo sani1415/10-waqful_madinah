@@ -19,9 +19,10 @@ export function lookupWithFallback(hostname, options, callback) {
 export function connectionOptions(databaseUrl, resolvedAddresses = []) {
   const url = new URL(databaseUrl);
   for (const key of ['sslmode','sslcert','sslkey','sslrootcert']) url.searchParams.delete(key);
-  return {
-    connectionString: url.toString(), ssl: { rejectUnauthorized: true }, connectionTimeoutMillis: 30000,
-    stream: () => {
+  const result = { connectionString: url.toString(), ssl: { rejectUnauthorized: true }, connectionTimeoutMillis: 30000 };
+  // Cloud runners use pg's normal stream. The custom lookup is only needed for
+  // the Windows setup's HTTPS-resolved addresses.
+  if (resolvedAddresses.length) result.stream = () => {
       const socket = new net.Socket();
       socket.connect = function (port, host) {
         // Keep the hostname intact for TLS/SNI verification; only DNS lookup falls back.
@@ -33,6 +34,6 @@ export function connectionOptions(databaseUrl, resolvedAddresses = []) {
         return net.Socket.prototype.connect.call(this, { port, host, lookup });
       };
       return socket;
-    }
-  };
+    };
+  return result;
 }

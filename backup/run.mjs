@@ -201,5 +201,9 @@ async function main() {
   if (failures) throw new Error(`${failures} project backup(s) failed. Previous successful snapshots remain available.`);
 }
 try { await main(); }
-catch (error) { console.error(error instanceof pg.DatabaseError ? 'Database read failed; check connection, grants and runtime.' : error.message); process.exitCode = 1; }
+catch (error) {
+  console.error(['28P01','28000'].includes(error.code) ? 'Database password/authorization rejected (AUTH_FAILED).'
+    : error instanceof pg.DatabaseError ? `Database read failed (${error.code || 'UNKNOWN'}); check connection, grants and runtime.` : error.message);
+  process.exitCode = 1;
+}
 finally { if (db) { await db.query('ROLLBACK').catch(() => {}); await db.end(); } await removeTempDirectory(temp, 'waqf-backup-'); }
