@@ -1,0 +1,12 @@
+{
+  "name": "waqf-idarah-backups",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "backup": "node run.mjs",
+    "verify": "node verify.mjs"
+  },
+  "dependencies": { "pg": "8.20.0" },
+  "engines": { "node": ">=22" }
+}

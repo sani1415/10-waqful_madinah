@@ -1,0 +1,108 @@
+name: Supabase backups to OneDrive
+
+on:
+  schedule:
+    # Daily wake-up, 02:17 Asia/Dhaka. The script backs up only every third day.
+    # A */3 day-of-month expression would reset the interval at month boundaries.
+    - cron: '17 20 * * *'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Take a new snapshot even if the three-day interval has not elapsed
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: supabase-onedrive-backups
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      BACKUP_AGE_RECIPIENT: ${{ secrets.BACKUP_AGE_RECIPIENT }}
+      BACKUP_TOKEN_ENCRYPTION_KEY: ${{ secrets.BACKUP_TOKEN_ENCRYPTION_KEY }}
+      BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.BACKUP_SUPABASE_SERVICE_ROLE_KEY }}
+      PG_DUMP_BIN: /usr/lib/postgresql/17/bin/pg_dump
+      PG_RESTORE_BIN: /usr/lib/postgresql/17/bin/pg_restore
+    steps:
+      - name: Checkout reviewed backup code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backup/package-lock.json
+      - name: Check required secrets and write private OneDrive config
+        id: credentials
+        env:
+          RCLONE_CONFIG_B64: ${{ secrets.RCLONE_CONFIG_B64 }}
+        run: |
+          export RCLONE_CONFIG="$RUNNER_TEMP/backup-rclone.conf"
+          printf 'RCLONE_CONFIG=%s\n' "$RCLONE_CONFIG" >> "$GITHUB_ENV"
+          node --input-type=module <<'JS'
+          import {writeFileSync} from 'node:fs';
+          for (const name of ['RCLONE_CONFIG_B64','BACKUP_DATABASE_URL','SUPABASE_SERVICE_ROLE_KEY','BACKUP_AGE_RECIPIENT','BACKUP_TOKEN_ENCRYPTION_KEY']) {
+            if (!process.env[name]) throw new Error(`Missing repository secret: ${name}`);
+          }
+          writeFileSync(process.env.RCLONE_CONFIG, Buffer.from(process.env.RCLONE_CONFIG_B64,'base64'), {mode:0o600});
+          JS
+      - name: Load latest encrypted Microsoft credential state
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node backup/load-credentials.mjs
+      - name: Install backup tools from official distribution repositories
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common ca-certificates rclone age
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+      - name: Install locked backup dependencies and check retention rules
+        working-directory: backup
+        run: |
+          npm ci --ignore-scripts
+          npm test
+      - name: Back up due projects, verify uploads, retain latest three
+        env:
+          FORCE_BACKUP: ${{ inputs.force }}
+        working-directory: backup
+        run: |
+          if [ "$FORCE_BACKUP" = "true" ]; then
+            node run.mjs --force
+          else
+            node run.mjs
+          fi
+      - name: Persist rotated Microsoft refresh token
+        id: rotation
+        if: always() && steps.credentials.outcome == 'success'
+        working-directory: backup
+        env:
+          CREDENTIAL_STATE_FILE: ${{ runner.temp }}/onedrive-state.enc.json
+        run: node rotate-credentials.mjs
+      - name: Save encrypted credential state for the next run
+        if: always() && steps.rotation.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: backup-onedrive-credentials
+          path: ${{ runner.temp }}/onedrive-state.enc.json
+          retention-days: 90
+          if-no-files-found: error
+      - name: Remove runner credentials
+        if: always()
+        run: |
+          if [ -n "${RCLONE_CONFIG:-}" ]; then
+            rm -f -- "$RCLONE_CONFIG"
+          fi
+
+      # Only authenticated encrypted OAuth state is an artifact, never plaintext
+      # tokens, recovery keys, database dumps or Storage files.

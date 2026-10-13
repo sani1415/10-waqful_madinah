@@ -1,0 +1,23 @@
+{
+  "projectRef": "bbdtoucanihtrymzpynq",
+  "remoteRoot": "onedrive:2-Documents/Database Backups",
+  "intervalDays": 3,
+  "keep": 3,
+  "slotHourUtc": 20,
+  "slotMinuteUtc": 17,
+  "schemaContext": ["public", "private"],
+  "projects": [
+    {
+      "id": "waqf",
+      "folder": "Waqful Madinah",
+      "prefixes": { "public": ["waqf_"], "private": ["waqf_"] },
+      "buckets": ["waqf-files"]
+    },
+    {
+      "id": "idarah",
+      "folder": "1-idarah",
+      "prefixes": { "public": ["mdr_"], "private": ["mdr_"] },
+      "buckets": ["mdr-program-receipts", "dept-expense-receipts", "mdr-student-documents", "student-photos"]
+    }
+  ]
+}
