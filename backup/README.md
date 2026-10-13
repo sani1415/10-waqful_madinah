@@ -28,6 +28,8 @@ Secret নাম: `BACKUP_DATABASE_URL`, `BACKUP_SUPABASE_SERVICE_ROLE_KEY`, `BA
 
 ## সময়সূচি ও retention
 
+Database TLS uses `supabase-ca.crt`, downloaded over verified HTTPS from Supabase's certificate distribution at https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt. Both the Node connection and PostgreSQL tools verify the certificate and hostname; validation is never disabled. The bundled root expires in April 2031 and must be refreshed if Supabase rotates its CA. See https://supabase.com/docs/guides/platform/ssl-enforcement.
+
 - GitHub প্রতিদিন বাংলাদেশ সময় **রাত ২:১৭**-এ জাগায়; script OneDrive-এর সর্বশেষ `complete.json` দেখে তিন দিনের schedule interval পূর্ণ না হলে **কোনো database/Storage backup নেয় না**। Daily wake-up = daily backup নয়। মাসের boundary-তে `*/3` cron-এর ভুল ব্যবধান হয় না; দেরিতে upload শেষ হলেও interval চার দিন হয়ে যায় না।
 - GitHub schedule দেরি/মিস করতে পারে; মিস হলে পরের wake-up-এ overdue backup হবে। Exact-to-the-second SLA নয়। প্রথম manual run দিয়ে cadence শুরু করা যায়; force run cadence পুনর্নির্ধারণ করে।
 - Snapshot → encryption → upload → remote bytes download করে SHA-256 যাচাই → `complete.json` সর্বশেষে publish → সর্বশেষ তিনটির বাইরে পুরোনো **completed** folder সরানো। Verification ব্যর্থ বা marker corrupt হলে rotation বন্ধ হয়। অসম্পূর্ণ upload folder স্বয়ংক্রিয়ভাবে successful বলে গণনা/মোছা হয় না।

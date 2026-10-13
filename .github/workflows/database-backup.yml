@@ -57,6 +57,7 @@ jobs:
           writeFileSync(process.env.RCLONE_CONFIG, Buffer.from(process.env.RCLONE_CONFIG_B64,'base64'), {mode:0o600});
           JS
       - name: Load latest encrypted Microsoft credential state
+        id: credential_state
         env:
           GH_TOKEN: ${{ github.token }}
         run: node backup/load-credentials.mjs
@@ -84,7 +85,7 @@ jobs:
           fi
       - name: Persist rotated Microsoft refresh token
         id: rotation
-        if: always() && steps.credentials.outcome == 'success'
+        if: always() && steps.credential_state.outcome == 'success'
         working-directory: backup
         env:
           CREDENTIAL_STATE_FILE: ${{ runner.temp }}/onedrive-state.enc.json

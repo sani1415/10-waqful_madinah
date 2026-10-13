@@ -2,6 +2,7 @@ import { readFile, writeFile, mkdir, mkdtemp, rm, stat } from 'node:fs/promises'
 import { createWriteStream } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
@@ -9,7 +10,7 @@ import pg from 'pg';
 import { assertConfig, selected, quoteIdent, slotFor, due, hash, safeSegment, validateMarker, retentionPlan,
   digestFile, command, validateObjectPath, removeTempDirectory, BACKUP_NAME, OBJECT_NAME } from './lib.mjs';
 import { countCopyRows, verifyCounts } from './verify.mjs';
-import { connectionOptions } from './database-connect.mjs';
+import { connectionOptions, databaseCaPath } from './database-connect.mjs';
 
 const config = JSON.parse(await readFile(new URL('./config.json', import.meta.url), 'utf8'));
 assertConfig(config);
@@ -72,7 +73,7 @@ function connectionEnv(url) {
     && !(u.hostname.endsWith('.pooler.supabase.com') && decodeURIComponent(u.username).endsWith(`.${config.projectRef}`))) throw new Error('Database connection does not match configured Supabase project');
   return { ...process.env, PGHOST: u.hostname, PGPORT: u.port || '5432', PGDATABASE: u.pathname.slice(1) || 'postgres',
     PGUSER: decodeURIComponent(u.username), PGPASSWORD: decodeURIComponent(u.password), PGSSLMODE: 'verify-full',
-    PGSSLROOTCERT: process.env.PGSSLROOTCERT || 'system', PGCONNECT_TIMEOUT: '30' };
+    PGSSLROOTCERT: fileURLToPath(databaseCaPath), PGCONNECT_TIMEOUT: '30' };
 }
 function pgConfig(databaseUrl) {
   return connectionOptions(databaseUrl);

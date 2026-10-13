@@ -1,5 +1,8 @@
 import dns from 'node:dns';
 import net from 'node:net';
+import { readFileSync } from 'node:fs';
+
+export const databaseCaPath = new URL('./supabase-ca.crt', import.meta.url);
 
 export function lookupWithFallback(hostname, options, callback) {
   dns.lookup(hostname, options, async (error, address, family) => {
@@ -19,7 +22,7 @@ export function lookupWithFallback(hostname, options, callback) {
 export function connectionOptions(databaseUrl, resolvedAddresses = []) {
   const url = new URL(databaseUrl);
   for (const key of ['sslmode','sslcert','sslkey','sslrootcert']) url.searchParams.delete(key);
-  const result = { connectionString: url.toString(), ssl: { rejectUnauthorized: true }, connectionTimeoutMillis: 30000 };
+  const result = { connectionString: url.toString(), ssl: { rejectUnauthorized: true, ca: readFileSync(databaseCaPath, 'utf8') }, connectionTimeoutMillis: 30000 };
   // Cloud runners use pg's normal stream. The custom lookup is only needed for
   // the Windows setup's HTTPS-resolved addresses.
   if (resolvedAddresses.length) result.stream = () => {

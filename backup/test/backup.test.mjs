@@ -9,6 +9,18 @@ import { countCopyRows, verifyCounts } from '../verify.mjs';
 import config from '../config.json' with { type: 'json' };
 import { sealConfig, openConfig } from '../credential-state.mjs';
 import { randomBytes } from 'node:crypto';
+import { X509Certificate } from 'node:crypto';
+import { connectionOptions } from '../database-connect.mjs';
+
+test('database TLS trusts the vendor CA while retaining hostname verification', () => {
+  const options = connectionOptions('postgresql://postgres:synthetic@aws-1-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require');
+  assert.equal(options.ssl.rejectUnauthorized, true);
+  assert.equal(new URL(options.connectionString).searchParams.has('sslmode'), false);
+  const ca = new X509Certificate(options.ssl.ca);
+  assert.equal(ca.ca, true);
+  assert.match(ca.subject, /Supabase Root 2021 CA/);
+  assert.ok(Date.parse(ca.validTo) > Date.now());
+});
 
 test('rotated Microsoft credential state is authenticated and repository-bound', () => {
   const key = randomBytes(32).toString('base64'), plain = Buffer.from('synthetic OAuth fixture');
