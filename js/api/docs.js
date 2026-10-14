@@ -27,6 +27,12 @@
     getAll()                { return this._readMeta(); },
     getForStudent(sid)      { return this._readMeta().filter(d=>d.studentId===sid); },
     getById(id)             { return this._readMeta().find(d=>d.id===id)||null; },
+    getReviewReference(message) {
+      if(!message||message.type!=='text'||!message.docId) return null;
+      const doc=this.getById(message.docId);
+      if(!message.reviewedAt&&!Object.prototype.hasOwnProperty.call(message,'reviewComment')&&doc?.reviewMessageId!==message.id) return null;
+      return { docId:message.docId, fileName:doc?.fileName||message.fileName||'ডকুমেন্ট' };
+    },
     getFileData(id) {
       const meta = this.getById(id);
       if (meta && meta.fileUrl) return meta.fileUrl;

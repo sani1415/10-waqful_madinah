@@ -1,6 +1,19 @@
 /* Waqful Madinah · js/shared/ui.js — global UI helpers (esc, toast, modals, …) shared by both pages. */
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\n/g,'<br>'); }
 function autoResize(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; }
+// Both panels use the persisted document ID, including reviews loaded after sync.
+function docReviewReferenceHtml(message, previewFunction){
+  const ref=API.Docs.getReviewReference(message);
+  if(!ref) return '';
+  const id=encodeURIComponent(ref.docId).replace(/'/g,'%27');
+  return `<button type="button" class="msg-reply-ref msg-doc-review-ref" onclick="${previewFunction}(decodeURIComponent('${id}'))" aria-label="পর্যালোচিত ফাইল খুলুন"><span class="rr-sender">ফাইলের পর্যালোচনা</span><span class="rr-text">${esc(ref.fileName)}</span></button>`;
+}
+function chatDocOpenHtml(message, previewFunction, leading=''){
+  const content=`${leading}<div class="msg-doc-card"><div class="msg-doc-tile">${fileIcon(message.fileType)}</div><div class="msg-doc-info"><div class="msg-doc-name">${esc(message.fileName)}</div><div class="msg-doc-size">${message.fileSize?formatBytes(message.fileSize):''}</div></div></div>`;
+  if(!message.docId) return content;
+  const id=encodeURIComponent(message.docId).replace(/'/g,'%27');
+  return `<button type="button" class="msg-doc-open" onclick="${previewFunction}(decodeURIComponent('${id}'))" aria-label="ফাইল খুলুন">${content}</button>`;
+}
 function showToast(msg,duration=2800){ const t=document.getElementById('toast'); if(!t) return; t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),duration); }
 function uiViewTransition(run){
   if(typeof document==='undefined'||typeof run!=='function') return;

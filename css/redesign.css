@@ -302,6 +302,12 @@ button.rd-mini{cursor:pointer}
 #app .doc-preview-sheet .doc-review-send:disabled{opacity:.65;cursor:wait}
 @media(prefers-reduced-motion:reduce){#app .doc-preview-sheet .doc-review-send{transition:none;transform:none}}
 .rd-still .rd-card,.rd-still .rd-arch,.rd-still.rd-card,.rd-still.rd-arch{animation:none!important}
+#app .msg-doc-open,#app .rd-doc-open{display:block;width:100%;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;min-height:44px}
+#app .msg-doc-open:focus-visible,#app .rd-doc-open:focus-visible,#app .msg-doc-review-ref:focus-visible{outline:2px solid var(--rd-accent-2);outline-offset:-2px;border-radius:8px}
+#app .msg-doc-review-ref{display:block;width:100%;min-height:44px;text-align:left;font:inherit;border:0;border-left:3px solid var(--rd-accent-2);background:var(--rd-tint);color:var(--rd-ink)}
+#app .msg-doc-review-ref .rr-sender,#app .msg-doc-review-ref .rr-text{display:block;color:var(--rd-accent);max-width:100%}
+#app .msg-doc-review-ref .rr-sender{font-size:11px}
+#app .msg-doc-review-ref .rr-text{font-size:13px}
 .rd-today-chips{margin-top:18px}
 /* Word (.docx) প্রিভিউ */
 .docx-preview-host{overflow:auto;background:#EDEBE4;border-radius:12px;text-align:start}

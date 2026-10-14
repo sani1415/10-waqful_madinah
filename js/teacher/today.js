@@ -113,9 +113,9 @@ function _rdCard(it,opts){
   }
   if(it.kind==='doc'){
     const d=it.doc, key=_todayKey(((opts&&opts.kp)||'')+'d',d.id), open=_todayOpen.has(key);
-    return `<div class="rd-card rd-expand${open?' open':''}" data-key="${key}">${who}<span class="rd-kind k-doc">${rdIcon('file')}ফাইল</span></div>
-      <div class="rd-card-title">${esc(d.fileName||'ফাইল')}</div>${d.note?`<div class="rd-card-body">${esc(d.note)}</div>`:''}
-      <div class="rd-acts"><button type="button" class="rd-btn ghost" onclick="toggleTodayCard('${key}')"><span class="rd-when-closed">মন্তব্য লিখুন</span><span class="rd-when-open">ছোট করুন</span></button><button type="button" class="rd-btn soft" onclick="openDocPreview('${rdJs(d.id)}',true)">${rdIcon('eye')}খুলে দেখুন</button></div>
+    return `<div class="rd-card rd-expand${open?' open':''}" data-key="${key}"><button type="button" class="rd-doc-open" onclick="openDocPreview('${rdJs(d.id)}',true)" aria-label="ফাইল খুলুন">${who}<span class="rd-kind k-doc">${rdIcon('file')}ফাইল</span></div>
+      <div class="rd-card-title">${esc(d.fileName||'ফাইল')}</div>${d.note?`<div class="rd-card-body">${esc(d.note)}</div>`:''}</button>
+      <div class="rd-acts"><button type="button" class="rd-btn ghost" onclick="toggleTodayCard('${key}')"><span class="rd-when-closed">মন্তব্য লিখুন</span><span class="rd-when-open">ছোট করুন</span></button></div>
       <div class="rd-reply">
         <textarea id="tr-${key}" rows="3" placeholder="মন্তব্য লিখুন — ছাত্র রিসালায় পাবে" oninput="_todayDrafts['${key}']=this.value">${rdText(_todayDrafts[key])}</textarea>
         <div class="rd-acts"><button type="button" class="rd-btn pri" onclick="todayReviewDoc('${rdJs(d.id)}','${key}')">${rdIcon('check')}মন্তব্যসহ পর্যালোচিত</button></div>

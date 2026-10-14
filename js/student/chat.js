@@ -83,15 +83,13 @@ function renderChat(){
   msgs.forEach(m=>{
     const _mts=m._ts||parseInt(/^m(\d{13})/.exec(m.id)?.[1]||'0'); if(_mts) _flushNotes(_mts);
     const _ds=_mds(m); _sep(_ds);
-    const replyRef=m.replyTo?`<div class="msg-reply-ref" onclick="scrollToMsg('${m.replyTo.id}')"><div class="rr-sender">${esc(m.replyTo.senderLabel||'')}</div><div class="rr-text">${esc(m.replyTo.text||'')}</div></div>`:'';
+    const replyRef=docReviewReferenceHtml(m,'previewStudentChatDoc')||(m.replyTo?`<div class="msg-reply-ref" onclick="scrollToMsg('${m.replyTo.id}')"><div class="rr-sender">${esc(m.replyTo.senderLabel||'')}</div><div class="rr-text">${esc(m.replyTo.text||'')}</div></div>`:'');
     const swiIcon=`<div class="swipe-reply-icon">↩</div>`;
     if(m.type==='task'){
       const tLabel=m.task?.taskType==='daily'?'🔁 দৈনিক':'📌 এককালীন';
       h+=`<div class="msg-wrap in" data-mid="${m.id}">${swiIcon}<div class="task-bubble"><div class="task-bubble-hd">📋 উস্তাদ আমল দিয়েছেন · ${tLabel}</div><div class="task-bubble-bd">${replyRef}<div class="task-bubble-title">${esc(m.task.title)}</div><div class="task-bubble-desc">${esc(m.task.desc)}</div>${m.task.deadline?`<div class="task-bubble-dl">📅 শেষ তারিখ: ${m.task.deadline}</div>`:''}</div></div><div style="font-size:11px;color:var(--gray-400);text-align:left;margin-top:2px;padding-left:4px">${m.time}</div></div>`;
     } else if(m.type==='doc'){
-      const ic=fileIcon(m.fileType);
-      const viewBtn=m.docId?`<button type="button" class="chat-doc-view-btn" onclick="previewStudentChatDoc('${m.docId}')"><span class="ic-svg">${_svgEye}</span> দেখুন</button>`:'';
-      const card=`${replyRef}<div class="msg-doc-card"><div class="msg-doc-tile">${ic}</div><div class="msg-doc-info"><div class="msg-doc-name">${esc(m.fileName)}</div><div class="msg-doc-size">${m.fileSize?formatBytes(m.fileSize):''}</div></div></div>${viewBtn}`;
+      const card=replyRef+chatDocOpenHtml(m,'previewStudentChatDoc');
       if(m.role==='in'){
         h+=`<div class="msg-wrap out" data-mid="${m.id}">${swiIcon}<div class="msg-doc-bubble">${card}</div><div class="msg-meta"><span class="msg-time">${m.time}</span>${tickHtml(m)}</div></div>`;
       } else {

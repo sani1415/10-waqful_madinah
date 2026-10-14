@@ -8,7 +8,7 @@ function _chatSubmissions(sid){
     const t=Date.parse(`${n.date||''}T${String(n.time||'00:00').slice(0,5)}:00+06:00`);
     out.push({kind:'note',sid,s,note:n,ts:t?t+59999:0,ds:n.date||null}); // মিনিটের শেষ ধরে — একই মিনিটের বার্তার পরে
   });
-  const inChat=new Set(API.Messages.getThread(sid).filter(m=>m.docId).map(m=>m.docId));
+  const inChat=new Set(API.Messages.getThread(sid).filter(m=>m.type==='doc'&&m.docId).map(m=>m.docId));
   API.Docs.getForStudent(sid).filter(d=>d.sentBy!=='teacher'&&!inChat.has(d.id)).forEach(d=>{
     const t=Date.parse(d.uploadedAt||'')||0;
     out.push({kind:'doc',sid,s,doc:d,ts:t,ds:t?API.bdDateStr(t):null});
@@ -42,18 +42,15 @@ function renderMsgs(id){
     const mts=m._ts||parseInt(/^m(\d{13})/.exec(m.id)?.[1]||'0'); if(mts) _flushSubs(mts);
     const ds=_msgDateStr(m);
     _sep(ds);
-    const replyRef=m.replyTo?`<div class="msg-reply-ref" onclick="scrollToMsg('${m.replyTo.id}')"><div class="rr-sender">${esc(m.replyTo.senderLabel||'')}</div><div class="rr-text">${esc(m.replyTo.text||'')}</div></div>`:'';
+    const replyRef=docReviewReferenceHtml(m,'teacherPreviewChatDoc')||(m.replyTo?`<div class="msg-reply-ref" onclick="scrollToMsg('${m.replyTo.id}')"><div class="rr-sender">${esc(m.replyTo.senderLabel||'')}</div><div class="rr-text">${esc(m.replyTo.text||'')}</div></div>`:'');
     const swiIcon=`<div class="swipe-reply-icon">↩</div>`;
     if(m.type==='task'){
       const tLabel=m.task?.taskType==='daily'?'🔁 দৈনিক':'📌 এককালীন';
       h+=`<div class="msg-wrap out" data-mid="${m.id}">${swiIcon}<div class="task-bubble"><div class="task-bubble-hd">📋 আমল · ${tLabel}</div><div class="task-bubble-bd">${replyRef}<div class="task-bubble-title">${esc(m.task.title)}</div><div class="task-bubble-desc">${esc(m.task.desc)}</div>${m.task.deadline?`<div class="task-bubble-dl">📅 ${m.task.deadline}</div>`:''}</div></div><div style="font-size:11px;color:var(--gray-400);text-align:right;margin-top:2px">${m.time}</div></div>`;
     } else if(m.type==='doc'){
-      const ic=fileIcon(m.fileType);
-      const markRead=m.role==='in';
-      const previewBtn=m.docId?`<button type="button" class="chat-doc-view-btn" onclick="teacherPreviewChatDoc('${m.docId}',${markRead})"><span class="ic-svg">${_svgEye}</span> দেখুন</button>`:'';
       const dm=m.role==='in'&&m.docId?API.Docs.getById(m.docId):null;
       const revTag=dm?(dm.reviewStatus==='pending'?'<span class="chat-doc-rev pending">পর্যালোচনা বাকি</span>':'<span class="chat-doc-rev">✓ পর্যালোচিত</span>'):'';
-      const card=`${replyRef}${revTag}<div class="msg-doc-card"><div class="msg-doc-tile">${ic}</div><div class="msg-doc-info"><div class="msg-doc-name">${esc(m.fileName)}</div><div class="msg-doc-size">${m.fileSize?formatBytes(m.fileSize):''}</div></div></div>${previewBtn}`;
+      const card=replyRef+chatDocOpenHtml(m,'teacherPreviewChatDoc',revTag);
       if(m.role==='in'){
         h+=`<div class="msg-wrap in" data-mid="${m.id}">${swiIcon}<div class="msg-doc-bubble">${card}</div><div style="font-size:11px;color:var(--gray-400);margin-top:2px;padding-left:4px">${m.time}</div></div>`;
       } else {
