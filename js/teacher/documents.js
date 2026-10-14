@@ -94,20 +94,36 @@ async function markDocReviewed(id,comment=''){
   try{
     await API.Docs.markReviewed(id,comment);
     if(d&&d.studentId) docExpandedSid=d.studentId;
-    renderDocsGrouped();
-    updateDocBadge();
+    renderAll();
     showToast('✅ পর্যালোচনা সম্পন্ন');
   }catch(e){ console.error(e); showToast('❌ আপডেট হয়নি'); }
 }
 async function markDocReviewedFromPreview(){
-  if(!curPreviewDocId) return;
+  const id=curPreviewDocId;
+  if(!id||docReviewSendingIds.has(id)||API.Docs.getById(id)?.reviewStatus!=='pending') return;
   const btn=document.getElementById('docReviewBtn');
-  const comment=(document.getElementById('docReviewComment')?.value||'').trim();
+  const input=document.getElementById('docReviewComment');
+  const box=document.getElementById('docReviewBox');
+  const comment=(input?.value||'').trim();
+  docReviewSendingIds.add(id);
   if(btn){ btn.disabled=true; btn.textContent='পাঠানো হচ্ছে…'; }
-  await markDocReviewed(curPreviewDocId,comment);
-  const meta=API.Docs.getById(curPreviewDocId);
-  if(meta&&meta.reviewStatus==='done') renderDocReviewState(meta);
-  else if(btn){ btn.disabled=false; btn.textContent='রিভিউ সম্পূর্ণ ও পাঠান'; }
+  if(input) input.disabled=true;
+  if(box) box.setAttribute('aria-busy','true');
+  try{
+    await markDocReviewed(id,comment);
+  }finally{
+    docReviewSendingIds.delete(id);
+    // A different document may have been opened while this request was in flight.
+    if(curPreviewDocId===id){
+      const meta=API.Docs.getById(id);
+      if(meta&&meta.reviewStatus==='done') renderDocReviewState(meta);
+      else {
+        if(btn){ btn.disabled=false; btn.textContent='পাঠান'; }
+        if(input) input.disabled=false;
+        if(box) box.setAttribute('aria-busy','false');
+      }
+    }
+  }
 }
 async function triggerDocDownload(){
   const meta=API.Docs.getById(curPreviewDocId);

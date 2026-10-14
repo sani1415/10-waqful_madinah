@@ -223,7 +223,8 @@ function openChat(id, initialTab){
       renderMsgs('_broadcast');
     });
   }
-  setTimeout(()=>{ document.getElementById('chatMsgs').scrollTop=9e9; document.getElementById('msgIn').focus(); },50);
+  document.getElementById('msgIn').blur();
+  setTimeout(()=>{ document.getElementById('chatMsgs').scrollTop=9e9; },50);
   });
 }
 function closeChat(){

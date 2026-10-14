@@ -612,9 +612,8 @@
   <div id="docPreviewMeta" style="font-size:13px;color:var(--gray-500);margin-bottom:12px"></div>
   <div id="docPreviewContent" style="text-align:center;margin-bottom:12px"></div>
   <div class="doc-review-box" id="docReviewBox" style="display:none">
-    <label class="doc-review-label" for="docReviewComment">রিভিউ মন্তব্য</label>
-    <textarea class="form-input doc-review-input" id="docReviewComment" maxlength="1000" placeholder="ছাত্রের জন্য মন্তব্য লিখুন…"></textarea>
-    <button class="btn-primary" id="docReviewBtn" style="margin-top:8px;background:#E65100" onclick="markDocReviewedFromPreview()">রিভিউ সম্পূর্ণ ও পাঠান</button>
+    <textarea class="form-input doc-review-input" id="docReviewComment" rows="1" maxlength="1000" aria-label="পর্যালোচনার মন্তব্য" placeholder="মন্তব্য লিখুন…" oninput="autoResize(this)"></textarea>
+    <button type="button" class="doc-review-send" id="docReviewBtn" onclick="markDocReviewedFromPreview()" aria-label="পর্যালোচনা সম্পূর্ণ করে পাঠান">পাঠান</button>
   </div>
   <div class="doc-review-result" id="docReviewResult" style="display:none"></div>
   <div class="doc-preview-actions">

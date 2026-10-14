@@ -423,8 +423,13 @@ function renderDocReviewState(meta){
   const result=document.getElementById('docReviewResult');
   const input=document.getElementById('docReviewComment');
   const pending=meta&&meta.reviewStatus==='pending';
-  if(box) box.style.display=pending?'block':'none';
-  if(input) input.value=pending?'':(meta?.reviewComment||'');
+  if(box) box.style.display=pending?'flex':'none';
+  if(input){ input.value=pending?'':(meta?.reviewComment||''); input.style.height=''; }
+  const sending=!!meta&&docReviewSendingIds.has(meta.id);
+  const btn=document.getElementById('docReviewBtn');
+  if(btn){ btn.disabled=sending; btn.textContent=sending?'পাঠানো হচ্ছে…':'পাঠান'; }
+  if(input) input.disabled=sending;
+  if(box) box.setAttribute('aria-busy',String(sending));
   if(!result) return;
   if(pending){ result.style.display='none'; result.innerHTML=''; return; }
   let reviewed='';

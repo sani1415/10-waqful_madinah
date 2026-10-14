@@ -7,6 +7,7 @@ let newTaskType='daily';
 let examTab='list', docViewTab='received', docExpandedSid=null;
 let questions=[], curQContainer='questionList', examChatSid=null, qSelectedIds=[];
 let curPreviewDocId=null;
+const docReviewSendingIds=new Set();
 let chatTeacherPendingFile=null;
 let curProfileSid=null;
 let replyingTo=null;

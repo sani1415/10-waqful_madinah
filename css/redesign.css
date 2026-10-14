@@ -294,7 +294,13 @@ button.rd-mini{cursor:pointer}
 #app .modal-overlay .doc-preview-sheet{display:flex;flex-direction:column;max-height:calc(100dvh - 40px);overflow:hidden}
 #app .doc-preview-sheet>*{flex:none}
 #app .doc-preview-sheet #docPreviewContent{flex:1 1 auto;min-height:140px;overflow:auto;-webkit-overflow-scrolling:touch}
-#app .doc-preview-sheet .doc-review-input{min-height:64px;max-height:120px}
+#app .doc-preview-sheet .doc-review-box{align-items:flex-end;gap:8px;margin:0 0 10px;padding:8px;background:var(--rd-surface-2);border:1px solid var(--rd-line);border-radius:16px}
+#app .doc-preview-sheet .doc-review-input{flex:1;min-width:0;width:0;min-height:44px;height:44px;max-height:120px;margin:0;padding:10px 12px;resize:none;line-height:22px;border:1px solid var(--rd-line);border-radius:12px;background:var(--rd-surface);color:var(--rd-ink);font-size:14px}
+#app .doc-preview-sheet .doc-review-input:focus{outline:2px solid var(--rd-accent-soft);outline-offset:1px}
+#app .doc-preview-sheet .doc-review-send{flex:none;min-width:64px;min-height:44px;padding:8px 12px;border:0;border-radius:12px;background:var(--rd-accent);color:var(--rd-surface);font-size:14px;font-weight:700;cursor:pointer;transition:transform .15s var(--rd-ease)}
+#app .doc-preview-sheet .doc-review-send:active{transform:scale(.97)}
+#app .doc-preview-sheet .doc-review-send:disabled{opacity:.65;cursor:wait}
+@media(prefers-reduced-motion:reduce){#app .doc-preview-sheet .doc-review-send{transition:none;transform:none}}
 .rd-still .rd-card,.rd-still .rd-arch,.rd-still.rd-card,.rd-still.rd-arch{animation:none!important}
 .rd-today-chips{margin-top:18px}
 /* Word (.docx) প্রিভিউ */
