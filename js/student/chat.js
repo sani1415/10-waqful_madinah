@@ -47,6 +47,7 @@ async function previewStudentChatDoc(docId){
   }
   document.getElementById('chatDocPreviewDl').style.display=data?'block':'none';
   openModal('chatDocPreviewModal');
+  document.getElementById('app').scrollLeft=0;
   if(_isPdf2 && data && window.PdfPreview) PdfPreview.render(box, data, { maxHeight:'55vh', fileName:meta.fileName });
   if(_isDocx2 && data) DocxPreview.render(box, data, { maxHeight:'55vh', fileName:meta.fileName });
   const fullBtn=document.getElementById('chatDocFullBtn'); if(fullBtn) fullBtn.style.display=(data&&(_isImg2||_isPdf2||_isDocx2))?'':'none';

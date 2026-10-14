@@ -109,6 +109,8 @@ async function openDocPreview(docId, markAsRead){
   renderDocReviewState(meta);
   if(markAsRead){ API.Docs.markRead(docId); updateDocBadge(); }
   openModal('docPreviewModal');
+  // Focusing a file button must not scroll the shell toward its hidden panels.
+  document.getElementById('app').scrollLeft=0;
   if(_isPdf && data && window.PdfPreview) PdfPreview.render(content, data, { maxHeight:'65vh', fileName:meta.fileName });
   if(_isDocx && data) DocxPreview.render(content, data, { fileName:meta.fileName });
   const fullBtn=document.getElementById('docFullBtn'); if(fullBtn) fullBtn.style.display=(data&&(_isImg||_isPdf||_isDocx))?'':'none';
