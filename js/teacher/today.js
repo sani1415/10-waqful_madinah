@@ -105,7 +105,7 @@ function _rdCard(it,opts){
     const n=it.note, nid=rdJs(n.id), key=_todayKey(((opts&&opts.kp)||'')+'n',n.id), open=_todayOpen.has(key);
     return `<div class="rd-card rd-expand${open?' open':''}" data-key="${key}">${who}<span class="rd-kind k-note">${rdIcon('book')}বিবরণ</span></div>
       ${n.title?`<div class="rd-card-title">${esc(n.title)}</div>`:''}<div class="rd-card-body">${esc(n.text||'')}</div>
-      <div class="rd-acts"><button type="button" class="rd-btn ghost" onclick="toggleTodayCard('${key}')"><span class="rd-when-closed">পুরোটা পড়ুন ও উত্তর দিন</span><span class="rd-when-open">ছোট করুন</span></button><button type="button" class="rd-btn soft" onclick="todayMarkNoteReviewed('${sid}','${nid}')">${rdIcon('check')}পর্যালোচিত</button></div>
+      <div class="rd-acts"><button type="button" class="rd-btn ghost" onclick="toggleTodayCard('${key}')"><span class="rd-when-closed">পুরোটা পড়ুন ও উত্তর দিন</span><span class="rd-when-open">ছোট করুন</span></button><button type="button" class="rd-btn soft" onclick="todayMarkNoteReviewed('${sid}','${nid}')">${rdIcon('check')}অনুমোদন</button></div>
       <div class="rd-reply">
         <textarea id="tr-${key}" rows="3" placeholder="উত্তর লিখুন…" oninput="_todayDrafts['${key}']=this.value">${rdText(_todayDrafts[key])}</textarea>
         <div class="rd-acts"><button type="button" class="rd-btn pri" onclick="todayReplyNote('${sid}','${nid}','${key}',true)">${rdIcon('send')}উত্তর পাঠান</button></div>
@@ -113,12 +113,13 @@ function _rdCard(it,opts){
   }
   if(it.kind==='doc'){
     const d=it.doc, key=_todayKey(((opts&&opts.kp)||'')+'d',d.id), open=_todayOpen.has(key);
+    const busy=docReviewSendingIds.has(d.id), busyAttrs=busy?' disabled aria-busy="true"':'';
     return `<div class="rd-card rd-expand${open?' open':''}" data-key="${key}"><button type="button" class="rd-doc-open" onclick="openDocPreview('${rdJs(d.id)}',true)" aria-label="ফাইল খুলুন">${who}<span class="rd-kind k-doc">${rdIcon('file')}ফাইল</span></div>
       <div class="rd-card-title">${esc(d.fileName||'ফাইল')}</div>${d.note?`<div class="rd-card-body">${esc(d.note)}</div>`:''}</button>
-      <div class="rd-acts"><button type="button" class="rd-btn ghost" onclick="toggleTodayCard('${key}')"><span class="rd-when-closed">মন্তব্য লিখুন</span><span class="rd-when-open">ছোট করুন</span></button></div>
+      <div class="rd-acts"><button type="button" class="rd-btn ghost" onclick="toggleTodayCard('${key}')"><span class="rd-when-closed">মন্তব্য লিখুন</span><span class="rd-when-open">ছোট করুন</span></button><button type="button" class="rd-btn soft" data-review-doc="${esc(d.id)}" data-review-label="অনুমোদন"${busyAttrs} onclick="todayReviewDoc('${rdJs(d.id)}')">${rdIcon('check')}${busy?'অনুমোদন হচ্ছে…':'অনুমোদন'}</button></div>
       <div class="rd-reply">
         <textarea id="tr-${key}" rows="3" placeholder="মন্তব্য লিখুন — ছাত্র রিসালায় পাবে" oninput="_todayDrafts['${key}']=this.value">${rdText(_todayDrafts[key])}</textarea>
-        <div class="rd-acts"><button type="button" class="rd-btn pri" onclick="todayReviewDoc('${rdJs(d.id)}','${key}')">${rdIcon('check')}মন্তব্যসহ পর্যালোচিত</button></div>
+        <div class="rd-acts"><button type="button" class="rd-btn pri" data-review-doc="${esc(d.id)}" data-review-label="মন্তব্যসহ অনুমোদন"${busyAttrs} onclick="todayReviewDoc('${rdJs(d.id)}','${key}')">${rdIcon('check')}${busy?'অনুমোদন হচ্ছে…':'মন্তব্যসহ অনুমোদন'}</button></div>
       </div></div>`;
   }
   const q=it.quiz, sub=it.sub;
@@ -150,16 +151,27 @@ async function todayReplyNote(sid,noteId,key,alsoReview){
   }catch(e){ console.error(e); showToast('❌ পাঠানো যায়নি'); }
 }
 async function todayReviewDoc(docId,key){
-  const ta=document.getElementById('tr-'+key);
+  if(docReviewSendingIds.has(docId)||API.Docs.getById(docId)?.reviewStatus!=='pending') return;
+  const ta=key?document.getElementById('tr-'+key):null;
+  docReviewSendingIds.add(docId);
+  function setBusy(busy){
+    document.querySelectorAll('[data-review-doc]').forEach(btn=>{
+      if(btn.dataset.reviewDoc!==docId) return;
+      btn.disabled=busy; btn.setAttribute('aria-busy',String(busy));
+      btn.innerHTML=rdIcon('check')+(busy?'অনুমোদন হচ্ছে…':btn.dataset.reviewLabel);
+    });
+  }
+  setBusy(true);
   try{
     await API.Docs.markReviewed(docId,(ta&&ta.value||'').trim());
-    delete _todayDrafts[key]; _todayOpen.delete(key);
-    showToast('✅ পর্যালোচিত — ছাত্রকে জানানো হয়েছে');
+    if(key){ delete _todayDrafts[key]; _todayOpen.delete(key); }
+    showToast('✅ অনুমোদন হয়েছে — ছাত্রকে জানানো হয়েছে');
     renderAll();
-  }catch(e){ console.error(e); showToast('❌ আপডেট হয়নি'); }
+  }catch(e){ console.error(e); showToast('❌ অনুমোদন হয়নি — আবার চেষ্টা করুন'); }
+  finally{ docReviewSendingIds.delete(docId); setBusy(false); }
 }
 async function todayMarkNoteReviewed(sid,noteId){
-  try{ await API.StudentNotes.markReviewed(sid,noteId); showToast('✅ পর্যালোচিত হিসেবে চিহ্নিত'); renderAll(); }
+  try{ await API.StudentNotes.markReviewed(sid,noteId); showToast('✅ অনুমোদন হয়েছে'); renderAll(); }
   catch(e){ console.error(e); showToast('❌ আপডেট হয়নি'); }
 }
 // ══ হোম: «আজ» + ছাত্রতালিকা একসাথে — প্রতি ছাত্র এক রঙিন সারি ════════

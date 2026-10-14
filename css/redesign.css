@@ -480,6 +480,8 @@ html,body{background:var(--rd-bg)!important}
 .rd-joma-h{font-size:13px;font-weight:600;color:var(--rd-ink-3);margin:8px 2px 0}
 .rd-joma-list{display:grid;gap:8px;grid-template-columns:minmax(0,1fr)}
 .rd-joma-list .rd-card{margin:0;box-shadow:var(--rd-sh)}
+.rd-joma-list .rd-btn{min-height:44px}
+.rd-btn[data-review-doc]:disabled{opacity:.65;cursor:wait}
 .rd-joma-done{display:flex;align-items:center;justify-content:center;gap:6px;color:var(--rd-accent);font-size:14px;font-weight:600;padding:10px 0}
 .rd-joma-done .rd-i{width:16px;height:16px}
 .rd-joma-past{display:grid;gap:4px;justify-items:start;text-align:start;width:100%;box-sizing:border-box;background:var(--rd-surface);border:1px solid var(--rd-line);border-radius:16px;padding:12px 14px;font:inherit;color:inherit}
