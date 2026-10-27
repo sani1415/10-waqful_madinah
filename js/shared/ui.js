@@ -1,5 +1,42 @@
 /* Waqful Madinah · js/shared/ui.js — global UI helpers (esc, toast, modals, …) shared by both pages. */
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\n/g,'<br>'); }
+
+// Update existing nodes in place so live refreshes keep focus and unsent form values.
+function uiPatchContent(root, html, options={}){
+  const template=document.createElement('template'); template.innerHTML=html;
+  const scroller=options.scroller||root;
+  const nearBottom=scroller.scrollHeight-scroller.scrollTop-scroller.clientHeight<80;
+  const top=scroller.scrollTop;
+  const bounds=scroller.getBoundingClientRect();
+  const anchor=Array.from(scroller.children).find(n=>n.getBoundingClientRect().bottom>bounds.top);
+  const offset=anchor?anchor.getBoundingClientRect().top-bounds.top:0;
+  const key=n=>n.nodeType===1&&(n.id?'id:'+n.id:n.dataset.mid?'msg:'+n.dataset.mid:n.dataset.key?'key:'+n.dataset.key:n.dataset.sid?'sid:'+n.dataset.sid:'');
+  function patch(parent, fresh){
+    const old=Array.from(parent.childNodes), keyed=new Map(old.map(n=>[key(n),n]).filter(x=>x[0]));
+    let cursor=parent.firstChild;
+    for(const desired of Array.from(fresh.childNodes)){
+      const k=key(desired);
+      let node=k?keyed.get(k):cursor;
+      if(node&&(!k&&key(node)||node.nodeType!==desired.nodeType||node.nodeType===1&&node.tagName!==desired.tagName)) node=null;
+      if(!node){ parent.insertBefore(desired,cursor); continue; }
+      if(node!==cursor) parent.insertBefore(node,cursor);
+      if(node.nodeType===3){ if(node.nodeValue!==desired.nodeValue) node.nodeValue=desired.nodeValue; }
+      else if(node.nodeType===1){
+        for(const attr of Array.from(node.attributes)) if(!desired.hasAttribute(attr.name)) node.removeAttribute(attr.name);
+        for(const attr of Array.from(desired.attributes)) if(node.getAttribute(attr.name)!==attr.value) node.setAttribute(attr.name,attr.value);
+        // Do not reset typed values, selection or the active field during a refresh.
+        if(!/^(INPUT|TEXTAREA|SELECT)$/.test(node.tagName)) patch(node,desired);
+      }
+      cursor=node.nextSibling;
+    }
+    while(cursor){ const next=cursor.nextSibling; parent.removeChild(cursor); cursor=next; }
+  }
+  patch(root,template.content);
+  if(options.followBottom&&nearBottom) scroller.scrollTop=scroller.scrollHeight;
+  else if(anchor&&anchor.isConnected) scroller.scrollTop+=anchor.getBoundingClientRect().top-bounds.top-offset;
+  else scroller.scrollTop=top;
+}
+
 function autoResize(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; }
 // Both panels use the persisted document ID, including reviews loaded after sync.
 function docReviewReferenceHtml(message, previewFunction){

@@ -74,7 +74,7 @@ function _chatNoteCard(n){
 function renderChat(){
   const msgs=API.Messages.getThread(me.id); const el=document.getElementById('chatMsgs');
   const notes=(API.StudentNotes?API.StudentNotes.getAll(me.id):[]).filter(n=>!isWeeklyReceiptNote(n)).map(n=>({n,ts:_chatNoteTs(n)})).sort((a,b)=>a.ts-b.ts);
-  if(!msgs.length&&!notes.length){ el.innerHTML='<div style="text-align:center;padding:40px;color:var(--gray-400);font-size:14px">📖 উস্তাদকে সালাম দিন! 👋</div>'; return; }
+  if(!msgs.length&&!notes.length){ uiPatchContent(el,'<div style="text-align:center;padding:40px;color:var(--gray-400);font-size:14px">📖 উস্তাদকে সালাম দিন! 👋</div>'); return; }
   const _todayStr=API.today();
   function _mds(m){ const ts=m._ts||parseInt(/^m(\d{13})/.exec(m.id)?.[1]||'0'); if(!ts) return null; return API.bdDateStr(ts); }
   function _dlbl(ds){ if(!ds) return null; if(ds===_todayStr) return 'আজ'; const d=new Date(ds+'T00:00:00Z'); return `${d.getUTCDate()}/${d.getUTCMonth()+1}/${d.getUTCFullYear()}`; }
@@ -110,7 +110,7 @@ function renderChat(){
     }
   });
   _flushNotes(Infinity);
-  el.innerHTML=h; setTimeout(()=>el.scrollTop=9e9,50);
+  uiPatchContent(el,h,{followBottom:true});
 }
 async function openStudentMsgEdit(mid){
   if(!me) return;
@@ -143,7 +143,7 @@ async function sendMsg(){
   try{
     await API.Messages.sendFromStudent(me.id, text, 'text', rt?{replyTo:rt}:{});
     cancelReply();
-    inp.value=''; inp.style.height='auto'; renderChat(); updateBadges();
+    inp.value=''; inp.style.height='auto'; renderChat(); document.getElementById('chatMsgs').scrollTop=9e9; updateBadges();
   }catch(e){
     console.error(e);
     showToast('❌ বার্তা পাঠানো হয়নি');

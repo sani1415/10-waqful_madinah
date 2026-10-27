@@ -1,6 +1,7 @@
 /* Waqful Madinah — js/teacher/today.js: «আজ» — everything waiting on the teacher, in one list.
    Reads only existing data (schedule proposals, pending বিবরণ, pending files, quizzes to grade,
    unread messages, today's আমল) and reuses the existing actions. */
+const noteReviewSendingIds=new Set();
 let _todayFilter='pending'; // হোমের ফিল্টার: pending (বাকি আছে) | unread | all
 // খোলা কার্ড ও না-পাঠানো খসড়া — রি-রেন্ডারেও (লাইভ সিঙ্ক) হারায় না
 const _todayOpen=new Set();
@@ -103,12 +104,13 @@ function _rdCard(it,opts){
   }
   if(it.kind==='note'){
     const n=it.note, nid=rdJs(n.id), key=_todayKey(((opts&&opts.kp)||'')+'n',n.id), open=_todayOpen.has(key);
+    const busy=noteReviewSendingIds.has(n.id);
     return `<div class="rd-card rd-expand${open?' open':''}" data-key="${key}">${who}<span class="rd-kind k-note">${rdIcon('book')}বিবরণ</span></div>
       ${n.title?`<div class="rd-card-title">${esc(n.title)}</div>`:''}<div class="rd-card-body">${esc(n.text||'')}</div>
-      <div class="rd-acts"><button type="button" class="rd-btn ghost" onclick="toggleTodayCard('${key}')"><span class="rd-when-closed">পুরোটা পড়ুন ও উত্তর দিন</span><span class="rd-when-open">ছোট করুন</span></button><button type="button" class="rd-btn soft" onclick="todayMarkNoteReviewed('${sid}','${nid}')">${rdIcon('check')}অনুমোদন</button></div>
+      <div class="rd-acts"><button type="button" class="rd-btn ghost" onclick="toggleTodayCard('${key}')"><span class="rd-when-closed">পুরোটা পড়ুন ও উত্তর দিন</span><span class="rd-when-open">ছোট করুন</span></button><button type="button" class="rd-btn soft" data-review-note="${esc(n.id)}" data-note-label="অনুমোদন" ${busy?'disabled aria-busy="true"':''} onclick="todayMarkNoteReviewed('${sid}','${nid}')">${rdIcon('check')}${busy?'অনুমোদন হচ্ছে…':'অনুমোদন'}</button></div>
       <div class="rd-reply">
         <textarea id="tr-${key}" rows="3" placeholder="উত্তর লিখুন…" oninput="_todayDrafts['${key}']=this.value">${rdText(_todayDrafts[key])}</textarea>
-        <div class="rd-acts"><button type="button" class="rd-btn pri" onclick="todayReplyNote('${sid}','${nid}','${key}',true)">${rdIcon('send')}উত্তর পাঠান</button></div>
+        <div class="rd-acts"><button type="button" class="rd-btn pri" data-review-note="${esc(n.id)}" data-note-label="উত্তর পাঠান" ${busy?'disabled aria-busy="true"':''} onclick="todayReplyNote('${sid}','${nid}','${key}',true)">${rdIcon('send')}${busy?'পাঠানো হচ্ছে…':'উত্তর পাঠান'}</button></div>
       </div></div>`;
   }
   if(it.kind==='doc'){
@@ -138,17 +140,30 @@ function toggleTodayCard(key){
   if(open){ _todayOpen.add(key); setTimeout(()=>document.getElementById('tr-'+key)?.focus({preventScroll:true}),50); }
   else _todayOpen.delete(key);
 }
+async function showReviewSuccess(attr,id){
+  const buttons=Array.from(document.querySelectorAll('['+attr+']')).filter(b=>b.getAttribute(attr)===id);
+  if(!buttons.length) return;
+  buttons.forEach(b=>{ b.textContent='✓ অনুমোদিত'; });
+  await new Promise(resolve=>setTimeout(resolve,450));
+}
 async function todayReplyNote(sid,noteId,key,alsoReview){
   const ta=document.getElementById('tr-'+key); const text=(ta&&ta.value||'').trim();
   if(!text){ showToast('উত্তর লিখুন'); return; } // উত্তর পাঠালে বিবরণটি নিজে থেকেই পর্যালোচিত হয়
+  if(noteReviewSendingIds.has(noteId)) return;
   const n=API.StudentNotes.getAll(sid).find(x=>x.id===noteId);
+  noteReviewSendingIds.add(noteId);
+  const buttons=Array.from(document.querySelectorAll('[data-review-note]')).filter(b=>b.dataset.reviewNote===noteId);
+  buttons.forEach(b=>{ b.disabled=true; b.setAttribute('aria-busy','true'); });
+  const send=ta?.closest('.rd-reply')?.querySelector('button'); if(send) send.textContent='পাঠানো হচ্ছে…';
   try{
     if(text) await API.Messages.send(sid,(n&&n.title?`«${n.title}» প্রসঙ্গে:\n`:'')+text,'text');
     if(alsoReview) await API.StudentNotes.markReviewed(sid,noteId);
     delete _todayDrafts[key]; _todayOpen.delete(key);
     showToast('✅ উত্তর পাঠানো হয়েছে');
+    await showReviewSuccess('data-review-note',noteId);
     renderAll();
-  }catch(e){ console.error(e); showToast('❌ পাঠানো যায়নি'); }
+  }catch(e){ console.error(e); showToast('❌ পাঠানো যায়নি — আবার চেষ্টা করুন'); }
+  finally{ noteReviewSendingIds.delete(noteId); buttons.forEach(b=>{ if(b.isConnected){ b.disabled=false; b.removeAttribute('aria-busy'); } }); if(send?.isConnected) send.innerHTML=rdIcon('send')+'উত্তর পাঠান'; }
 }
 async function todayReviewDoc(docId,key){
   if(docReviewSendingIds.has(docId)||API.Docs.getById(docId)?.reviewStatus!=='pending') return;
@@ -166,13 +181,19 @@ async function todayReviewDoc(docId,key){
     await API.Docs.markReviewed(docId,(ta&&ta.value||'').trim());
     if(key){ delete _todayDrafts[key]; _todayOpen.delete(key); }
     showToast('✅ অনুমোদন হয়েছে — ছাত্রকে জানানো হয়েছে');
+    await showReviewSuccess('data-review-doc',docId);
     renderAll();
   }catch(e){ console.error(e); showToast('❌ অনুমোদন হয়নি — আবার চেষ্টা করুন'); }
   finally{ docReviewSendingIds.delete(docId); setBusy(false); }
 }
 async function todayMarkNoteReviewed(sid,noteId){
-  try{ await API.StudentNotes.markReviewed(sid,noteId); showToast('✅ অনুমোদন হয়েছে'); renderAll(); }
-  catch(e){ console.error(e); showToast('❌ আপডেট হয়নি'); }
+  if(noteReviewSendingIds.has(noteId)) return;
+  noteReviewSendingIds.add(noteId);
+  const buttons=Array.from(document.querySelectorAll('[data-review-note]')).filter(b=>b.dataset.reviewNote===noteId);
+  buttons.forEach(b=>{ b.disabled=true; b.setAttribute('aria-busy','true'); b.textContent='অনুমোদন হচ্ছে…'; });
+  try{ await API.StudentNotes.markReviewed(sid,noteId); showToast('✅ অনুমোদন হয়েছে'); await showReviewSuccess('data-review-note',noteId); renderAll(); }
+  catch(e){ console.error(e); showToast('❌ আপডেট হয়নি — আবার চেষ্টা করুন'); }
+  finally{ noteReviewSendingIds.delete(noteId); buttons.forEach(b=>{ if(b.isConnected){ b.disabled=false; b.removeAttribute('aria-busy'); b.innerHTML=rdIcon(b.dataset.noteLabel==='উত্তর পাঠান'?'send':'check')+b.dataset.noteLabel; } }); }
 }
 // ══ হোম: «আজ» + ছাত্রতালিকা একসাথে — প্রতি ছাত্র এক রঙিন সারি ════════
 // যার কিছু বাকি (রিসালা, বিবরণ, ফাইল, সময়সূচি, নম্বর) সে ওপরে। নামে চাপলেই ছাত্রের পাতা খোলে —
@@ -248,7 +269,7 @@ function setTodayFilter(f){
   const box=document.getElementById('todayDecisions'); if(!box){ renderToday(); return; }
   const list=document.getElementById('todayList'); const top=list?list.scrollTop:0;
   box.classList.add('rd-still');
-  box.innerHTML=_homeListHtml(_homeRows());
+  uiPatchContent(box,_homeListHtml(_homeRows()),{scroller:list||box});
   if(list) list.scrollTop=top;
 }
 
@@ -261,7 +282,7 @@ function renderToday(){
   if(curTab!=='today') return;
   const firstPaint=!el.dataset.painted; el.dataset.painted='1';
   const keepTop=el.scrollTop;
-  el.innerHTML=`<div id="todayDecisions">${_homeListHtml(data)}</div><div class="rd-bottom-space"></div>`;
+  uiPatchContent(el,`<div id="todayDecisions">${_homeListHtml(data)}</div><div class="rd-bottom-space"></div>`);
   el.classList.toggle('rd-still',!firstPaint);
   if(!firstPaint) el.scrollTop=keepTop;
 }

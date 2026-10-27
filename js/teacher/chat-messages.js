@@ -30,7 +30,7 @@ function renderMsgs(id){
   const el=document.getElementById('chatMsgs');
   const subs=_chatSubmissions(id);
   if(!msgs.length&&!subs.length){
-    el.innerHTML='<div style="text-align:center;padding:30px;color:var(--gray-400);font-size:13px">কথোপকথন শুরু করুন 👋</div>';
+    uiPatchContent(el,'<div style="text-align:center;padding:30px;color:var(--gray-400);font-size:13px">কথোপকথন শুরু করুন 👋</div>');
   } else {
   const todayStr=API.today();
   function _msgDateStr(m){ const ts=m._ts||parseInt(/^m(\d{13})/.exec(m.id)?.[1]||'0'); if(!ts) return null; return API.bdDateStr(ts); }
@@ -68,9 +68,8 @@ function renderMsgs(id){
     }
   });
   _flushSubs(Infinity);
-  el.innerHTML=h;
+  uiPatchContent(el,h,{followBottom:true});
   }
-  setTimeout(()=>el.scrollTop=9e9,50);
   renderChatScheduleStrip();
 }
 

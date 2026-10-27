@@ -612,3 +612,13 @@ button.chat-sub-done{cursor:pointer}
 .rd-sb-q{display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid var(--rd-line);padding:4px 0;font-size:14.5px;color:var(--rd-ink)}
 .rd-sb-q button{border:0;background:none;color:var(--rd-rose-deep);width:28px;height:28px;border-radius:50%;cursor:pointer;flex:none}
 .rd-sb-save{margin-top:2px}
+
+/* Compact, consistent controls in the review workflow. */
+.rd-hfilter,.rd-joma-chip{min-height:44px}
+.rd-joma-list .rd-card{padding:14px}
+.rd-joma-list .rd-acts{gap:8px}
+.rd-joma-chip,.rd-joma-list .rd-btn,.chat-sub .rd-btn{transition:transform .15s var(--rd-ease),background-color .15s var(--rd-ease)}
+@media (hover:hover){.rd-joma-list .rd-btn:not(:disabled):hover,.rd-joma-chip:hover{filter:brightness(.97)}}
+.rd-joma-list .rd-btn:not(:disabled):active,.chat-sub .rd-btn:not(:disabled):active,.rd-joma-chip:active{transform:scale(.98)}
+.rd-joma-list .rd-btn:disabled,.chat-sub .rd-btn:disabled{cursor:wait;opacity:.7}
+@media (prefers-reduced-motion:reduce){.rd-joma-chip,.rd-joma-list .rd-btn,.chat-sub .rd-btn{transition:none}.rd-joma-list .rd-btn:active,.chat-sub .rd-btn:active,.rd-joma-chip:active{transform:none}}

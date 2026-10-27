@@ -485,7 +485,7 @@ const JOMA_FILTERS=[['all','সব'],['note','বিবরণ'],['doc','ফা�
 function setJomaFilter(f){ _jomaFilter=f; renderChatNotes(); }
 function _jomaGradeCard(it){
   const q=it.quiz, sub=it.sub;
-  return `<div class="rd-card"><div class="rd-who rd-who--mini"><span class="rd-time">${esc(_rdAgo(it.ts))}</span><span class="rd-kind k-exam">${rdIcon('pen')}পরীক্ষা</span></div>
+  return `<div class="rd-card" data-key="${_todayKey('grade',sub.id)}"><div class="rd-who rd-who--mini"><span class="rd-time">${esc(_rdAgo(it.ts))}</span><span class="rd-kind k-exam">${rdIcon('pen')}পরীক্ষা</span></div>
     <div class="rd-card-title">${esc(q.title||'পরীক্ষা')}</div><div class="rd-card-body">উত্তর জমা হয়েছে — নম্বর দিন</div>
     ${renderOralAnswerButtons(q,sub)}
     <div class="rd-acts rd-joma-grade"><input class="marks-input" type="number" inputmode="numeric" placeholder="নম্বর" min="0" max="${sub.total}" aria-label="নম্বর"><span>/ ${rdBn(sub.total||0)}</span><button type="button" class="rd-btn pri" onclick="jomaSaveGrade('${rdJs(sub.id)}',this)">${rdIcon('check')}নম্বর দিন</button></div></div>`;
@@ -520,7 +520,7 @@ function renderChatNotes(){
     const d=x.d;
     return `<button type="button" class="rd-joma-past rd-joma-file" onclick="teacherPreviewChatDoc('${rdJs(d.id)}',true)"><span class="rd-kind k-doc">${rdIcon('file')}ফাইল</span><b>${esc(d.fileName||'ফাইল')}</b>${d.reviewComment?`<p>মন্তব্য: ${esc(d.reviewComment)}</p>`:''}<span class="rd-time">${esc(d.uploadedAt?API.bdDateStr(d.uploadedAt):'')}</span></button>`;
   }).join('')}</div>`:'';
-  el.innerHTML=chips+pendHtml+pastHtml+(!pending.length&&!past.length?'<div class="csp-empty" style="padding:8px 0">এখনো কিছু জমা হয়নি।</div>':'');
+  uiPatchContent(el,chips+pendHtml+pastHtml+(!pending.length&&!past.length?'<div class="csp-empty" style="padding:8px 0">এখনো কিছু জমা হয়নি।</div>':''));
 }
 /** জিম্মাদারের নিজের নোট — নামের পাশের আইকন থেকে, নিচের ড্রয়ারে (ছাত্র দেখে না) */
 function openTeacherNotes(){
