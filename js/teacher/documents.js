@@ -116,7 +116,8 @@ async function markDocReviewedFromPreview(){
     // A different document may have been opened while this request was in flight.
     if(curPreviewDocId===id){
       const meta=API.Docs.getById(id);
-      if(meta&&meta.reviewStatus==='done') renderDocReviewState(meta);
+      // পর্যালোচনা হয়ে গেলে পূর্বরূপ নিজে থেকেই বন্ধ — আলাদা করে ✕ চাপতে হয় না
+      if(meta&&meta.reviewStatus==='done'){ renderDocReviewState(meta); closeModal('docPreviewModal'); }
       else {
         if(btn){ btn.disabled=false; btn.textContent='পাঠান'; }
         if(input) input.disabled=false;

@@ -446,7 +446,10 @@ button.rd-mini{cursor:pointer}
 #chatView[data-tab]:not([data-tab="msg"]) :is(.chat-input-bar,.reply-preview-bar,.chat-file-preview){display:none!important}
 /* ফোনে ডানে-বামে সরে না: পর্দার বাইরে লুকানো প্যানেলগুলো (গ্রুপ, প্রোফাইল…) পাতা চওড়া করে দিত */
 html,body{overflow-x:hidden;max-width:100%}
-@supports (overflow:clip){html,body,#app{overflow-x:clip}}
+@supports (overflow:clip){html,body{overflow-x:clip}
+/* #app-এ দুই দিকেই clip: শুধু overflow-x:clip দিলে overflow-y:hidden থাকায় ব্রাউজার সেটাকে আবার hidden বানায়,
+   আর hidden বাক্স ভেতর থেকে সরানো যায় — লেখার ঘরে ফোকাস/কিবোর্ড এলে পাশের লুকানো প্যানেল (গ্রুপ, প্রোফাইল) ভেসে উঠত */
+#app{overflow:clip}}
 /* নিচের মেনুর পেছনে আলাদা রঙের পট্টি নয় — পুরো পাতা এক রঙ */
 html,body{background:var(--rd-bg)!important}
 /* আজ: লম্বা শেষ-বার্তা বা বড় ফন্টে সারি যেন পর্দা ছাড়িয়ে না যায় (grid-এর সারি নিজে থেকে চওড়া হতো) */

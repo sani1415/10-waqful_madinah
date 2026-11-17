@@ -41,7 +41,7 @@ api/      Vercel functions; `_`-prefixed files (_env.js, _auth.js) are shared he
 
 ## Service Worker Cache Rule
 - **`sw.js` এর `CACHE` version (`waqful-full-vN`) প্রতিবার যেকোনো file edit করলে N বাড়াতে হবে।**
-- Current version: **v231** (last bumped: ব্যাক বোতামে বন্ধের আগে প্রশ্ন — Chrome-এর skip নিয়ম মেনে))
+- Current version: **v239** (last bumped: ফাইল পর্যালোচনা পাঠালে পূর্বরূপ নিজে থেকেই বন্ধ হয়)
 - যেকোনো `.html`, `.css`, `.js` file বদলালে → `sw.js` খুলে `waqful-full-vN` → `vN+1` করো।
 - নতুন file তৈরি হলে `LOCAL_SHELL` array-তেও যোগ করো।
 
