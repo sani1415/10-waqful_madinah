@@ -75,12 +75,20 @@ function renderMsgs(id){
 
 async function openDocPreview(docId, markAsRead){
   const meta=API.Docs.getById(docId); if(!meta){ showToast('ফাইল পাওয়া যায়নি!'); return; }
-  curPreviewDocId=docId;
+  curPreviewDocId=docId; curPreviewExtFile=null;
   const data=await API.Docs.resolveFileUrl(docId);
+  const st=meta.studentId?API.Students.getById(meta.studentId):null;
+  const metaLine=`${formatBytes(meta.fileSize)}${st?.waqfId?' · '+API.Students.displayWaqfId(st.waqfId):''}${meta.studentName?' · '+meta.studentName:''} · ${formatDate(meta.uploadedAt)}`;
+  showFilePreview(meta, data, metaLine, ()=>{
+    renderDocReviewState(meta);
+    if(markAsRead){ API.Docs.markRead(docId); updateDocBadge(); }
+  });
+}
+/** একই পূর্বরূপ শিট — ডকুমেন্ট বা পরীক্ষার ফাইল উত্তর, দুটোর জন্যই।
+    meta: { fileName, fileType, fileSize }; data: দেখার URL (না থাকলে «পূর্বরূপ সম্ভব নয়»)। */
+function showFilePreview(meta, data, metaLine, beforeOpen){
   document.getElementById('docPreviewTitle').textContent=meta.fileName;
-  { const st=meta.studentId?API.Students.getById(meta.studentId):null;
-    document.getElementById('docPreviewMeta').textContent=`${formatBytes(meta.fileSize)}${st?.waqfId?' · '+API.Students.displayWaqfId(st.waqfId):''}${meta.studentName?' · '+meta.studentName:''} · ${formatDate(meta.uploadedAt)}`;
-  }
+  document.getElementById('docPreviewMeta').textContent=metaLine||'';
   const content=document.getElementById('docPreviewContent');
   const _ft=meta.fileType||'';
   const _isImg=_ft==='image'||_ft.startsWith('image/');
@@ -101,12 +109,11 @@ async function openDocPreview(docId, markAsRead){
     DocxPreview.legacyNotice(content);
   } else {
     const icon=fileIcon(meta.fileType);
-    content.innerHTML=`<div style="padding:24px 16px;background:var(--gray-100);border-radius:8px;display:flex;flex-direction:column;align-items:center;gap:8px"><span class="msg-doc-tile" style="width:56px;height:56px">${icon}</span><span style="font-size:14px;font-weight:600;color:var(--gray-700);word-break:break-all">${esc(meta.fileName)}</span><span style="font-size:12px;color:var(--gray-500)">${formatBytes(meta.fileSize)}</span><span style="font-size:12px;color:var(--gray-400)">পূর্বরূপ সম্ভব নয় — ডাউনলোড করুন</span></div>`;
+    content.innerHTML=`<div style="padding:24px 16px;background:var(--gray-100);border-radius:8px;display:flex;flex-direction:column;align-items:center;gap:8px"><span class="msg-doc-tile" style="width:56px;height:56px">${icon}</span><span style="font-size:14px;font-weight:600;color:var(--gray-700);word-break:break-all">${esc(meta.fileName)}</span><span style="font-size:12px;color:var(--gray-500)">${formatBytes(meta.fileSize)}</span><span style="font-size:12px;color:var(--gray-400)">${data?'পূর্বরূপ সম্ভব নয় — ডাউনলোড করুন':'ফাইলের লিংক তৈরি হয়নি'}</span></div>`;
   }
   const btn=document.getElementById('docDownloadBtn');
   btn.style.display=data?'block':'none';
-  renderDocReviewState(meta);
-  if(markAsRead){ API.Docs.markRead(docId); updateDocBadge(); }
+  if(beforeOpen) beforeOpen();
   openModal('docPreviewModal');
   // Focusing a file button must not scroll the shell toward its hidden panels.
   document.getElementById('app').scrollLeft=0;

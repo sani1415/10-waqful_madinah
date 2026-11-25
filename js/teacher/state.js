@@ -7,6 +7,8 @@ let newTaskType='daily';
 let examTab='list', docViewTab='received', docExpandedSid=null;
 let questions=[], curQContainer='questionList', examChatSid=null, qSelectedIds=[];
 let curPreviewDocId=null;
+/** পরীক্ষার ফাইল উত্তর পূর্বরূপে খোলা থাকলে: { fileName, url } (তখন curPreviewDocId=null) */
+let curPreviewExtFile=null;
 const docReviewSendingIds=new Set();
 let chatTeacherPendingFile=null;
 let curProfileSid=null;

@@ -1,6 +1,6 @@
 /* Waqful Madinah · js/api/exams.js — Exams (quizzes). Attaches to window.API (core.js loads first). */
 (function (API) {
-  const { EXAMS_KEY, MAX_ORAL_AUDIO_BYTES, RS, _useRemote, blobToDataUrl, safeFilePart, today, uid } = API._internal;
+  const { EXAMS_KEY, MAX_ORAL_AUDIO_BYTES, RS, _useRemote, blobToDataUrl, fileWithinUploadLimit, safeFilePart, today, uid } = API._internal;
 
 
   // ── EXAMS ─────────────────────────────────────────────────
@@ -62,43 +62,63 @@
       this._write(data);
     },
 
+    /* মৌখিক (audio) ও ফাইল-আপলোড উত্তরের আসল বাইট জমার সময় Storage-এ যায়;
+       সাবমিশনে থাকে শুধু মেটা: { kind, …, storagePath } (লোকাল মোডে dataUrl)। */
     async _prepareAnswersForSubmit(quiz, sid, answers) {
       const out = { ...(answers || {}) };
-      for (const q of (quiz.questions || [])) {
-        if (q.type !== 'audio') continue;
-        const ans = out[q.id];
-        if (!ans || !ans.blob) continue;
-        const blob = ans.blob;
-        if (typeof blob.size !== 'number' || blob.size <= 0) throw new Error('audio_empty');
-        if (blob.size > MAX_ORAL_AUDIO_BYTES) throw new Error('audio_too_large');
-        const mimeType = ans.mimeType || blob.type || 'audio/webm';
-        const ext = mimeType.includes('mp4') ? 'm4a' : mimeType.includes('ogg') ? 'ogg' : 'webm';
-        const baseMeta = {
-          kind: 'audio',
-          mimeType,
-          size: blob.size,
-          duration: Math.max(0, Math.round(Number(ans.duration || 0))),
-          recordedAt: ans.recordedAt || new Date().toISOString(),
-        };
+      const store = async (q, blob, ext, baseMeta, prefix) => {
         if (_useRemote && RS.uploadFile) {
-          const path = `oral-exams/${safeFilePart(quiz.id)}/${safeFilePart(sid)}/${safeFilePart(q.id)}_${Date.now()}_${uid('aud')}.${ext}`;
+          const path = `${prefix}/${safeFilePart(quiz.id)}/${safeFilePart(sid)}/${safeFilePart(q.id)}_${Date.now()}_${uid('f')}.${ext}`;
           const res = await RS.uploadFile(path, blob);
           const { fileUrl, storagePath } = RS.consumeUploadResult(res);
-          out[q.id] = { ...baseMeta, storagePath: storagePath || path, fileUrl };
-        } else {
-          out[q.id] = { ...baseMeta, dataUrl: await blobToDataUrl(blob) };
+          return { ...baseMeta, storagePath: storagePath || path, fileUrl };
+        }
+        return { ...baseMeta, dataUrl: await blobToDataUrl(blob) };
+      };
+      for (const q of (quiz.questions || [])) {
+        const ans = out[q.id];
+        if (q.type === 'audio') {
+          if (!ans || !ans.blob) continue;
+          const blob = ans.blob;
+          if (typeof blob.size !== 'number' || blob.size <= 0) throw new Error('audio_empty');
+          if (blob.size > MAX_ORAL_AUDIO_BYTES) throw new Error('audio_too_large');
+          const mimeType = ans.mimeType || blob.type || 'audio/webm';
+          const ext = mimeType.includes('mp4') ? 'm4a' : mimeType.includes('ogg') ? 'ogg' : 'webm';
+          out[q.id] = await store(q, blob, ext, {
+            kind: 'audio',
+            mimeType,
+            size: blob.size,
+            duration: Math.max(0, Math.round(Number(ans.duration || 0))),
+            recordedAt: ans.recordedAt || new Date().toISOString(),
+          }, 'oral-exams');
+        } else if (q.type === 'file_upload') {
+          if (!ans || !ans.file) continue;
+          const file = ans.file;
+          if (!fileWithinUploadLimit(file)) throw new Error('file_too_large');
+          const fileName = String(file.name || 'file');
+          const dot = fileName.lastIndexOf('.');
+          const ext = (dot > 0 ? safeFilePart(fileName.slice(dot + 1)).slice(0, 10) : '') || 'bin';
+          out[q.id] = await store(q, file, ext, {
+            kind: 'file',
+            fileName,
+            mimeType: file.type || 'application/octet-stream',
+            size: file.size,
+            uploadedAt: new Date().toISOString(),
+          }, 'exam-files');
         }
       }
       return out;
     },
 
-    resolveAudioUrl(answer) {
-      if (!answer) return null;
+    /** মৌখিক বা ফাইল উত্তরের দেখার লিংক (রিমোটে সবসময় নতুন signed URL) */
+    resolveAnswerUrl(answer) {
+      if (!answer || typeof answer !== 'object') return null;
       if (answer.dataUrl) return answer.dataUrl;
       if (_useRemote && answer.storagePath && RS.getSignedUrlForPath)
         return RS.getSignedUrlForPath(answer.storagePath);
       return answer.fileUrl || null;
     },
+    resolveAudioUrl(answer) { return this.resolveAnswerUrl(answer); },
 
     async submitQuiz(qid, sid, answers) {
       const quiz=this.getQuizById(qid); if(!quiz) throw new Error('quiz_not_found');

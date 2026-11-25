@@ -456,7 +456,7 @@ function renderChatExams(){
     const grade=sub&&sub.needsManualGrade
       ?`<div class="csp-exam-grade"><input class="marks-input" type="number" placeholder="নম্বর" value="${sub.score||0}" min="0" max="${sub.total}" style="width:72px" onchange="updateChatExamScore('${sub.id}',this.value)"><span style="font-size:11px;color:var(--gray-400)">/ ${sub.total}</span></div>`
       :'';
-    const oral=sub?renderOralAnswerButtons(q,sub):'';
+    const oral=sub?renderSubmissionAnswers(q,sub):'';
     return `<div class="csp-row"><div class="csp-row-main">${esc(q.title)}${bits.length?' · '+esc(bits.join(' · ')):''}</div><span class="csp-row-meta ${mCls}">${meta}</span></div>${oral}${grade}`;
   }).join('');
 }
@@ -487,7 +487,7 @@ function _jomaGradeCard(it){
   const q=it.quiz, sub=it.sub;
   return `<div class="rd-card" data-key="${_todayKey('grade',sub.id)}"><div class="rd-who rd-who--mini"><span class="rd-time">${esc(_rdAgo(it.ts))}</span><span class="rd-kind k-exam">${rdIcon('pen')}পরীক্ষা</span></div>
     <div class="rd-card-title">${esc(q.title||'পরীক্ষা')}</div><div class="rd-card-body">উত্তর জমা হয়েছে — নম্বর দিন</div>
-    ${renderOralAnswerButtons(q,sub)}
+    ${renderSubmissionAnswers(q,sub)}
     <div class="rd-acts rd-joma-grade"><input class="marks-input" type="number" inputmode="numeric" placeholder="নম্বর" min="0" max="${sub.total}" aria-label="নম্বর"><span>/ ${rdBn(sub.total||0)}</span><button type="button" class="rd-btn pri" onclick="jomaSaveGrade('${rdJs(sub.id)}',this)">${rdIcon('check')}নম্বর দিন</button></div></div>`;
 }
 async function jomaSaveGrade(subId,btn){

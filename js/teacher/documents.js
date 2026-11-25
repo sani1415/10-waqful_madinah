@@ -127,6 +127,10 @@ async function markDocReviewedFromPreview(){
   }
 }
 async function triggerDocDownload(){
+  if(curPreviewExtFile){
+    const a=document.createElement('a'); a.href=curPreviewExtFile.url; a.download=curPreviewExtFile.fileName; a.target='_blank'; a.rel='noopener'; a.click();
+    return;
+  }
   const meta=API.Docs.getById(curPreviewDocId);
   if(!meta) return;
   const data=await API.Docs.resolveFileUrl(curPreviewDocId);
