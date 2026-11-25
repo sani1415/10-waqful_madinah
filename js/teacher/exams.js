@@ -221,18 +221,52 @@ function initResultsQuizSelect(){
   sel.innerHTML='<option value="">পরীক্ষা বেছে নিন...</option>'+quizzes.map(q=>`<option value="${q.id}">${esc(q.title)}</option>`).join('');
   renderResults();
 }
-function oralAnswersFor(quiz, sub){
-  if(!quiz||!sub||!sub.answers) return [];
-  return (quiz.questions||[])
-    .filter(q=>q.type==='audio' && sub.answers[q.id])
-    .map((q,i)=>({ q, answer:sub.answers[q.id], index:i+1 }));
+/* ছাত্রের যেসব উত্তর শিক্ষককে নিজে দেখে নম্বর দিতে হয়: লিখিত (সংক্ষিপ্ত/রচনামূলক), ফাইল, মৌখিক */
+const MANUAL_ANSWER_TYPES=['short_answer','essay','file_upload','audio'];
+function renderSubmissionAnswers(quiz, sub){
+  if(!quiz||!sub) return '';
+  const answers=sub.answers||{};
+  const rows=(quiz.questions||[]).map((q,i)=>({q,n:i+1})).filter(x=>MANUAL_ANSWER_TYPES.includes(x.q.type));
+  if(!rows.length) return '';
+  const sid=rdJs(sub.id);
+  return `<div class="exam-ans-list">${rows.map(({q,n})=>{
+    const ans=answers[q.id];
+    const qid=rdJs(q.id);
+    let body;
+    if(q.type==='audio'){
+      body=ans&&typeof ans==='object'
+        ?`<button type="button" class="exam-ans-btn" onclick="playOralAnswer('${sid}','${qid}')">▶ মৌখিক উত্তর শুনুন${ans.duration?' · '+rdBn(Math.round(ans.duration))+' সেকেন্ড':''}</button>`
+        :'';
+    } else if(q.type==='file_upload'){
+      if(ans&&typeof ans==='object'&&ans.kind==='file')
+        body=`<button type="button" class="exam-ans-btn" onclick="openExamAnswerFile('${sid}','${qid}')">📎 <span class="exam-ans-fname">${esc(ans.fileName||'ফাইল')}</span>${ans.size?' · '+esc(formatBytes(ans.size)):''}</button>`;
+      else if(typeof ans==='string'&&ans.trim())
+        body=`<div class="exam-ans-empty">📎 ${esc(ans)} — ফাইলটি আপলোড হয়নি (পুরোনো জমা, শুধু নাম আছে)</div>`;
+    } else if(typeof ans==='string'&&ans.trim()){
+      body=`<div class="exam-ans-text">${esc(ans)}</div>`;
+    }
+    return `<div class="exam-ans">
+      <div class="exam-ans-q"><span class="exam-ans-n">প্রশ্ন ${rdBn(n)}</span>${esc(q.text||'')}</div>
+      ${body||'<div class="exam-ans-empty">উত্তর দেয়নি</div>'}
+    </div>`;
+  }).join('')}</div>`;
 }
-function renderOralAnswerButtons(quiz, sub){
-  const list=oralAnswersFor(quiz, sub);
-  if(!list.length) return '';
-  return `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${list.map(x=>`
-    <button type="button" class="btn-secondary" style="width:auto;padding:4px 9px;font-size:12px" onclick="playOralAnswer('${sub.id}','${x.q.id}')">▶ মৌখিক ${x.index}${x.answer.duration?' · '+Math.round(x.answer.duration)+'s':''}</button>
-  `).join('')}</div>`;
+async function openExamAnswerFile(subId, questionId){
+  const sub=API.Exams.getSubmissions().find(s=>s.id===subId);
+  const ans=sub&&sub.answers?sub.answers[questionId]:null;
+  if(!ans||ans.kind!=='file'){ showToast('ফাইল পাওয়া যায়নি'); return; }
+  let url=null;
+  try{ url=await API.Exams.resolveAnswerUrl(ans); }catch(e){ console.error(e); }
+  if(!url) showToast('ফাইলের লিংক তৈরি হয়নি');
+  const quiz=API.Exams.getQuizById(sub.quizId);
+  const meta={ fileName:ans.fileName||'ফাইল', fileType:ans.mimeType||'', fileSize:ans.size||0 };
+  curPreviewDocId=null; curPreviewExtFile=url?{ fileName:meta.fileName, url }:null;
+  const metaLine=[formatBytes(meta.fileSize), sub.studentName, quiz?.title, formatDate(sub.submittedAt)].filter(Boolean).join(' · ');
+  showFilePreview(meta, url, metaLine, ()=>{
+    // পরীক্ষার ফাইলে ডকুমেন্টের «পর্যালোচনা» অংশ লাগে না — নম্বর দেওয়া হয় কার্ডেই
+    const box=document.getElementById('docReviewBox'); if(box) box.style.display='none';
+    const res=document.getElementById('docReviewResult'); if(res){ res.style.display='none'; res.innerHTML=''; }
+  });
 }
 async function playOralAnswer(subId, questionId){
   const sub=API.Exams.getSubmissions().find(s=>s.id===subId);
@@ -258,7 +292,7 @@ function renderResults(){
     return `
     <div class="result-item">
       <div style="flex:1"><div class="result-name">${wid?'<span style="color:#3F6B4A;font-weight:600;font-size:13px">'+esc(wid)+'</span> · ':''}${esc(s.studentName)}</div>
-      <div class="result-meta">${formatDate(s.submittedAt)} ${s.needsManualGrade?'· ✏️ ম্যানুয়াল গ্রেডিং প্রয়োজন':''}</div>${renderOralAnswerButtons(quiz,s)}</div>
+      <div class="result-meta">${formatDate(s.submittedAt)} ${s.needsManualGrade?'· ✏️ ম্যানুয়াল গ্রেডিং প্রয়োজন':''}</div>${renderSubmissionAnswers(quiz,s)}</div>
       ${s.needsManualGrade
         ? `<input class="marks-input" type="number" placeholder="নম্বর" value="${s.score||0}" min="0" max="${s.total}" onchange="updateScore('${s.id}',this.value,${s.total},${quiz.passPercent||60})">`
         : `<div class="result-score ${s.passed?'result-pass':'result-fail'}">${s.score}/${s.total}<br><small style="font-size:11px">${s.passed?'✅ পাস':'❌ ফেল'}</small></div>`

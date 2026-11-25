@@ -66,7 +66,8 @@ function renderQuizAnswer(q,i){
   }
   if(q.type==='file_upload'){
     return `<p style="font-size:13px;color:var(--gray-500);padding:8px 0">${esc(q.uploadInstructions||'ফাইল আপলোড করুন।')}</p>
-            <input type="file" class="form-input" onchange="setAnswer('${q.id}',this.files[0]?.name||'')">`;
+            <input type="file" class="form-input" multiple aria-label="উত্তরের ফাইল" onchange="onQuizFileChosen('${q.id}',this)">
+            <div class="quiz-file-status" id="qfStatus_${q.id}" aria-live="polite"></div>`;
   }
   if(q.type==='audio'){
     const quiz=API.Exams.getQuizById(activeQuizId)||{};
@@ -83,6 +84,20 @@ function renderQuizAnswer(q,i){
 }
 function highlightOption(qi,selected,count){ for(let i=0;i<count;i++){ const el=document.getElementById(`opt_${qi}_${i}`); if(el) el.classList.toggle('selected',i===selected); } }
 function setAnswer(qid,val){ quizAnswers[qid]=val; }
+/** ফাইল-আপলোড প্রশ্ন: ফাইলটা রেখে দিই, জমা দেওয়ার সময় API Storage-এ পাঠায় (একাধিক ছবি → একটি PDF) */
+async function onQuizFileChosen(qid,input){
+  const st=document.getElementById('qfStatus_'+qid);
+  if(!input.files?.length){ delete quizAnswers[qid]; if(st) st.textContent=''; return; }
+  try{
+    if(input.files.length>1){ if(st) st.textContent='ছবি একত্রিত করা হচ্ছে…'; }
+    const f=await API.prepareFilesForUpload(input.files);
+    quizAnswers[qid]={kind:'file',file:f};
+    if(st) st.textContent=`✓ ${f.name} · ${formatBytes(f.size)} — জমা দিলে আপলোড হবে`;
+  }catch(e){
+    delete quizAnswers[qid]; input.value=''; if(st) st.textContent='';
+    showUploadPrepError(e);
+  }
+}
 function pickQuizAudioMime(){
   if(typeof MediaRecorder==='undefined') return '';
   const cands=['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg;codecs=opus'];
@@ -154,9 +169,9 @@ function startQuizTimer(seconds){
     if(quizSecondsLeft<=0){ clearInterval(quizTimerInterval); submitQuiz(true); }
   },1000);
 }
+let quizSubmitting=false;
 async function submitQuiz(auto=false){
-  clearInterval(quizTimerInterval);
-  if(!activeQuizId) return;
+  if(!activeQuizId||quizSubmitting) return;
   if(activeQuizAudioId) await stopQuizAudio(activeQuizAudioId);
   const answered=Object.keys(quizAnswers).length;
   const quiz=API.Exams.getQuizById(activeQuizId);
@@ -166,11 +181,21 @@ async function submitQuiz(auto=false){
       ? `${answered}/${total}টি প্রশ্নের উত্তর দিয়েছেন। এখনই জমা দেবেন?`
       : 'পরীক্ষা জমা দেবেন?';
     const ok=await showConfirm(confirmMsg,{title:'পরীক্ষা জমা দিন',okText:'জমা দিন'});
-    if(!ok) return;
+    if(!ok||!activeQuizId||quizSubmitting) return;
   }
+  clearInterval(quizTimerInterval);
+  const hasUpload=(quiz?.questions||[]).some(q=>q.type==='file_upload'&&quizAnswers[q.id]?.file);
+  if(hasUpload) showToast('⏳ ফাইল আপলোড হচ্ছে…',8000);
   let sub;
+  quizSubmitting=true;
   try{ sub=await API.Exams.submitQuiz(activeQuizId,me.id,quizAnswers); }
-  catch(e){ console.error(e); showToast('❌ পরীক্ষা জমা হয়নি'); return; }
+  catch(e){
+    console.error(e);
+    showToast(e?.message==='file_too_large'?'❌ ফাইল সর্বোচ্চ ১০ MB!':'❌ পরীক্ষা জমা হয়নি — আবার চেষ্টা করুন');
+    if(!auto&&quizSecondsLeft>0) startQuizTimer(quizSecondsLeft);
+    return;
+  }
+  finally{ quizSubmitting=false; }
   exitQuiz();
   if(sub.needsManualGrade){
     showToast('✅ পরীক্ষা জমা হয়েছে! উস্তাদ নম্বর দেবেন।',4000);

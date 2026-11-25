@@ -625,3 +625,18 @@ button.chat-sub-done{cursor:pointer}
 .rd-joma-list .rd-btn:not(:disabled):active,.chat-sub .rd-btn:not(:disabled):active,.rd-joma-chip:active{transform:scale(.98)}
 .rd-joma-list .rd-btn:disabled,.chat-sub .rd-btn:disabled{cursor:wait;opacity:.7}
 @media (prefers-reduced-motion:reduce){.rd-joma-chip,.rd-joma-list .rd-btn,.chat-sub .rd-btn{transition:none}.rd-joma-list .rd-btn:active,.chat-sub .rd-btn:active,.rd-joma-chip:active{transform:none}}
+
+/* ── পরীক্ষা: শিক্ষকের গ্রেডিং — ছাত্রের লিখিত / ফাইল / মৌখিক উত্তর ── */
+.exam-ans-list{display:flex;flex-direction:column;gap:8px;margin-top:8px;text-align:start}
+.exam-ans{background:var(--rd-surface-2);border:1px solid var(--rd-line);border-radius:12px;padding:8px 10px}
+.exam-ans-q{font-size:13px;color:var(--rd-ink-2);line-height:1.5;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.exam-ans-n{font-weight:700;color:var(--rd-accent);margin-inline-end:6px}
+.exam-ans-text{font-size:15px;color:var(--rd-ink);line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;max-height:240px;overflow-y:auto}
+.exam-ans-empty{font-size:13px;color:var(--rd-ink-3)}
+.exam-ans-btn{display:inline-flex;align-items:center;gap:4px;max-width:100%;padding:6px 10px;border:1px solid var(--rd-accent-soft);border-radius:999px;background:var(--rd-tint-2);color:var(--rd-accent);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.exam-ans-btn:active{transform:scale(.98)}
+.exam-ans-fname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+#csp-exam .exam-ans-list{padding:0 2px 6px 28px}
+/* ছাত্র: ফাইল-উত্তর বাছাইয়ের অবস্থা */
+.quiz-file-status{font-size:12px;color:var(--rd-accent);font-weight:600;padding-top:6px;overflow-wrap:anywhere}
+.quiz-file-status:empty{display:none}
